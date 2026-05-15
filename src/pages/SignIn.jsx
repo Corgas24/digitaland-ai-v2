@@ -106,7 +106,7 @@ export default function SignIn() {
               onError={() => setError('Google Login was unsuccessful or cancelled.')}
               useOneTap
               width="380"
-              theme={document.documentElement.getAttribute('data-theme') === 'dark' ? 'filled_black' : 'outline'}
+              theme={typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? 'filled_black' : 'outline'}
               size="large"
               text="continue_with"
               shape="rectangular"

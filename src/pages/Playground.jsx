@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, Zap, Settings2, Trash2, Cpu, Sparkles, AlertCircle, Settings, ArrowUpRight, Copy, RefreshCcw, StopCircle, Terminal, Info, Search, Filter, Sliders, MessageSquare, Image as ImageIcon, Film, Music, Type as TypeIcon, User, RefreshCw, Command } from 'lucide-react';
+import { 
+  Send, Zap, Settings2, Trash2, Cpu, Sparkles, AlertCircle, 
+  Settings, ArrowUpRight, Copy, RefreshCcw, StopCircle, 
+  Terminal, Info, Search, Filter, Sliders, MessageSquare, 
+  Image as ImageIcon, Film, Music, Type as TypeIcon, 
+  User, RefreshCw, Command 
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';

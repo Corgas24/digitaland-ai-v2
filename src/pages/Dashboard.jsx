@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Key, Plus, Copy, Trash2, CreditCard, BarChart3, Settings, Activity, ArrowUpRight, TrendingUp, Cpu, Server, Shield, Zap, Globe, RefreshCcw, Bell, X, Check, Lock, DollarSign, Sparkles } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { 
+  Key, Plus, Copy, Trash2, CreditCard, BarChart3, Settings, 
+  Activity, ArrowUpRight, TrendingUp, Cpu, Server, Shield, 
+  Zap, Globe, RefreshCcw, Bell, X, Check, Lock, DollarSign, Sparkles 
+} from 'lucide-react';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, BarChart, Bar, Cell 
+} from 'recharts';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';

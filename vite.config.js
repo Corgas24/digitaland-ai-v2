@@ -11,17 +11,10 @@ export default defineConfig({
     include: ['lucide-react', 'recharts', 'react-markdown']
   },
   build: {
+    emptyOutDir: true,
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true
-    },
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['lucide-react', 'recharts'],
-        }
-      }
     }
   }
 })

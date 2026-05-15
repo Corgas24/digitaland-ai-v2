@@ -1,0 +1,329 @@
+import { useState, useMemo } from 'react';
+import { MODELS, PROVIDERS, MARKUP, OFFICIAL_MULT, ourPrice, officialPrice, savingsPercent } from '../data/models';
+import { Search, Grid3X3, List, Copy, Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+
+const DISCOUNT = savingsPercent(); // ~23%
+
+const TYPE_ICONS = {
+  Chat: '💬', Reasoning: '🧠', Code: '💻', Vision: '👁', Image: '🎨',
+  Audio: '🎵', Video: '🎬', Search: '🔍', Embedding: '📐', MoE: '🔀',
+};
+
+const TOP_PROVIDERS = ['OpenAI', 'Anthropic', 'Google', 'xAI', 'DeepSeek'];
+
+export default function Models() {
+  const [search, setSearch] = useState('');
+  const [selProvider, setSelProvider] = useState('All');
+  const [selType, setSelType] = useState('All');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+  const [sortBy, setSortBy] = useState('default'); // 'default' | 'price-asc' | 'price-desc' | 'name'
+  const [copied, setCopied] = useState(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Derive unique providers & types
+  const providers = useMemo(() => {
+    const counts = {};
+    MODELS.forEach(m => { counts[m.provider] = (counts[m.provider] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => {
+      const aTop = TOP_PROVIDERS.indexOf(a[0]);
+      const bTop = TOP_PROVIDERS.indexOf(b[0]);
+      if (aTop !== -1 && bTop !== -1) return aTop - bTop;
+      if (aTop !== -1) return -1;
+      if (bTop !== -1) return 1;
+      return b[1] - a[1];
+    });
+  }, []);
+
+  const types = useMemo(() => {
+    const counts = {};
+    MODELS.forEach(m => { counts[m.type] = (counts[m.type] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, []);
+
+  // Filter & sort
+  const filtered = useMemo(() => {
+    let result = MODELS.filter(m => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || m.name.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || m.type.toLowerCase().includes(q);
+      const matchProvider = selProvider === 'All' || m.provider === selProvider;
+      const matchType = selType === 'All' || m.type === selType;
+      return matchSearch && matchProvider && matchType;
+    });
+
+    if (sortBy === 'price-asc') result.sort((a, b) => (a.offIn * MARKUP) - (b.offIn * MARKUP));
+    else if (sortBy === 'price-desc') result.sort((a, b) => (b.offIn * MARKUP) - (a.offIn * MARKUP));
+    else if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
+
+    return result;
+  }, [search, selProvider, selType, sortBy]);
+
+  const handleCopy = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const resetFilters = () => {
+    setSearch('');
+    setSelProvider('All');
+    setSelType('All');
+    setSortBy('default');
+  };
+
+  const hasFilters = search || selProvider !== 'All' || selType !== 'All';
+
+  return (
+    <main className="models-page">
+      {/* ═══ HEADER ═══ */}
+      <div className="models-header">
+        <div className="container">
+          <div className="models-header-inner">
+            <div>
+              <h1>All Models</h1>
+              <p className="models-subtitle">
+                <span className="models-count">{filtered.length}</span> of {MODELS.length} models
+                {selProvider !== 'All' && <> from <strong>{selProvider}</strong></>}
+                {selType !== 'All' && <> · {selType}</>}
+              </p>
+            </div>
+            <div className="models-header-actions">
+              <div className="models-search-wrap">
+                <Search size={16} className="models-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search models..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="models-search"
+                />
+                {search && (
+                  <button className="models-search-clear" onClick={() => setSearch('')}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              <div className="models-view-toggle">
+                <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} title="Grid view">
+                  <Grid3X3 size={16} />
+                </button>
+                <button className={viewMode === 'table' ? 'active' : ''} onClick={() => setViewMode('table')} title="Table view">
+                  <List size={16} />
+                </button>
+              </div>
+              <button className="models-mobile-filter-btn" onClick={() => setShowMobileFilters(!showMobileFilters)}>
+                <SlidersHorizontal size={16} /> Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container">
+        <div className="models-layout">
+          {/* ═══ SIDEBAR FILTERS ═══ */}
+          <aside className={`models-sidebar ${showMobileFilters ? 'show' : ''}`}>
+            <div className="sidebar-section">
+              <div className="sidebar-header">
+                <h3>Provider</h3>
+                {hasFilters && <button className="sidebar-reset" onClick={resetFilters}>Reset</button>}
+              </div>
+              <button
+                className={`sidebar-filter-btn ${selProvider === 'All' ? 'active' : ''}`}
+                onClick={() => setSelProvider('All')}
+              >
+                <span className="sfb-dot" style={{ background: 'var(--primary)' }} />
+                All Providers
+                <span className="sfb-count">{MODELS.length}</span>
+              </button>
+              {providers.map(([name, count]) => (
+                <button
+                  key={name}
+                  className={`sidebar-filter-btn ${selProvider === name ? 'active' : ''}`}
+                  onClick={() => setSelProvider(selProvider === name ? 'All' : name)}
+                >
+                  <span className="sfb-dot" style={{ background: PROVIDERS[name]?.color || '#666' }} />
+                  {name}
+                  <span className="sfb-count">{count}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="sidebar-section">
+              <h3>Type</h3>
+              <button
+                className={`sidebar-filter-btn ${selType === 'All' ? 'active' : ''}`}
+                onClick={() => setSelType('All')}
+              >
+                <span className="sfb-emoji">🌐</span>
+                All types
+              </button>
+              {types.map(([type, count]) => (
+                <button
+                  key={type}
+                  className={`sidebar-filter-btn ${selType === type ? 'active' : ''}`}
+                  onClick={() => setSelType(selType === type ? 'All' : type)}
+                >
+                  <span className="sfb-emoji">{TYPE_ICONS[type] || '🤖'}</span>
+                  {type}
+                  <span className="sfb-count">{count}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="sidebar-section">
+              <h3>Sort by</h3>
+              <select className="sidebar-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                <option value="default">Default</option>
+                <option value="price-asc">Price: Low → High</option>
+                <option value="price-desc">Price: High → Low</option>
+                <option value="name">Name A → Z</option>
+              </select>
+            </div>
+          </aside>
+
+          {/* ═══ MODELS CONTENT ═══ */}
+          <div className="models-content">
+            {filtered.length === 0 ? (
+              <div className="models-empty">
+                <h3>No models found</h3>
+                <p>Try adjusting your search or filters.</p>
+                <button className="btn-outline" onClick={resetFilters} style={{ marginTop: '1rem' }}>Clear filters</button>
+              </div>
+            ) : viewMode === 'grid' ? (
+              /* ═══ GRID VIEW ═══ */
+              <div className="models-grid">
+                {filtered.map((m, i) => {
+                  const prov = PROVIDERS[m.provider] || { color: '#666', short: m.provider[0] };
+                  const ourIn = ourPrice(m.offIn);
+                  const ourOut = ourPrice(m.offOut);
+                  const offIn = officialPrice(m.offIn);
+                  const offOut = officialPrice(m.offOut);
+                  
+                  // Strategic recommendation for cheap models
+                  const isRecommended = m.name.toLowerCase().includes('mini') || 
+                                      m.name.toLowerCase().includes('8b') || 
+                                      m.name.toLowerCase().includes('haiku') ||
+                                      m.name.toLowerCase().includes('flash');
+
+                  return (
+                    <div className="mg-card" key={i} style={{ 
+                      position: 'relative',
+                      border: '1px solid var(--border-light)',
+                      borderTop: `3px solid ${prov.color}`,
+                      background: 'var(--surface)',
+                      boxShadow: `0 10px 30px -15px ${prov.color}44`,
+                      overflow: 'hidden'
+                    }}>
+                      {isRecommended && (
+                        <div style={{ 
+                          position: 'absolute', top: '10px', right: '-35px', 
+                          background: 'var(--primary)', color: '#fff', fontSize: '0.6rem', 
+                          fontWeight: 900, padding: '4px 40px', transform: 'rotate(45deg)',
+                          boxShadow: '0 2px 10px rgba(99,102,241,0.4)', zIndex: 1
+                        }}>
+                          FAST
+                        </div>
+                      )}
+
+                      <div className="mg-top" style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ 
+                          width: '10px', height: '10px', borderRadius: '50%', 
+                          background: prov.color, boxShadow: `0 0 10px ${prov.color}` 
+                        }} />
+                        <div className="mg-meta">
+                          <h4 className="mg-name" style={{ fontSize: '1rem', fontWeight: 800 }}>{m.name}</h4>
+                          <span className="mg-provider-name" style={{ color: prov.color, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase' }}>{m.provider}</span>
+                        </div>
+                        <button
+                          className="mg-copy"
+                          onClick={() => handleCopy(m.name, i)}
+                          style={{ background: 'var(--bg-alt)', borderRadius: '8px' }}
+                        >
+                          {copied === i ? <Check size={13} /> : <Copy size={13} />}
+                        </button>
+                      </div>
+
+                      {/* Pricing with glow */}
+                      <div className="mg-prices" style={{ background: 'var(--bg-alt)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="mg-price-line">
+                          <span className="mg-price-label" style={{ opacity: 0.5, fontWeight: 700 }}>INPUT</span>
+                          <div className="mg-price-values">
+                            <span className="mg-our-price" style={{ color: 'var(--text)', fontWeight: 800 }}>${ourIn.toFixed(4)}<small style={{ opacity: 0.4 }}>/M</small></span>
+                          </div>
+                        </div>
+                        <div className="mg-price-line">
+                          <span className="mg-price-label" style={{ opacity: 0.5, fontWeight: 700 }}>OUTPUT</span>
+                          <div className="mg-price-values">
+                            <span className="mg-our-price" style={{ color: 'var(--text)', fontWeight: 800 }}>${ourOut.toFixed(4)}<small style={{ opacity: 0.4 }}>/M</small></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      <div className="mg-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {m.badge && <span className={`mg-tag mg-tag-${m.badge.toLowerCase()}`} style={{ fontSize: '0.65rem' }}>{m.badge}</span>}
+                        <span className="mg-tag mg-tag-type" style={{ fontSize: '0.65rem', background: 'var(--bg-alt)' }}>{TYPE_ICONS[m.type] || ''} {m.type}</span>
+                        {(offIn > 0 || offOut > 0) && (
+                          <span className="mg-tag mg-tag-save" style={{ 
+                            fontSize: '0.65rem', background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)' 
+                          }}>
+                            -{DISCOUNT}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* ═══ TABLE VIEW ═══ */
+              <div className="models-table-wrap">
+                <table className="models-table">
+                  <thead>
+                    <tr>
+                      <th>Model</th>
+                      <th>Provider</th>
+                      <th>Type</th>
+                      <th>Input / 1M</th>
+                      <th>Output / 1M</th>
+                      <th>Official</th>
+                      <th>Save</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((m, i) => {
+                      const prov = PROVIDERS[m.provider] || { color: '#666', short: m.provider[0] };
+                      const ourIn = ourPrice(m.offIn);
+                      const ourOut = ourPrice(m.offOut);
+                      const offIn = officialPrice(m.offIn);
+                      return (
+                        <tr key={i}>
+                          <td className="mt-name">
+                            <span className="mt-dot" style={{ background: prov.color }} />
+                            {m.name}
+                          </td>
+                          <td className="mt-provider">{m.provider}</td>
+                          <td><span className="mg-tag mg-tag-type" style={{ fontSize: '0.65rem' }}>{TYPE_ICONS[m.type] || ''} {m.type}</span></td>
+                          <td className="mt-price">${ourIn.toFixed(4)}</td>
+                          <td className="mt-price">${ourOut.toFixed(4)}</td>
+                          <td className="mt-off">{offIn > 0 ? `$${offIn.toFixed(2)}` : '—'}</td>
+                          <td><span className="mg-tag mg-tag-save" style={{ fontSize: '0.6rem' }}>-{DISCOUNT}%</span></td>
+                          <td>
+                            <button className="mg-copy" onClick={() => handleCopy(m.name, `t${i}`)} title="Copy">
+                              {copied === `t${i}` ? <Check size={12} /> : <Copy size={12} />}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

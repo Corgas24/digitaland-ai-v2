@@ -6,7 +6,7 @@
     },
     {
       "source": "/v1/:path*",
-      "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway"
+      "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway/:path*"
     },
     {
       "source": "/(.*)",

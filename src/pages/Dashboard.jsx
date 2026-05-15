@@ -3,11 +3,10 @@ import { Key, Plus, Copy, Trash2, CreditCard, BarChart3, Settings, Activity, Arr
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 const DEMO_KEYS = [];
 const MODEL_USAGE = [];
-
-import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const { user, updateBalance, addApiKey, removeApiKey } = useAuth();

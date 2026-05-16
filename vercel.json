@@ -1,13 +1,13 @@
 {
-      "rewrites": [
-              {
-                        "source": "/v1/:path*",
-                        "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway/:path*"
-              },
-              {
-                        "source": "/((?!api/).*)",
-                        "destination": "/index.html"
-              }
-      ],
-      "cleanUrls": true
+        "rewrites": [
+                  {
+                              "source": "/v1/:path*",
+                              "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway/:path*"
+                  },
+                  {
+                              "source": "/((?!v1|api).*)",
+                              "destination": "/index.html"
+                  }
+        ],
+        "cleanUrls": true
 }

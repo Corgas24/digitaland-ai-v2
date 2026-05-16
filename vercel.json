@@ -1,14 +1,17 @@
 {
-  "rewrites": [
-    {
-      "source": "/v1/:path*",
-      "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+    "routes": [
+          {
+                  "src": "/v1/(.*)",
+                  "dest": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway"
+          },
+          {
+                  "handle": "filesystem"
+          },
+          {
+                  "src": "/(.*)",
+                  "dest": "/index.html"
+          }
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
 }

@@ -1,19 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+/**
+ * ══════════════════════════════════════════════════════════════════════════════
+ * DIGITALAND STUDIO - PERFORMANCE & RELIABILITY MANIFESTO
+ * ══════════════════════════════════════════════════════════════════════════════
+ * 1. UNIVERSAL COMPATIBILITY: Every model in the matrix must be 100% functional.
+ * 2. ZERO-LATENCY GOAL: All UI transitions and API calls must be sub-50ms where possible.
+ * 3. INTELLIGENT ROUTING: Always prioritize the fastest available node for the user.
+ * 4. PREMIUM EXPERIENCE: The interface must feel 'alive', responsive, and elite.
+ * ══════════════════════════════════════════════════════════════════════════════
+ */
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Send, Zap, Settings2, Trash2, Cpu, Sparkles, AlertCircle, 
   Settings, ArrowUpRight, Copy, RefreshCcw, StopCircle, 
   Terminal, Info, Search, Filter, Sliders, MessageSquare, 
   Image as ImageIcon, Film, Music, Type as TypeIcon, 
-  User, RefreshCw, Command 
+  User, RefreshCw, Command, CreditCard, Activity,
+  Layers, Database, Shield, Globe, Clock, ChevronRight, X, ChevronLeft
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { MODELS, PROVIDERS } from '../data/models';
+import { getDynamicModels, PROVIDERS } from '../data/models';
 
 export default function Playground() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, isProfileLoading } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,26 +41,123 @@ export default function Playground() {
   const [error, setError] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [currentConvId, setCurrentConvId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [latency, setLatency] = useState(0);
   const abortControllerRef = useRef(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const [models, setModels] = useState([]);
+  const [isModelsLoading, setIsModelsLoading] = useState(true);
 
+  useEffect(() => {
+    getDynamicModels().then(data => {
+      setModels(data);
+      setIsModelsLoading(false);
+    });
+  }, []);
+
+  // Memoized lookups for speed
+  const currentModelObj = useMemo(() => models.find(m => m.id === selectedModel), [models, selectedModel]);
+  
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, streamingMessage]);
 
+  useEffect(() => {
+    if (user) {
+      fetchConversations();
+    }
+  }, [user]);
+
+  const fetchConversations = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+    }
+  };
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setCurrentConvId(null);
+    setStreamingMessage('');
+    setError(null);
+    setLatency(0);
+  };
+
+  const loadConversation = (conv) => {
+    setMessages(conv.messages || []);
+    setCurrentConvId(conv.id);
+    setSelectedModel(conv.model_id || 'gpt-4o-mini');
+    setStreamingMessage('');
+    setError(null);
+  };
+
+  const saveConversation = async (updatedMessages, modelId) => {
+    if (!user || updatedMessages.length === 0) return;
+    
+    setIsSaving(true);
+    try {
+      const title = updatedMessages[0].content.substring(0, 40) + (updatedMessages[0].content.length > 40 ? '...' : '');
+      
+      if (currentConvId) {
+        const { error } = await supabase
+          .from('conversations')
+          .update({ 
+            messages: updatedMessages, 
+            model_id: modelId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentConvId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('conversations')
+          .insert([{
+            user_id: user.id,
+            title,
+            messages: updatedMessages,
+            model_id: modelId,
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        if (data) setCurrentConvId(data.id);
+      }
+      fetchConversations();
+    } catch (err) {
+      console.error('Error saving conversation:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim()) return;
+    if (loading) return;
     
     if (!user) {
-      setError('Please sign in to use the Playground.');
+      setError('Acesso Negado: Inicie sessão no Neural Studio.');
       return;
     }
 
     if (user.balance <= 0) {
-      setError('Insufficient balance. Please add credits in the Dashboard.');
+      setError('Créditos Neurais Insuficientes. Adicione fundos no Dashboard.');
       return;
     }
 
@@ -61,651 +170,633 @@ export default function Playground() {
     setIsStreaming(true);
     setStreamingMessage('');
     setError(null);
+    startTimeRef.current = Date.now();
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const apiKey = user.apiKeys?.[0]?.key;
+    const executeRequest = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const apiKey = user.apiKeys?.[0]?.key;
 
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-      
-      const response = await fetch('https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'x-api-key': apiKey || '',
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: systemPrompt ? [{ role: 'system', content: systemPrompt }, ...newMessages.map(m => ({ role: m.role, content: m.content }))] : newMessages.map(m => ({ role: m.role, content: m.content })),
-          temperature,
-          max_tokens: maxTokens,
-          top_p: topP,
-          stream: true
-        })
-      });
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        
+        const isMedia = ['Image', 'Video', 'Audio'].includes(currentModelObj?.type);
+        const defaultSystem = "You are Digitaland AI, an ultra-fast neural core. Provide precise, high-performance responses.";
+        
+        const response = await fetch('https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`,
+            'x-api-key': apiKey || '',
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: [{ role: 'system', content: systemPrompt || defaultSystem }, ...newMessages.map(m => ({ role: m.role, content: m.content }))],
+            temperature,
+            max_tokens: maxTokens,
+            top_p: topP,
+            stream: !isMedia
+          })
+        });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error?.message || `Gateway Error (${response.status})`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-        for (const line of lines) {
-          if (line.includes('[DONE]')) break;
-          if (!line.startsWith('data: ')) continue;
-
-          try {
-            const json = JSON.parse(line.replace('data: ', ''));
-            const content = json.choices?.[0]?.delta?.content || '';
-            if (content) {
-              assistantContent += content;
-              setStreamingMessage(assistantContent);
-            }
-          } catch (e) {}
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error?.message || `Erro na Sincronização Neural (${response.status})`);
         }
-      }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantContent, modelId: selectedModel }]);
-      setStreamingMessage('');
-      if (refreshUser) refreshUser();
-      
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        console.log('Stream aborted');
-      } else {
-        console.error('Playground Error:', err);
-        setError(err.message);
+        let assistantContent = '';
+        setLatency(Date.now() - startTimeRef.current);
+
+        if (isMedia) {
+          const data = await response.json();
+          assistantContent = data.data?.[0]?.url || data.choices?.[0]?.message?.content || '';
+          if (assistantContent.startsWith('http')) {
+            const prefix = currentModelObj?.type === 'Image' ? '!' : '';
+            assistantContent = `${prefix}[Neural Output](${assistantContent})`;
+          }
+        } else {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let lineBuffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            lineBuffer += decoder.decode(value, { stream: true });
+            const lines = lineBuffer.split('\n');
+            lineBuffer = lines.pop() || ''; // Keep the last partial line in the buffer
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || trimmed === 'data: [DONE]') continue;
+              
+              if (trimmed.startsWith('data: ')) {
+                try {
+                  const jsonStr = trimmed.slice(6);
+                  const json = JSON.parse(jsonStr);
+                  const content = json.choices?.[0]?.delta?.content || '';
+                  if (content) {
+                    assistantContent += content;
+                    setStreamingMessage(assistantContent);
+                  }
+                } catch (e) {
+                  // Silent catch for incomplete JSON in mid-stream
+                }
+              }
+            }
+          }
+        }
+
+        const finalMessages = [...newMessages, { role: 'assistant', content: assistantContent, modelId: selectedModel }];
+        setMessages(finalMessages);
+        setStreamingMessage('');
+        await saveConversation(finalMessages, selectedModel);
+        if (refreshUser) refreshUser();
+        
+      } catch (err) {
+        if (err.name !== 'AbortError') setError(err.message);
+      } finally {
+        setLoading(false);
+        setIsStreaming(false);
       }
-    } finally {
-      setLoading(false);
-      setIsStreaming(false);
-      abortControllerRef.current = null;
-    }
+    };
+
+    await executeRequest();
   };
 
   const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-  };
+  const copyToClipboard = (text) => navigator.clipboard.writeText(text);
 
-  // Auto-select logic
-  useEffect(() => {
-    if (filterType === 'All') return;
-    const categoryModels = MODELS.filter(m => m.type === filterType);
-    const currentModelObj = MODELS.find(m => m.id === selectedModel);
-    if (categoryModels.length > 0 && currentModelObj?.type !== filterType) {
-      setSelectedModel(categoryModels[0].id);
-    }
-  }, [filterType, selectedModel]);
-
-  const [lastSync, setLastSync] = useState(new Date());
-  useEffect(() => {
-    setLastSync(new Date());
-  }, [user?.balance]);
+  // High-performance filter logic
+  const filteredModelsByProvider = useMemo(() => {
+    const providers = {};
+    Object.keys(PROVIDERS).forEach(p => {
+      const pModels = models.filter(m => {
+        const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.provider.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesType = searchQuery ? true : (filterType === 'All' || m.type === filterType);
+        return m.provider === p && matchesSearch && matchesType;
+      });
+      if (pModels.length > 0) providers[p] = pModels;
+    });
+    return providers;
+  }, [models, searchQuery, filterType]);
 
   return (
-    <div className="playground-root" style={{ 
-      display: 'flex',
+    <div className="playground-container" style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      width: '100%', 
       height: 'calc(100vh - 68px)', 
-      background: '#020202',
-      color: '#ffffff',
-      position: 'relative',
+      background: 'var(--bg)', 
+      position: 'absolute', 
+      left: 0,
+      top: '68px',
       overflow: 'hidden',
-      fontFamily: 'var(--font-body)'
+      zIndex: 100,
     }}>
-      
-      {/* 1. ASYMMETRIC SLIDE BAR (Far Left) */}
-      <div style={{ 
-        width: '84px', 
-        background: 'rgba(5, 5, 8, 0.95)', 
-        borderRight: '1px solid rgba(255,255,255,0.03)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '1.75rem 0',
-        gap: '1.25rem',
-        zIndex: 100,
-        boxShadow: '10px 0 30px rgba(0,0,0,0.5)'
-      }}>
-        {[
-          { id: 'All', icon: Filter, label: 'All', color: '#818cf8' },
-          { id: 'Chat', icon: MessageSquare, label: 'Chat', color: '#10b981' },
-          { id: 'Image', icon: ImageIcon, label: 'Image', color: '#ec4899' },
-          { id: 'Video', icon: Film, label: 'Video', color: '#f59e0b' },
-          { id: 'Audio', icon: Music, label: 'Audio', color: '#06b6d4' },
-          { id: 'Reasoning', icon: Zap, label: 'Think', color: '#8b5cf6' }
-        ].map(cat => {
-          const isActive = filterType === cat.id;
-          return (
+      {isModelsLoading && (
+        <div style={{
+          position: 'absolute', inset: 0, background: 'var(--bg)', zIndex: 1000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <RefreshCw size={40} className="animate-spin" style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+          <h2 style={{ fontWeight: 900, color: 'var(--text)' }}>Neural Studio initializing...</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Synchronizing with Neural Matrix base...</p>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .neural-pulse {
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+
+        /* Responsive Improvements */
+        @media (max-width: 1200px) {
+          .neural-sidebar {
+             transform: translateX(-100%);
+          }
+          .neural-sidebar.open {
+             transform: translateX(0);
+          }
+          .sidebar-toggle {
+             display: flex !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .viewport-container {
+             padding: 1rem !important;
+          }
+          .status-bar {
+             padding: 0 1rem !important;
+             gap: 0.5rem !important;
+          }
+          .status-bar-info {
+             display: none !important;
+          }
+          .input-container {
+             padding: 0.75rem !important;
+          }
+          .welcome-title {
+             font-size: 2rem !important;
+          }
+          .input-box {
+             font-size: 0.9rem !important;
+             padding: 0.75rem 3rem 0.75rem 1rem !important;
+          }
+        }
+      `}</style>
+      {/* Dynamic Background Mesh */}
+      <div className="mesh-bg" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+        <div className="mesh-blob blob-1" style={{ position: 'absolute', width: '800px', height: '800px', top: '-20%', left: '-10%', opacity: 0.1, background: 'var(--primary)', borderRadius: '50%', filter: 'blur(100px)', animation: 'blob-move 20s infinite alternate' }} />
+        <div className="mesh-blob blob-2" style={{ position: 'absolute', width: '600px', height: '600px', bottom: '10%', right: '-5%', opacity: 0.1, background: 'var(--secondary)', borderRadius: '50%', filter: 'blur(100px)', animation: 'blob-move 25s infinite alternate-reverse' }} />
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, height: '100%', position: 'relative', width: '100%' }}>
+        {/* Mobile Sidebar Toggle */}
+        <button 
+          onClick={() => setShowSettings(!showSettings)}
+          className="sidebar-toggle"
+          style={{
+            position: 'absolute',
+            left: '10px',
+            top: '10px',
+            zIndex: 120,
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            display: 'none', // Shown via media query
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text)'
+          }}
+        >
+          {showSettings ? <X size={20} /> : <ChevronRight size={20} />}
+        </button>
+
+        {/* 1. NEURAL CORE SLIDE (LEFT - FLOATING) */}
+        <div className={`neural-sidebar ${showSettings ? 'open' : ''}`} style={{ 
+          width: '85px', 
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          background: 'var(--surface)', 
+          borderRight: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', 
+          padding: '1.5rem 0', gap: '1.5rem', zIndex: 110,
+          boxShadow: 'var(--shadow-lg)',
+          backdropFilter: 'blur(30px)',
+          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}>
+          {[
+            { id: 'Chat', icon: MessageSquare, label: 'Chat', color: '#10b981' },
+            { id: 'Image', icon: ImageIcon, label: 'Images', color: '#ec4899' },
+            { id: 'Video', icon: Film, label: 'Videos', color: '#f59e0b' },
+            { id: 'Music', icon: Music, label: 'Music', color: '#6366f1' },
+            { id: 'Reasoning', icon: Zap, label: 'Think', color: '#8b5cf6' }
+          ].map(cat => (
             <button
               key={cat.id}
-              onClick={() => {
-                setFilterType(cat.id);
-                setActiveTab('models');
-                setSearchQuery('');
-              }}
+              onClick={() => { setFilterType(cat.id); setActiveTab('models'); }}
               style={{
-                width: '58px', height: '58px', borderRadius: '20px',
+                width: '64px', height: '64px', borderRadius: '16px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: '4px', border: '1px solid transparent', cursor: 'pointer', transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                background: isActive ? `rgba(${cat.color === '#818cf8' ? '129, 140, 248' : '255, 255, 255'}, 0.08)` : 'transparent',
-                borderColor: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-                color: isActive ? cat.color : 'rgba(255,255,255,0.2)',
-                boxShadow: isActive ? `0 0 30px ${cat.color}20` : 'none',
-                position: 'relative'
+                border: '1px solid transparent', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                background: filterType === cat.id ? `rgba(99, 102, 241, 0.1)` : 'transparent',
+                color: filterType === cat.id ? cat.color : 'var(--text-muted)',
+                position: 'relative',
+                gap: '4px'
               }}
               title={cat.label}
             >
-              <cat.icon size={24} strokeWidth={isActive ? 2.5 : 1.5} />
-              <span style={{ fontSize: '0.55rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', opacity: isActive ? 1 : 0.4 }}>{cat.label}</span>
-              {isActive && (
-                <div style={{ 
-                  position: 'absolute', right: '-1px', top: '20%', bottom: '20%', width: '4px', 
-                  background: cat.color, borderRadius: '4px 0 0 4px',
-                  boxShadow: `0 0 15px ${cat.color}`
-                }} />
-              )}
+              <cat.icon size={20} />
+              <span style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cat.label}</span>
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* 2. CONTEXT & ENGINE SIDEBAR */}
-      {showSettings && (
-        <aside style={{ 
-          width: '360px', 
-          background: 'rgba(8, 8, 12, 0.4)', 
-          backdropFilter: 'blur(50px)',
-          borderRight: '1px solid rgba(255,255,255,0.05)',
+        {/* 2. MAIN CONTENT AREA (CENTERED FOCUS) */}
+        <div className="chat-main-area" style={{ 
+          flex: 1, 
           display: 'flex', 
           flexDirection: 'column', 
-          height: '100%',
+          height: '100%', 
+          position: 'relative',
+          background: 'var(--bg-alt)',
           overflow: 'hidden',
-          zIndex: 90
+          alignItems: 'center',
+          width: '100%'
         }}>
-          {/* Sidebar Header */}
-          <div style={{ padding: '1.75rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900, fontSize: '1.3rem', color: '#fff', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
-              <Cpu size={22} color="var(--primary)" /> {filterType === 'All' ? 'Neural Matrix' : `${filterType} Core`}
-            </h3>
-            
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', padding: '0.3rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              {[
-                { id: 'models', icon: Filter, label: 'Engines' },
-                { id: 'system', icon: MessageSquare, label: 'Context' },
-                { id: 'params', icon: Sliders, label: 'Matrix' }
-              ].map(tab => (
-                <button 
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-                    padding: '0.7rem', borderRadius: '11px', fontSize: '0.75rem', fontWeight: 700,
-                    background: activeTab === tab.id ? 'rgba(255,255,255,0.06)' : 'transparent',
-                    color: activeTab === tab.id ? 'var(--primary)' : 'rgba(255,255,255,0.3)',
-                    transition: '0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
-                >
-                  <tab.icon size={14} /> {tab.label}
+          {/* Centralized Status Bar */}
+          <div className="status-bar" style={{ 
+            width: '100%',
+            maxWidth: '1000px',
+            height: '60px', 
+            padding: '0 2rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            zIndex: 80,
+            borderBottom: '1px solid var(--border-light)'
+          }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                <button onClick={() => setShowSettings(!showSettings)} style={{ color: 'var(--text-dim)', transition: '0.2s', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  {showSettings ? <Settings size={18} style={{ color: 'var(--primary)' }} /> : <Settings2 size={18} />}
                 </button>
-              ))}
-            </div>
+                <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
+                <div className="status-bar-info" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Activity size={14} color="#10b981" className="neural-pulse" />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px' }}>Core Sync: Stable</span>
+                </div>
+             </div>
+             
+             {/* Integrated Model Selector */}
+             <div style={{ 
+               display: 'flex', 
+               alignItems: 'center', 
+               gap: '0.6rem', 
+               padding: '0.5rem 1.25rem', 
+               background: 'var(--bg)', 
+               borderRadius: '100px', 
+               border: '1px solid var(--border)',
+               cursor: 'pointer',
+               boxShadow: 'var(--shadow-sm)',
+               transition: '0.2s'
+             }} onClick={() => { setActiveTab('models'); setShowSettings(true); }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary-glow)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+             >
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: PROVIDERS[currentModelObj?.provider]?.color || 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '0.65rem' }}>
+                   {PROVIDERS[currentModelObj?.provider]?.short || 'N'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{currentModelObj?.name}</span>
+                   <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{currentModelObj?.provider}</span>
+                </div>
+             </div>
+
+             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button onClick={startNewConversation} style={{ color: 'var(--text-muted)', transition: '0.2s', background: 'none', border: 'none', cursor: 'pointer' }} title="New Chat"><Trash2 size={18} /></button>
+                <div style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)' }}>${user?.balance?.toFixed(4)}</span>
+                </div>
+             </div>
           </div>
 
-          {/* Sidebar Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', scrollbarWidth: 'none' }}>
-            {activeTab === 'models' && (
-              <>
-                <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '1.1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.2 }} />
-                  <input 
-                    type="text" 
-                    placeholder={searchQuery ? 'Searching globally...' : `Search in ${filterType.toLowerCase()}...`}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ 
-                      width: '100%', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '16px', padding: '0.85rem 1.25rem 0.85rem 3rem', color: '#fff', fontSize: '0.9rem',
-                      outline: 'none', transition: '0.3s',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
-                    }}
-                  />
-                </div>
+          {/* Viewport (Centered Content) */}
+          <div ref={scrollRef} className="viewport-container" style={{ 
+            width: '100%', 
+            maxWidth: '1000px', 
+            flex: 1, 
+            overflowY: 'auto', 
+            padding: '2rem 3rem', 
+            scrollbarWidth: 'none', 
+            scrollBehavior: 'smooth',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+             {messages.length === 0 && !error && (
+               <div style={{ margin: 'auto', textAlign: 'center', maxWidth: '600px', paddingBottom: '4rem' }}>
+                  <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }}>
+                    <Sparkles size={40} className="gradient-text" />
+                  </div>
+                  <h1 className="welcome-title" style={{ fontSize: '3rem', fontWeight: 950, color: 'var(--text)', marginBottom: '1rem', letterSpacing: '-0.05em' }}>
+                    Digitaland <span className="gradient-text">Studio</span>
+                  </h1>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', lineHeight: 1.6, fontWeight: 500, marginBottom: '3rem' }}>
+                    Experience the future of AI. Your personal command center for high-fidelity research and creative execution.
+                  </p>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    {[
+                      { t: 'Analise este código para otimização', i: Cpu, c: '#6366f1' },
+                      { t: 'Gere uma imagem hiper-realista', i: ImageIcon, c: '#ec4899' },
+                      { t: 'Explique física quântica simplesmente', i: Zap, c: '#f59e0b' },
+                      { t: 'Traduza este texto para 5 idiomas', i: Globe, c: '#10b981' }
+                    ].map((item, idx) => (
+                      <button key={idx} onClick={() => setInput(item.t)} style={{ padding: '1.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }} 
+                        onMouseEnter={e => {
+                          e.currentTarget.style.transform = 'translateY(-5px)';
+                          e.currentTarget.style.borderColor = item.c;
+                          e.currentTarget.style.boxShadow = `0 10px 30px ${item.c}15`;
+                        }} 
+                        onMouseLeave={e => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.borderColor = 'var(--border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <item.i size={20} style={{ marginBottom: '1rem', color: item.c }} />
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{item.t}</div>
+                      </button>
+                    ))}
+                  </div>
+               </div>
+             )}
 
-                {Object.keys(PROVIDERS).map(provider => {
-                  const providerModels = MODELS.filter(m => {
-                    const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                          m.provider.toLowerCase().includes(searchQuery.toLowerCase());
-                    const matchesType = searchQuery ? true : (filterType === 'All' || m.type === filterType);
-                    return m.provider === provider && matchesSearch && matchesType;
-                  });
-                  if (providerModels.length === 0) return null;
+             {error && (
+               <div style={{ padding: '1rem 1.5rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '16px', color: '#ef4444', fontSize: '0.85rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', alignSelf: 'center', width: '100%' }}>
+                  <AlertCircle size={18} /> {error}
+               </div>
+             )}
 
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                {messages.map((m, i) => {
+                  const isUser = m.role === 'user';
+                  const model = models.find(mod => mod.id === m.modelId) || currentModelObj;
+                  const provider = PROVIDERS[model?.provider] || { color: 'var(--primary)', short: 'AI' };
                   return (
-                    <div key={provider} style={{ marginBottom: '1.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.9rem', padding: '0 0.5rem' }}>
-                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: PROVIDERS[provider].color, boxShadow: `0 0 10px ${PROVIDERS[provider].color}` }} />
-                        <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{provider}</span>
+                    <div key={i} style={{ 
+                      display: 'flex', flexDirection: 'column', 
+                      alignItems: isUser ? 'flex-end' : 'flex-start',
+                      maxWidth: '100%'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', opacity: 0.6, flexDirection: isUser ? 'row-reverse' : 'row' }}>
+                         <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: isUser ? 'var(--primary)' : provider.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                            {isUser ? <User size={12} /> : provider.short}
+                         </div>
+                         <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>{isUser ? 'Client Command' : (model?.name || 'Digitaland Response')}</span>
                       </div>
+                      <div style={{ 
+                        maxWidth: '85%', padding: '1.25rem 1.75rem', borderRadius: isUser ? '24px 4px 24px 24px' : '4px 24px 24px 24px',
+                        background: isUser ? 'var(--primary)' : 'var(--surface)',
+                        color: isUser ? '#fff' : 'var(--text)',
+                        border: '1px solid var(--border-light)',
+                        boxShadow: 'var(--shadow-sm)',
+                        position: 'relative'
+                      }}>
+                        <div className="prose" style={{ color: 'inherit', fontSize: '1rem', lineHeight: '1.6' }}>
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                        </div>
+                        {!isUser && (
+                           <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '1rem' }}>
+                              <button onClick={() => copyToClipboard(m.content)} style={{ color: 'inherit', opacity: 0.6, fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer' }}><Copy size={10} /> Copy</button>
+                           </div>
+                         )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {(loading || isStreaming) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', opacity: 0.5 }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                          <Activity size={12} className="neural-pulse" />
+                        </div>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>
+                          Digitaland Processing...
+                        </span>
+                     </div>
+                      {(streamingMessage || loading) && (
+                        <div style={{ 
+                          maxWidth: '85%',
+                          padding: '1.25rem 1.75rem', borderRadius: '4px 24px 24px 24px', 
+                          background: 'var(--surface)', border: '1px solid var(--border)', 
+                          color: 'var(--text)', fontSize: '1rem', lineHeight: 1.7
+                        }}>
+                          {streamingMessage ? (
+                            <>
+                              <ReactMarkdown>{streamingMessage}</ReactMarkdown>
+                              <span className="cursor-blink" style={{ marginLeft: '4px' }}>▋</span>
+                            </>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '24px' }}>
+                              <div className="dot-pulse" style={{ animationDelay: '0s' }} />
+                              <div className="dot-pulse" style={{ animationDelay: '0.2s' }} />
+                              <div className="dot-pulse" style={{ animationDelay: '0.4s' }} />
+                            </div>
+                          )}
+                       </div>
+                     )}
+                  </div>
+                )}
+             </div>
+          </div>
+
+          {/* Neural Dock (Integrated Input) */}
+          <div className="input-container" style={{ width: '100%', maxWidth: '1000px', padding: '1.5rem 2rem 2rem', background: 'transparent', position: 'relative', zIndex: 100 }}>
+            <div style={{ width: '100%', position: 'relative', background: 'var(--surface)', borderRadius: '24px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', padding: '10px' }}>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={`Engage with ${selectedModel}...`}
+                className="input-box"
+                style={{
+                  width: '100%',
+                  padding: '1rem 4rem 1rem 1.5rem',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: '16px',
+                  color: 'var(--text)',
+                  fontSize: '1.1rem',
+                  lineHeight: '1.5',
+                  resize: 'none',
+                  minHeight: '56px',
+                  maxHeight: '250px',
+                  outline: 'none'
+                }}
+              />
+              <div style={{ position: 'absolute', right: '12px', bottom: '12px' }}>
+                <button 
+                  onClick={handleSend}
+                  disabled={loading || !input.trim()}
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '16px',
+                    background: input.trim() ? 'var(--primary)' : 'var(--border)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    cursor: input.trim() ? 'pointer' : 'default',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: input.trim() ? '0 5px 15px var(--primary-glow)' : 'none'
+                  }}
+                  onMouseEnter={e => input.trim() && (e.currentTarget.style.transform = 'scale(1.05)')}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  {loading ? <RefreshCw size={20} className="animate-spin" /> : <ArrowUpRight size={24} />}
+                </button>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Digitaland Studio v5.0 • High Fidelity Core • Digitaland AI
+            </div>
+          </div>
+        </div>
+
+        {/* 3. NEURAL CONFIG PANEL (FLOATING SIDEBAR) */}
+        {showSettings && (
+          <aside style={{ 
+            width: '340px', 
+            position: 'absolute',
+            right: '20px',
+            top: '20px',
+            bottom: '20px',
+            borderRadius: '24px',
+            border: '1px solid var(--border)',
+            display: 'flex', flexDirection: 'column', 
+            background: 'var(--surface)',
+            backdropFilter: 'blur(40px)',
+            boxShadow: 'var(--shadow-xl)',
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
+            zIndex: 150,
+            animation: 'fadeInRight 0.4s ease'
+          }}>
+            {/* Header */}
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                 <h3 style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px' }}>Digitaland Models</h3>
+                 <button onClick={() => setShowSettings(false)} style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--text-muted)' }}><X size={16} /></button>
+              </div>
+              <div style={{ display: 'flex', background: 'var(--bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--border)' }}>
+                {[
+                  { id: 'models', label: 'Models', icon: Cpu },
+                  { id: 'params', label: 'Tuning', icon: Sliders },
+                  { id: 'history', label: 'Vault', icon: RefreshCcw }
+                ].map(tab => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, background: activeTab === tab.id ? 'var(--surface)' : 'transparent', color: activeTab === tab.id ? 'var(--text)' : 'var(--text-muted)', transition: '0.2s', border: 'none', cursor: 'pointer' }}>
+                    <tab.icon size={14} /> {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', scrollbarWidth: 'none' }}>
+              {activeTab === 'models' && (
+                <>
+                  <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
+                    <input type="text" placeholder="Search models matrix..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '12px', padding: '0.75rem 1rem 0.75rem 2.5rem', color: 'var(--text)', fontSize: '0.85rem', outline: 'none' }} />
+                  </div>
+                  {Object.entries(filteredModelsByProvider).map(([provider, pModels]) => (
+                    <div key={provider} style={{ marginBottom: '1.5rem' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>{provider}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        {providerModels.map(model => {
+                        {pModels.map(model => {
                           const isSelected = selectedModel === model.id;
-                          const ModelIcon = model.type === 'Image' ? ImageIcon : model.type === 'Video' ? Film : model.type === 'Audio' ? Music : TypeIcon;
-                          
                           return (
-                            <button 
-                              key={model.id}
-                              onClick={() => setSelectedModel(model.id)}
-                              style={{ 
-                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.85rem',
-                                borderRadius: '16px', border: '1px solid transparent',
-                                textAlign: 'left', cursor: 'pointer',
-                                background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
-                                borderColor: isSelected ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-                                color: isSelected ? '#fff' : 'rgba(255,255,255,0.4)',
-                                transition: '0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                width: '100%'
-                              }}
-                            >
-                              <div style={{ 
-                                width: '36px', height: '36px', borderRadius: '10px', 
-                                background: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isSelected ? '#fff' : 'rgba(255,255,255,0.25)',
-                                transition: '0.3s'
-                              }}>
-                                <ModelIcon size={18} />
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name}</div>
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                                  <span style={{ fontSize: '0.6rem', fontWeight: 900, color: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>{model.type}</span>
-                                </div>
-                              </div>
-                              {isSelected && <Zap size={16} color="var(--primary)" style={{ filter: 'drop-shadow(0 0 5px var(--primary))' }} />}
+                            <button key={model.id} onClick={() => { setSelectedModel(model.id); setShowSettings(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem', borderRadius: '12px', border: '1px solid transparent', textAlign: 'left', background: isSelected ? 'var(--primary-soft)' : 'transparent', borderColor: isSelected ? 'var(--primary-glow)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', transition: '0.2s', width: '100%' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: isSelected ? 'var(--primary)' : 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={16} color={isSelected ? '#fff' : 'var(--text-muted)'} /></div>
+                              <div style={{ flex: 1 }}><div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{model.name}</div></div>
                             </button>
                           );
                         })}
                       </div>
                     </div>
-                  );
-                })}
-              </>
-            )}
+                  ))}
+                </>
+              )}
 
-            {activeTab === 'system' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '1rem', display: 'block' }}>System Protocol</label>
-                  <textarea 
-                    value={systemPrompt}
-                    onChange={(e) => setSystemPrompt(e.target.value)}
-                    placeholder="Initialize core behavior parameters..."
-                    style={{ 
-                      width: '100%', height: '260px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '20px', padding: '1.25rem', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none',
-                      lineHeight: 1.7, transition: '0.3s'
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'params' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-                {[
-                  { label: 'Temperature', val: temperature, set: setTemperature, min: 0, max: 2, step: 0.1, desc: 'Randomness control' },
-                  { label: 'Max Tokens', val: maxTokens, set: setMaxTokens, min: 256, max: 32000, step: 256, desc: 'Output length' },
-                  { label: 'Top P', val: topP, set: setTopP, min: 0, max: 1, step: 0.05, desc: 'Nucleus sampling' }
-                ].map(p => (
-                  <div key={p.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>{p.label}</label>
-                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>{p.desc}</span>
-                      </div>
-                      <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--mono)' }}>{p.val}</span>
-                    </div>
-                    <input 
-                      type="range" min={p.min} max={p.max} step={p.step} value={p.val} 
-                      onChange={(e) => p.set(parseFloat(e.target.value))}
-                      style={{ width: '100%', accentColor: 'var(--primary)', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', appearance: 'none' }}
-                    />
+              {activeTab === 'params' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                  <div>
+                     <label style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '1rem', display: 'block' }}>System Context</label>
+                     <textarea value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="Behavioral instructions for the neural core..." style={{ width: '100%', height: '200px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.25rem', color: 'var(--text)', fontSize: '0.85rem', outline: 'none', resize: 'none' }} />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar Footer (Prominent Balance Card) */}
-          <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(5, 5, 8, 0.4)' }}>
-            <div style={{ 
-              padding: '1.5rem', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(0,0,0,0) 100%)', 
-              border: '1px solid rgba(99, 102, 241, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.5rem',
-              position: 'relative', overflow: 'hidden'
-            }}>
-              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', background: 'var(--primary)', filter: 'blur(50px)', opacity: 0.1 }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>Global Balance</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <div className="neural-pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#10b981' }}>LIVE</span>
-                </div>
-              </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--mono)', letterSpacing: '-0.05em' }}>
-                ${user?.balance?.toFixed(5) || '0.00000'}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                <Link to="/dashboard" style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  Manage Funds <ArrowUpRight size={10} />
-                </Link>
-                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>Updated {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-      )}
-
-      {/* 3. ASYMMETRIC CHAT AREA */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#030303', position: 'relative' }}>
-        
-        {/* Chat Header */}
-        <div style={{ 
-          padding: '1rem 3rem', 
-          background: 'rgba(2, 2, 2, 0.8)', 
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255,255,255,0.03)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          zIndex: 80
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <button 
-              onClick={() => setShowSettings(!showSettings)} 
-              style={{ 
-                color: showSettings ? 'var(--primary)' : 'rgba(255,255,255,0.2)', 
-                transition: '0.3s',
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase'
-              }}
-            >
-              <Settings size={20} />
-              <span>{showSettings ? 'Hide Config' : 'Show Config'}</span>
-            </button>
-            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.05)' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div className="neural-pulse" style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', boxShadow: '0 0 15px #10b981' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Neural Link: <span style={{ color: '#fff' }}>Secure & Synced</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.01em' }}>
-                {MODELS.find(m => m.id === selectedModel)?.name}
-              </div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>
-                Active Processor
-              </div>
-            </div>
-            <button 
-              onClick={() => setMessages([])} 
-              style={{ 
-                width: '40px', height: '40px', borderRadius: '12px',
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                color: 'rgba(255,255,255,0.3)', transition: '0.3s',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }} 
-              title="Wipe Session"
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Messages Viewport */}
-        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '4rem 6rem', display: 'flex', flexDirection: 'column', gap: '3.5rem', scrollbarWidth: 'none' }}>
-          
-          {error && (
-            <div style={{ 
-              padding: '1.75rem 2.25rem', borderRadius: '28px', background: 'rgba(239, 68, 68, 0.03)', 
-              color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.15)', 
-              display: 'flex', alignItems: 'center', gap: '1.5rem',
-              animation: 'fadeInUp 0.5s ease-out'
-            }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <AlertCircle size={28} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <span style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.02em' }}>Link Protocol Failed</span>
-                <span style={{ fontSize: '0.95rem', opacity: 0.7, lineHeight: 1.5 }}>{error}</span>
-              </div>
-            </div>
-          )}
-
-          {messages.length === 0 && !error && (
-            <div style={{ margin: 'auto', textAlign: 'center', maxWidth: '580px', opacity: 0.9 }}>
-              <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.02)', borderRadius: '28px', margin: '0 auto 3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'var(--primary)', borderRadius: '28px', filter: 'blur(30px)', opacity: 0.1 }} />
-                <Sparkles size={40} color="var(--primary)" />
-              </div>
-              <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '1.25rem', color: '#fff', letterSpacing: '-0.04em' }}>Neural Studio Playground</h2>
-              <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.8 }}>
-                Experience the next generation of multi-modal intelligence. Deploy complex prompts across Chat, Image, Video, and Reasoning labs with zero latency.
-              </p>
-            </div>
-          )}
-
-          {messages.map((m, i) => {
-            const isUser = m.role === 'user';
-            const modelObj = MODELS.find(mod => mod.id === m.modelId);
-            
-            return (
-              <div key={i} style={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: isUser ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
-                alignSelf: isUser ? 'flex-end' : 'flex-start',
-                paddingLeft: isUser ? '10%' : '0',
-                paddingRight: isUser ? '0' : '10%',
-                animation: 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both'
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.75rem', 
-                  marginBottom: '0.75rem',
-                  flexDirection: isUser ? 'row-reverse' : 'row',
-                  opacity: 0.5
-                }}>
-                  <div style={{ 
-                    width: '32px', height: '32px', borderRadius: '10px', 
-                    background: isUser ? 'rgba(255,255,255,0.05)' : (modelObj ? PROVIDERS[modelObj.provider]?.color : 'var(--primary)'),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 900, color: '#fff',
-                    boxShadow: !isUser ? `0 0 20px ${modelObj ? PROVIDERS[modelObj.provider]?.color : 'var(--primary)'}40` : 'none'
-                  }}>
-                    {isUser ? <User size={16} /> : (modelObj ? PROVIDERS[modelObj.provider]?.short : 'AI')}
-                  </div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {isUser ? 'Neural Command' : (modelObj ? `${modelObj.name}` : 'Neural Response')}
-                  </span>
-                </div>
-
-                <div className="prose-neural" style={{ 
-                  padding: '1.75rem 2.25rem', 
-                  borderRadius: isUser ? '32px 32px 4px 32px' : '4px 32px 32px 32px',
-                  background: isUser 
-                    ? 'rgba(255, 255, 255, 0.03)' 
-                    : 'linear-gradient(165deg, rgba(20, 20, 25, 0.8) 0%, rgba(5, 5, 10, 0.9) 100%)',
-                  border: isUser ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,255,255,0.08)',
-                  boxShadow: isUser ? 'none' : '0 20px 60px rgba(0,0,0,0.4)',
-                  fontSize: '1.05rem',
-                  lineHeight: 1.8,
-                  position: 'relative',
-                  width: 'fit-content'
-                }}>
-                  <ReactMarkdown 
-                    components={{
-                      p: ({ children }) => <p style={{ marginBottom: '1.25rem' }}>{children}</p>,
-                      a: ({ href, children }) => {
-                        const isImg = /\.(jpg|jpeg|png|webp|gif)$/i.test(href);
-                        const isVid = /\.(mp4|webm|mov)$/i.test(href);
-                        const isAud = /\.(mp3|wav|ogg)$/i.test(href);
-
-                        if (isImg) return (
-                          <div style={{ margin: '1.5rem 0', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 30px 60px rgba(0,0,0,0.6)' }}>
-                            <img src={href} alt="Generated Asset" style={{ width: '100%', display: 'block' }} />
-                          </div>
-                        );
-                        if (isVid) return <video src={href} controls style={{ width: '100%', borderRadius: '24px', marginTop: '1.5rem' }} />;
-                        if (isAud) return <audio src={href} controls style={{ width: '100%', marginTop: '1.5rem' }} />;
-                        return <a href={href} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 700 }}>{children}</a>;
-                      }
-                    }}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
-                  
-                  {/* Message Actions */}
-                  {!isUser && (
-                    <div style={{ 
-                      marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem',
-                      display: 'flex', gap: '1.5rem', opacity: 0.3
-                    }}>
-                      <button onClick={() => copyToClipboard(m.content)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', color: '#fff', border: 'none', background: 'none', cursor: 'pointer' }}>
-                        <Copy size={12} /> Copy
-                      </button>
+                  {[
+                    { label: 'Creativity', val: temperature, set: setTemperature, min: 0, max: 2, step: 0.1 },
+                    { label: 'Response Depth', val: maxTokens, set: setMaxTokens, min: 256, max: 128000, step: 1024 },
+                    { label: 'Prob. Threshold', val: topP, set: setTopP, min: 0, max: 1, step: 0.05 }
+                  ].map(p => (
+                    <div key={p.label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}><label style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{p.label}</label><span style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--primary)' }}>{p.val}</span></div>
+                      <input type="range" min={p.min} max={p.max} step={p.step} value={p.val} onChange={(e) => p.set && p.set(parseFloat(e.target.value))} style={{ width: '100%', accentColor: 'var(--primary)', height: '4px' }} />
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-            );
-          })}
+              )}
 
-          {streamingMessage && (
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              maxWidth: '85%',
-              alignSelf: 'flex-start',
-              paddingRight: '10%',
-              animation: 'fadeInUp 0.4s ease-out'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', opacity: 0.5 }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#fff' }}>
-                  A
+              {activeTab === 'history' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <button onClick={startNewConversation} style={{ width: '100%', padding: '1rem', borderRadius: '14px', background: 'var(--primary)', color: '#fff', fontSize: '0.8rem', fontWeight: 900, marginBottom: '1rem', boxShadow: '0 5px 15px var(--primary-glow)' }}>New Digitaland Link</button>
+                  {conversations.map(conv => (
+                    <button key={conv.id} onClick={() => { loadConversation(conv); setShowSettings(false); }} style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: currentConvId === conv.id ? 'var(--primary-soft)' : 'transparent', border: '1px solid', borderColor: currentConvId === conv.id ? 'var(--primary-glow)' : 'transparent', textAlign: 'left', transition: '0.2s' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: currentConvId === conv.id ? 'var(--primary)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{conv.title}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{new Date(conv.updated_at).toLocaleDateString()}</div>
+                    </button>
+                  ))}
                 </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Neural Processing...</span>
-              </div>
-              <div className="prose-neural" style={{ 
-                padding: '1.75rem 2.25rem', 
-                borderRadius: '4px 32px 32px 32px',
-                background: 'linear-gradient(165deg, rgba(20, 20, 25, 0.8) 0%, rgba(5, 5, 10, 0.9) 100%)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-                fontSize: '1.05rem',
-                lineHeight: 1.8
-              }}>
-                <ReactMarkdown>{streamingMessage}</ReactMarkdown>
-                <span className="cursor-blink" style={{ marginLeft: '4px', fontSize: '1.2rem', verticalAlign: 'middle' }}>▋</span>
-              </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Input Area */}
-        <div style={{ 
-          padding: '2rem 5rem 3rem',
-          background: 'linear-gradient(0deg, #020202 0%, transparent 100%)',
-          zIndex: 80
-        }}>
-          <div style={{ 
-            position: 'relative',
-            maxWidth: '1000px',
-            margin: '0 auto'
-          }}>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-              placeholder={`Transmit to ${MODELS.find(m => m.id === selectedModel)?.name}...`}
-              style={{
-                width: '100%',
-                minHeight: '84px',
-                maxHeight: '300px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '28px',
-                padding: '1.5rem 12rem 1.5rem 2rem',
-                color: '#fff',
-                fontSize: '1.1rem',
-                outline: 'none',
-                resize: 'none',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                lineHeight: 1.6,
-                boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
-              }}
-            />
-            
-            <div style={{ 
-              position: 'absolute', 
-              right: '1rem', 
-              bottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem'
-            }}>
-              <button
-                onClick={isStreaming ? stopGeneration : handleSend}
-                disabled={loading && !isStreaming}
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '20px',
-                  background: isStreaming ? 'rgba(239, 68, 68, 0.2)' : (loading || !input.trim() ? 'rgba(255,255,255,0.05)' : 'var(--primary)'),
-                  color: isStreaming ? '#ef4444' : '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  cursor: 'pointer',
-                  border: isStreaming ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
-                  boxShadow: isStreaming ? 'none' : (loading || !input.trim() ? 'none' : '0 10px 25px var(--primary-glow)')
-                }}
-              >
-                {isStreaming ? <StopCircle size={28} /> : (loading ? <RefreshCw className="animate-spin" size={24} /> : <Send size={24} />)}
-              </button>
+            <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-light)', background: 'transparent' }}>
+               <div style={{ background: 'var(--primary-soft)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--primary-glow)' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Digitaland Credits</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 950, fontFamily: 'var(--mono)', color: 'var(--text)' }}>${user?.balance?.toFixed(5) || '0.00000'}</div>
+                  <button onClick={() => navigate('/dashboard?tab=billing')} style={{ width: '100%', marginTop: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.75rem', fontWeight: 900 }}>RECHARGE BALANCE</button>
+               </div>
             </div>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.65rem', color: 'rgba(255,255,255,0.15)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Neural Core V4.1 • Secure Synthesis Protocol • Global Matrix Sync
-          </div>
-        </div>
+          </aside>
+        )}
       </div>
     </div>
   );

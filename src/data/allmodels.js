@@ -1,4 +1,4 @@
-// All 240 CrazyRouter models - offIn/offOut = CrazyRouter cost per 1M tokens
+// All 240+ Digitaland Neural models - Provider cost per 1M tokens
 // Format: [provider, name, offIn, offOut, type, badge]
 const R=[
 ['OpenAI','gpt-5.5',2.75,16.50,'Chat','Flagship'],

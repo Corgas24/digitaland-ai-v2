@@ -41,7 +41,7 @@ async function runDiagnostic() {
       
       if (status === 401) console.log('\n💡 Dica: Verifique se essa chave existe no seu banco de dados local.');
       if (status === 500 && data.error?.provider_error) {
-        console.log('\n💡 Dica: O erro veio do provedor (Crazyrouter). Verifique sua UPSTREAM_MASTER_KEY.');
+        console.log('\n💡 Dica: O erro veio do provedor central. Verifique sua UPSTREAM_MASTER_KEY.');
       }
     }
   } catch (err) {

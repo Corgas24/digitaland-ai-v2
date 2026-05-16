@@ -16,7 +16,7 @@ const DEMO_KEYS = [];
 const MODEL_USAGE = [];
 
 export default function Dashboard() {
-  const { user, updateBalance, addApiKey, removeApiKey } = useAuth();
+  const { user, updateBalance, addApiKey, removeApiKey, isProfileLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   // Use the keys from AuthContext instead of local state to keep it fully synced
   const keys = user?.apiKeys || [];
@@ -61,20 +61,28 @@ export default function Dashboard() {
       setLoadingLogs(false);
     }
     fetchData();
-  }, [user?.id]);
+  }, [user?.id, user?.balance]);
 
   // Process data for AreaChart (Daily Spend)
   const chartData = useMemo(() => {
     const last7Days = [...Array(7)].map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
+      return d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
     }).reverse();
 
     return last7Days.map(date => {
-      const dayLogs = usageLogs.filter(l => l.created_at.startsWith(date));
-      const totalSpend = dayLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0);
-      return { date: date.split('-').slice(1).join('/'), spend: totalSpend };
+      // Use a more robust date comparison that works across timezones
+      const dayLogs = usageLogs.filter(l => {
+        const logDate = new Date(l.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        return logDate === date;
+      });
+      
+      return { 
+        date: date.split('-').slice(1).join('/'), 
+        requests: dayLogs.length,
+        spend: Number(dayLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0).toFixed(6))
+      };
     });
   }, [usageLogs]);
 
@@ -251,7 +259,13 @@ export default function Dashboard() {
               {user?.balance > 100 ? 'GOLD TIER' : (user?.balance > 50 ? 'SILVER TIER' : 'BRONZE TIER')}
             </span>
           </div>
-          <p style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: 'var(--mono)', lineHeight: 1 }} className="gradient-text">${user?.balance?.toFixed(2) || '0.00'}</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: 'var(--mono)', lineHeight: 1 }} className="gradient-text">
+            {isProfileLoading ? (
+              <span className="balance-skeleton pulse" style={{ display: 'inline-block', width: '100px', height: '28px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }} />
+            ) : (
+              `$${user?.balance?.toFixed(5) || '0.00000'}`
+            )}
+          </p>
           <button onClick={() => setShowTopUp(true)} className="btn-solid" style={{ width: '100%', marginTop: '1.25rem', padding: '0.6rem', fontSize: '0.85rem', justifyContent: 'center' }}>
             <Plus size={14} /> Add Credits
           </button>
@@ -305,7 +319,13 @@ export default function Dashboard() {
                 <div className="stat-card premium-stat">
                   <div className="stat-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--green)' }}><DollarSign size={20} /></div>
                   <div className="label">Current Balance</div>
-                  <div className="value">${user?.balance?.toFixed(2) || '0.00'}</div>
+                  <div className="value">
+                    {isProfileLoading ? (
+                      <span className="balance-skeleton pulse" style={{ display: 'inline-block', width: '80px', height: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} />
+                    ) : (
+                      `$${user?.balance?.toFixed(5) || '0.00000'}`
+                    )}
+                  </div>
                 </div>
                 <div className="stat-card premium-stat">
                   <div className="stat-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--blue)' }}><Activity size={20} /></div>
@@ -342,7 +362,16 @@ export default function Dashboard() {
                           contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '0.8rem' }}
                           itemStyle={{ color: 'var(--primary)' }}
                         />
-                        <Area type="monotone" dataKey="spend" stroke="var(--primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorSpend)" />
+                        <Area 
+                          type="monotone" 
+                          dataKey="spend" 
+                          stroke="var(--primary)" 
+                          strokeWidth={4} 
+                          fill="url(#colorSpend)" 
+                          animationDuration={1500}
+                          dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2, stroke: 'var(--bg)' }}
+                          activeDot={{ r: 6, strokeWidth: 0 }}
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -656,7 +685,13 @@ export default function Dashboard() {
                 <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, transparent 100%)', borderColor: 'var(--primary-soft)' }}>
                   <div>
                     <h3 style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>Available Balance</h3>
-                    <div style={{ fontSize: '3rem', fontWeight: 900, fontFamily: 'var(--mono)', color: 'var(--text)' }}>${user?.balance?.toFixed(2) || '0.00'}</div>
+                    <div style={{ fontSize: '3rem', fontWeight: 900, fontFamily: 'var(--mono)', color: 'var(--text)' }}>
+                      {isProfileLoading ? (
+                        <span className="balance-skeleton pulse" style={{ display: 'inline-block', width: '150px', height: '48px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }} />
+                      ) : (
+                        `$${user?.balance?.toFixed(5) || '0.00000'}`
+                      )}
+                    </div>
                   </div>
                   <button className="btn-solid" onClick={() => setShowTopUp(true)} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
                     <Plus size={16} /> Add Credits

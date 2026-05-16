@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
-import { MODELS, PROVIDERS, MARKUP, OFFICIAL_MULT, ourPrice, officialPrice, savingsPercent } from '../data/models';
-import { Search, Grid3X3, List, Copy, Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { getDynamicModels, PROVIDERS, MARKUP, OFFICIAL_MULT, ourPrice, officialPrice, savingsPercent } from '../data/models';
+import { Search, Grid3X3, List, Copy, Check, ChevronDown, SlidersHorizontal, X, Loader2 } from 'lucide-react';
 
 const DISCOUNT = savingsPercent(); // ~23%
 
@@ -12,6 +12,8 @@ const TYPE_ICONS = {
 const TOP_PROVIDERS = ['OpenAI', 'Anthropic', 'Google', 'xAI', 'DeepSeek'];
 
 export default function Models() {
+  const [models, setModels] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selProvider, setSelProvider] = useState('All');
   const [selType, setSelType] = useState('All');
@@ -20,10 +22,17 @@ export default function Models() {
   const [copied, setCopied] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  useEffect(() => {
+    getDynamicModels().then(data => {
+      setModels(data);
+      setLoading(false);
+    });
+  }, []);
+
   // Derive unique providers & types
   const providers = useMemo(() => {
     const counts = {};
-    MODELS.forEach(m => { counts[m.provider] = (counts[m.provider] || 0) + 1; });
+    models.forEach(m => { counts[m.provider] = (counts[m.provider] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => {
       const aTop = TOP_PROVIDERS.indexOf(a[0]);
       const bTop = TOP_PROVIDERS.indexOf(b[0]);
@@ -32,17 +41,17 @@ export default function Models() {
       if (bTop !== -1) return 1;
       return b[1] - a[1];
     });
-  }, []);
+  }, [models]);
 
   const types = useMemo(() => {
     const counts = {};
-    MODELS.forEach(m => { counts[m.type] = (counts[m.type] || 0) + 1; });
+    models.forEach(m => { counts[m.type] = (counts[m.type] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, []);
+  }, [models]);
 
   // Filter & sort
   const filtered = useMemo(() => {
-    let result = MODELS.filter(m => {
+    let result = models.filter(m => {
       const q = search.toLowerCase();
       const matchSearch = !q || m.name.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || m.type.toLowerCase().includes(q);
       const matchProvider = selProvider === 'All' || m.provider === selProvider;
@@ -55,7 +64,7 @@ export default function Models() {
     else if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
 
     return result;
-  }, [search, selProvider, selType, sortBy]);
+  }, [models, search, selProvider, selType, sortBy]);
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -81,9 +90,17 @@ export default function Models() {
             <div>
               <h1>All Models</h1>
               <p className="models-subtitle">
-                <span className="models-count">{filtered.length}</span> of {MODELS.length} models
-                {selProvider !== 'All' && <> from <strong>{selProvider}</strong></>}
-                {selType !== 'All' && <> · {selType}</>}
+                {loading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Loader2 size={14} className="animate-spin" /> Synchronizing with Neural Matrix...
+                  </span>
+                ) : (
+                  <>
+                    <span className="models-count">{filtered.length}</span> of {models.length} models
+                    {selProvider !== 'All' && <> from <strong>{selProvider}</strong></>}
+                    {selType !== 'All' && <> · {selType}</>}
+                  </>
+                )}
               </p>
             </div>
             <div className="models-header-actions">
@@ -133,7 +150,7 @@ export default function Models() {
               >
                 <span className="sfb-dot" style={{ background: 'var(--primary)' }} />
                 All Providers
-                <span className="sfb-count">{MODELS.length}</span>
+                <span className="sfb-count">{models.length}</span>
               </button>
               {providers.map(([name, count]) => (
                 <button
@@ -183,7 +200,13 @@ export default function Models() {
 
           {/* ═══ MODELS CONTENT ═══ */}
           <div className="models-content">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="models-empty" style={{ minHeight: '400px' }}>
+                <Loader2 size={40} className="animate-spin" style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
+                <h3>Loading Neural Matrix...</h3>
+                <p>Fetching 273+ models from the encrypted database.</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="models-empty">
                 <h3>No models found</h3>
                 <p>Try adjusting your search or filters.</p>

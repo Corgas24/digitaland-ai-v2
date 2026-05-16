@@ -94,12 +94,12 @@ export default function Landing() {
   ];
 
   return (
-    <div className="landing-root">
+    <div className="landing-root" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div className="neural-grid-bg" />
       {/* ════════════════════════════════════
          HERO SECTION
          ════════════════════════════════════ */}
-      <header className="hero">
-        <div className="hero-glow" />
+      <header className="hero" style={{ padding: '8rem 0' }}>
         <div className="container hero-center">
           <div className="status-badge glass-card" style={{ animation: 'fadeInDown 0.8s ease-out' }}>
             <span className="status-dot neural-pulse"></span>
@@ -107,11 +107,11 @@ export default function Landing() {
           </div>
           
           <h1 className="hero-headline-lg fade-in-up delay-1">
-            <span className="glow-text">Next-Gen</span> API for<br />
+            <span>Next-Gen</span> API for<br />
             <span className="hero-gradient-text">Neural Intelligence</span>
           </h1>
           
-          <p className="hero-sub fade-in-up delay-2 glow-text" style={{ fontWeight: 600 }}>
+          <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600 }}>
             Unified access to 300+ AI models. Optimized for speed, 
             secured with end-to-end encryption, and priced for scale.
           </p>
@@ -124,10 +124,10 @@ export default function Landing() {
           </div>
 
           <div className="hero-btns fade-in-up delay-3">
-            <Link to="/playground" className="btn-solid btn-lg">
+            <Link to="/playground" className="premium-btn" style={{ padding: '1rem 2.5rem', borderRadius: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem', fontWeight: 800 }}>
               Start Building — It's Free <ArrowRight size={18} />
             </Link>
-            <Link to="/models" className="btn-outline">
+            <Link to="/models" className="btn-outline" style={{ padding: '1rem 2.5rem', borderRadius: '15px' }}>
               Explore Models
             </Link>
           </div>
@@ -197,10 +197,10 @@ export default function Landing() {
           {/* Left Side: Content (Asymmetric Narrow) */}
           <div className="fade-in-left" style={{ position: 'relative', zIndex: 10 }}>
             <div className="glass-card" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem', color: 'var(--primary)', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '2rem', letterSpacing: '2px', border: '1px solid var(--primary)' }}>
-              <Sparkles size={14} className="neural-pulse" /> LIVE NEURAL LABORATORY
+              <Sparkles size={14} /> LIVE NEURAL LABORATORY
             </div>
             
-            <h2 className="glow-text" style={{ fontSize: '4.2rem', fontWeight: 950, lineHeight: 0.9, marginBottom: '2.5rem', letterSpacing: '-4px', color: 'var(--text)' }}>
+            <h2 style={{ fontSize: '4.2rem', fontWeight: 950, lineHeight: 0.9, marginBottom: '2.5rem', letterSpacing: '-4px', color: 'var(--text)' }}>
               Experience <br /><span className="hero-gradient-text">Neural Edge</span>
             </h2>
             
@@ -216,7 +216,7 @@ export default function Landing() {
                 '1.4x optimized profit-markup model'
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)' }}>
-                  <div className="neural-pulse" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary)', flexShrink: 0 }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary)', flexShrink: 0 }}>
                     <Check size={18} />
                   </div>
                   {item}
@@ -239,13 +239,12 @@ export default function Landing() {
               position: 'relative', 
               overflow: 'hidden',
               transform: 'rotateY(-5deg) rotateX(2deg)',
-              boxShadow: '20px 40px 100px rgba(0,0,0,0.5), 0 0 40px var(--primary-soft)'
+              boxShadow: '20px 40px 100px rgba(0,0,0,0.5)'
             }}>
-              <div className="neural-pulse" style={{ position: 'absolute', top: '-60px', right: '-60px', width: '300px', height: '300px', background: 'var(--primary)', filter: 'blur(120px)', opacity: 0.3 }} />
               
               {/* Mock Chat UI Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '4rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '2.5rem' }}>
-                 <div className="neural-pulse" style={{ 
+                 <div style={{ 
                    width: '60px', height: '60px', 
                    background: 'linear-gradient(135deg, var(--primary) 0%, #ec4899 100%)', 
                    borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
@@ -254,7 +253,7 @@ export default function Landing() {
                     <Cpu size={30} />
                  </div>
                  <div>
-                    <p className="glow-text" style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', marginBottom: '0.25rem' }}>Neural Gateway <span style={{ color: '#22c55e', fontSize: '0.8rem', marginLeft: '1rem', fontWeight: 900, textTransform: 'uppercase' }}>● ONLINE</span></p>
+                    <p style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', marginBottom: '0.25rem' }}>Neural Gateway <span style={{ color: '#22c55e', fontSize: '0.8rem', marginLeft: '1rem', fontWeight: 900, textTransform: 'uppercase' }}>● ONLINE</span></p>
                     <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-4o_MAX</p>
                  </div>
               </div>
@@ -318,7 +317,9 @@ export default function Landing() {
                 </button>
               </div>
               <pre className="terminal-body">
-                <code>{termStep === 0 ? pythonCode : termStep === 1 ? nodeCode : curlCode}</code>
+                <code>
+                  {termStep === 0 ? <PythonSnippet /> : termStep === 1 ? <NodeSnippet /> : <CurlSnippet />}
+                </code>
               </pre>
             </div>
 
@@ -520,7 +521,7 @@ export default function Landing() {
          ════════════════════════════════════ */}
       <section className="cta-section">
         <div className="container">
-          <h2 className="glow-text">Ready to build with 300+ AI models?</h2>
+          <h2>Ready to build with 300+ AI models?</h2>
           <p>Join developers worldwide who trust Digitaland.ai for production AI</p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/playground" className="magic-btn btn-lg" style={{ padding: '1rem 2.5rem' }}>
@@ -537,8 +538,65 @@ export default function Landing() {
 }
 
 /* ═══════════════════════════════════════════════
-   Code Snippets for the terminal
+   Code Snippets for the terminal (Highlighted)
    ═══════════════════════════════════════════════ */
+const PythonSnippet = () => (
+  <>
+    <span className="t-comment"># pip install openai</span>{"\n"}
+    <span className="t-keyword">from</span> openai <span className="t-keyword">import</span> OpenAI{"\n"}
+    {"\n"}
+    client = <span className="t-func">OpenAI</span>({"\n"}
+    {"    "}base_url=<span className="t-string">"https://api.digitaland.ai/v1"</span>,{"\n"}
+    {"    "}api_key=<span className="t-string">"sk-your-digitaland-key"</span>{"\n"}
+    ){"\n"}
+    {"\n"}
+    response = client.chat.completions.<span className="t-func">create</span>({"\n"}
+    {"    "}model=<span className="t-string">"gpt-5.5"</span>,  <span className="t-comment"># or claude-opus-4-7, etc.</span>{"\n"}
+    {"    "}messages=[{"\n"}
+    {"        "}{"{"}<span className="t-string">"role"</span>: <span className="t-string">"user"</span>, <span className="t-string">"content"</span>: <span className="t-string">"Hello from Digitaland!"</span>{"}"}{"\n"}
+    {"    "}]{"\n"}
+    ){"\n"}
+    {"\n"}
+    <span className="t-func">print</span>(response.choices[<span className="t-num">0</span>].message.content)
+  </>
+);
+
+const NodeSnippet = () => (
+  <>
+    <span className="t-comment">// npm install openai</span>{"\n"}
+    <span className="t-keyword">import</span> OpenAI <span className="t-keyword">from</span> <span className="t-string">'openai'</span>;{"\n"}
+    {"\n"}
+    <span className="t-keyword">const</span> client = <span className="t-keyword">new</span> <span className="t-func">OpenAI</span>({"{"}{"\n"}
+    {"    "}baseURL: <span className="t-string">'https://api.digitaland.ai/v1'</span>,{"\n"}
+    {"    "}apiKey: <span className="t-string">'sk-your-digitaland-key'</span>,{"\n"}
+    {"}"});{"\n"}
+    {"\n"}
+    <span className="t-keyword">const</span> response = <span className="t-keyword">await</span> client.chat.completions.<span className="t-func">create</span>({"{"}{"\n"}
+    {"    "}model: <span className="t-string">'claude-sonnet-4-6'</span>, <span className="t-comment">// or gpt-5.5, etc.</span>{"\n"}
+    {"    "}messages: [{"\n"}
+    {"        "}{"{"} role: <span className="t-string">'user'</span>, content: <span className="t-string">'Hello from Digitaland!'</span> {"}"}{"\n"}
+    {"    "}],{"\n"}
+    {"}"});{"\n"}
+    {"\n"}
+    console.<span className="t-func">log</span>(response.choices[<span className="t-num">0</span>].message.content);
+  </>
+);
+
+const CurlSnippet = () => (
+  <>
+    <span className="t-func">curl</span> https://api.digitaland.ai/v1/chat/completions \<br />
+    {"  "}-H <span className="t-string">"Content-Type: application/json"</span> \<br />
+    {"  "}-H <span className="t-string">"Authorization: Bearer sk-your-digitaland-key"</span> \<br />
+    {"  "}-d <span className="t-string">'{"{"}'</span>{"\n"}
+    {"    "}<span className="t-prop">"model"</span>: <span className="t-string">"grok-4"</span>,{"\n"}
+    {"    "}<span className="t-prop">"messages"</span>: [{"\n"}
+    {"      "}{"{"}<span className="t-prop">"role"</span>: <span className="t-string">"user"</span>, <span className="t-prop">"content"</span>: <span className="t-string">"Hello from Digitaland!"</span>{"}"}{"\n"}
+    {"    "}]{"\n"}
+    {"  "}<span className="t-string">'{"}"}'</span>
+  </>
+);
+
+// Helper for copy (using raw strings)
 const pythonCode = `# pip install openai
 from openai import OpenAI
 
@@ -548,7 +606,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="gpt-5.5",  # or claude-opus-4-7, gemini-3.1-pro, etc.
+    model="gpt-5.5",
     messages=[
         {"role": "user", "content": "Hello from Digitaland!"}
     ]
@@ -556,8 +614,7 @@ response = client.chat.completions.create(
 
 print(response.choices[0].message.content)`;
 
-const nodeCode = `// npm install openai
-import OpenAI from 'openai';
+const nodeCode = `import OpenAI from 'openai';
 
 const client = new OpenAI({
   baseURL: 'https://api.digitaland.ai/v1',
@@ -565,7 +622,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-  model: 'claude-sonnet-4-6', // or gpt-5.5, gemini-3.1-pro, etc.
+  model: 'claude-sonnet-4-6',
   messages: [
     { role: 'user', content: 'Hello from Digitaland!' }
   ],

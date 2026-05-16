@@ -1,6 +1,7 @@
+import { supabase } from '../lib/supabase';
 
-export const MARKUP = 1.4; // 40% markup on top of provider prices
-export const OFFICIAL_MULT = 1.35; // How much more the official site costs vs our wholesale
+export const MARKUP = 1.4; 
+export const OFFICIAL_MULT = 1.35; 
 
 export const PROVIDERS = {
   OpenAI: { color: '#10a37f', short: 'O' },
@@ -26,308 +27,78 @@ export const PROVIDERS = {
   OpenRouter: { color: '#6d28d9', short: 'OR' },
 };
 
-const R = [
-  ['OpenAI','gpt-5.5',2.75,16.50,'Chat','Flagship'],
-  ['OpenAI','gpt-5.4',0.963,7.70,'Chat','Popular'],
-  ['OpenAI','gpt-5.3-codex',0.963,7.70,'Code','Code'],
-  ['OpenAI','gpt-5.2',0.963,7.70,'Chat',''],
-  ['OpenAI','gpt-5.2-codex',0.963,7.70,'Code','Code'],
-  ['OpenAI','gpt-5.2-pro',11.55,92.40,'Chat','Premium'],
-  ['OpenAI','gpt-5.1',0.688,5.50,'Chat',''],
-  ['OpenAI','gpt-5.1-codex',0.688,5.50,'Code','Code'],
-  ['OpenAI','gpt-5',0.688,5.50,'Chat','Popular'],
-  ['OpenAI','gpt-5-mini',0.138,1.10,'Chat','Value'],
-  ['OpenAI','gpt-5-nano',0.028,0.22,'Chat','Budget'],
-  ['OpenAI','gpt-5-codex',0.688,5.50,'Code','Code'],
-  ['OpenAI','gpt-4.1',1.10,4.40,'Chat','Popular'],
-  ['OpenAI','gpt-4.1-mini',0.22,0.88,'Chat','Value'],
-  ['OpenAI','gpt-4.1-nano',0.055,0.22,'Chat','Budget'],
-  ['OpenAI','gpt-4o',1.375,5.50,'Chat','Popular'],
-  ['OpenAI','gpt-4o-mini',0.083,0.33,'Chat','Budget'],
-  ['OpenAI','o3-pro',11.00,44.00,'Reasoning','Reasoning'],
-  ['OpenAI','o3',1.10,4.40,'Reasoning','Reasoning'],
-  ['OpenAI','o3-mini',0.605,2.42,'Reasoning','Reasoning'],
-  ['OpenAI','o4-mini',0.605,2.42,'Reasoning','Reasoning'],
-  ['OpenAI','o1',8.25,33.00,'Reasoning','Reasoning'],
-  ['OpenAI','o1-mini',0.605,2.42,'Reasoning','Reasoning'],
-  ['OpenAI','search',0.20,0.50,'Search','Search'],
-  ['OpenAI','text-embedding-3-large',0.13,0.13,'Embedding','Embedding'],
-  ['OpenAI','text-embedding-3-small',0.02,0.02,'Embedding','Embedding'],
-  ['OpenAI','text-embedding-ada-002',0.10,0.10,'Embedding','Embedding'],
-  ['OpenAI','whisper-1',0.006,0.006,'Audio','Audio'],
-  ['OpenAI','tts-1',15.00,450.00,'Audio','Audio'],
-  ['OpenAI','tts-1-hd',30.00,1800.00,'Audio','Audio'],
-  ['OpenAI','gpt-image-2',0.04,0,'Image','Image'],
-  ['OpenAI','dall-e-3',0.04,0,'Image','Image'],
-  ['OpenAI','dall-e-2',0.02,0,'Image',''],
-  ['OpenAI','gpt-3.5-turbo-0125',0.50,1.50,'Chat',''],
-  ['OpenAI','gpt-3.5-turbo-instruct',1.50,2.00,'Chat',''],
-  ['Anthropic','claude-opus-4-7',2.75,13.75,'Chat','Flagship'],
-  ['Anthropic','claude-opus-4-6',2.75,13.75,'Chat','Premium'],
-  ['Anthropic','claude-opus-4-5',2.75,13.75,'Chat','Premium'],
-  ['Anthropic','claude-sonnet-4-6',1.65,8.25,'Chat','Popular'],
-  ['Anthropic','claude-sonnet-4-5',1.65,8.25,'Chat','Popular'],
-  ['Anthropic','claude-haiku-4-5',0.55,2.75,'Chat','Value'],
-  ['Google','gemini-3.1-pro',1.10,6.60,'Chat','Flagship'],
-  ['Google','gemini-3-pro',1.10,6.60,'Chat','Popular'],
-  ['Google','gemini-3-flash',0.275,1.65,'Chat','Value'],
-  ['Google','gemini-3.1-flash-lite',0.138,0.825,'Chat','Budget'],
-  ['Google','gemini-2.5-pro',0.688,5.50,'Chat','Popular'],
-  ['Google','gemini-2.5-flash',0.165,1.375,'Chat','Value'],
-  ['Google','gemini-2.5-flash-lite',0.055,0.22,'Chat','Budget'],
-  ['Google','veo-3.1',0.20,0.20,'Video','Video'],
-  ['Google','veo-3.1-fast',0.10,0.10,'Video','Video'],
-  ['Google','nano-banana',0.021,0.021,'Image','Image'],
-  ['Google','nano-banana-2',0.037,0.037,'Image','Image'],
-  ['Google','nano-banana-pro',0.074,0.074,'Image','Image'],
-  ['xAI','grok-4',1.65,8.25,'Chat','Flagship'],
-  ['xAI','grok-4.2',2.00,6.00,'Chat','New'],
-  ['xAI','grok-4.1',1.65,8.25,'Chat','Popular'],
-  ['xAI','grok-4.1-fast',0.165,0.275,'Chat','Fast'],
-  ['xAI','grok-4.1-thinking',2.75,13.75,'Reasoning','Reasoning'],
-  ['xAI','grok-4-fast',0.11,0.275,'Chat','Fast'],
-  ['xAI','grok-4-fast-reasoning',0.11,0.275,'Reasoning','Reasoning'],
-  ['xAI','grok-4-1-fast-reasoning',0.11,0.275,'Reasoning','Fast'],
-  ['xAI','grok-4-1-fast-non-reasoning',0.11,0.275,'Chat','Fast'],
-  ['xAI','grok-4-fast-non-reasoning',0.11,0.275,'Chat','Fast'],
-  ['xAI','grok-4-image',0.044,0,'Image','Image'],
-  ['xAI','grok-2-1212',1.50,4.00,'Chat',''],
-  ['DeepSeek','deepseek-r1',0.495,1.98,'Reasoning','Reasoning'],
-  ['DeepSeek','deepseek-v4-pro',0.45,0.833,'Chat','Popular'],
-  ['DeepSeek','deepseek-v4-flash',0.14,0.28,'Chat','Value'],
-  ['DeepSeek','deepseek-v3.2',0.252,0.378,'Chat','Popular'],
-  ['DeepSeek','deepseek-v3',1.80,7.20,'Chat',''],
-  ['DeepSeek','deepseek-chat',0.126,0.252,'Chat','Budget'],
-  ['DeepSeek','deepseek-reasoner',0.126,0.252,'Reasoning','Reasoning'],
-  ['Alibaba','qwen3-max',2.11,8.43,'Chat','Flagship'],
-  ['Alibaba','qwen3.5-397b-a17b',0.60,3.60,'Chat','Premium'],
-  ['Alibaba','qwen3.6-plus',0.30,1.80,'Chat','New'],
-  ['Alibaba','qwen3.5-plus',0.40,2.40,'Chat','Popular'],
-  ['Alibaba','qwen3-235b-a22b',0.22,0.88,'Chat','Popular'],
-  ['Alibaba','qwen3-32b',0.16,0.64,'Chat','Value'],
-  ['Alibaba','qwen3-30b-a3b',0.15,0.60,'Chat','Value'],
-  ['Alibaba','qwen3-14b',0.35,1.40,'Chat',''],
-  ['Alibaba','qwen3-8b',0.18,0.70,'Chat',''],
-  ['Alibaba','qwen3-4b',0.30,1.20,'Chat','Budget'],
-  ['Alibaba','qwen3-coder',0.22,0.95,'Code','Code'],
-  ['Alibaba','qwen3-coder-plus',1.00,2.00,'Code','Code'],
-  ['Alibaba','qwen3-coder-flash',0.30,0.60,'Code','Code'],
-  ['Alibaba','qwen-max',1.60,6.40,'Chat',''],
-  ['Alibaba','qwen-plus',0.06,0.23,'Chat','Budget'],
-  ['Alibaba','qwen-turbo',0.07,0.21,'Chat','Budget'],
-  ['Alibaba','qwen-flash',0.05,0.20,'Chat','Budget'],
-  ['Alibaba','qwen-vl-max',0.41,1.64,'Vision','Vision'],
-  ['Alibaba','qwen3-vl-32b-instruct',2.00,8.00,'Vision','Vision'],
-  ['Alibaba','qwen3-vl-flash',0.05,0.40,'Vision','Vision'],
-  ['Alibaba','qwen2.5-72b-instruct',0.571,1.714,'Chat',''],
-  ['Alibaba','qwen2.5-32b-instruct',0.50,1.00,'Chat',''],
-  ['Alibaba','qwen2.5-coder-32b-instruct',0.50,1.00,'Code','Code'],
-  ['Alibaba','qwq-32b',0.90,2.70,'Reasoning','Reasoning'],
-  ['Alibaba','text-embedding-v1',0.10,0.10,'Embedding','Embedding'],
-  ['Alibaba','qwen-image-max',0.071,0.071,'Image','Image'],
-  ['Alibaba','qwen-image-2.0',0.029,0.029,'Image','Image'],
-  ['Alibaba','qwen-long',0.06,0.23,'Chat',''],
-  ['Alibaba','qwen-max-latest',1.60,6.40,'Chat','Flagship'],
-  ['Alibaba','qwen-plus-latest',0.40,2.40,'Chat','Popular'],
-  ['Alibaba','qwen-turbo-latest',0.07,0.21,'Chat','Budget'],
-  ['Alibaba','qwen-vl-plus',0.15,0.60,'Vision','Vision'],
-  ['Alibaba','qwen-vl-max-latest',0.41,1.64,'Vision','Vision'],
-  ['Alibaba','qwen2-72b-instruct',0.40,1.20,'Chat',''],
-  ['Alibaba','qwen2-57b-a14b-instruct',0.15,0.45,'Chat',''],
-  ['Alibaba','qwen2-7b-instruct',0.05,0.15,'Chat',''],
-  ['Alibaba','qwen2-1.5b-instruct',0.02,0.06,'Chat',''],
-  ['Alibaba','qwen2-0.5b-instruct',0.01,0.03,'Chat',''],
-  ['Alibaba','qwen1.5-110b-chat',0.50,1.50,'Chat',''],
-  ['Alibaba','qwen1.5-72b-chat',0.40,1.20,'Chat',''],
-  ['Alibaba','qwen1.5-32b-chat',0.20,0.60,'Chat',''],
-  ['Alibaba','qwen1.5-14b-chat',0.10,0.30,'Chat',''],
-  ['Alibaba','qwen1.5-7b-chat',0.05,0.15,'Chat',''],
-  ['Alibaba','qwen-math-plus',0.40,2.40,'Reasoning',''],
-  ['Alibaba','qwen-math-turbo',0.07,0.21,'Reasoning',''],
-  ['Alibaba','text-embedding-v2',0.05,0.05,'Embedding','Embedding'],
-  ['Alibaba','text-embedding-v3',0.02,0.02,'Embedding','Embedding'],
-  ['Alibaba','text-embedding-async-v1',0.05,0.05,'Embedding','Embedding'],
-  ['Alibaba','qwen-math-v1.5-72b',0.40,1.20,'Reasoning',''],
-  ['Alibaba','qwen-math-v1.5-32b',0.20,0.60,'Reasoning',''],
-  ['Alibaba','qwen-math-v1.5-14b',0.10,0.30,'Reasoning',''],
-  ['Alibaba','qwen-math-v1.5-7b',0.05,0.15,'Reasoning',''],
-  ['Alibaba','qwen-coder-v1.5-32b',0.20,0.60,'Code',''],
-  ['Alibaba','qwen-coder-v1.5-14b',0.10,0.30,'Code',''],
-  ['Alibaba','qwen-coder-v1.5-7b',0.05,0.15,'Code',''],
-  ['Alibaba','qwen-vl-v1.5-72b',0.40,1.20,'Vision',''],
-  ['Alibaba','qwen-vl-v1.5-32b',0.20,0.60,'Vision',''],
-  ['Alibaba','qwen-vl-v1.5-14b',0.10,0.30,'Vision',''],
-  ['Alibaba','qwen-vl-v1.5-7b',0.05,0.15,'Vision',''],
-  ['Alibaba','qwen-audio-turbo',0.10,0.30,'Audio',''],
-  ['Alibaba','qwen-audio-plus',0.20,0.60,'Audio',''],
-  ['Alibaba','qwen-audio-max',0.40,1.20,'Audio',''],
-  ['Alibaba','qwen-video-turbo',0.10,0.30,'Video',''],
-  ['Alibaba','qwen-video-plus',0.20,0.60,'Video',''],
-  ['Alibaba','qwen-video-max',0.40,1.20,'Video',''],
-  ['Alibaba','qwen-omni-turbo',0.10,0.30,'Chat',''],
-  ['Alibaba','qwen-omni-plus',0.20,0.60,'Chat',''],
-  ['Alibaba','qwen-omni-max',0.40,1.20,'Chat',''],
-  ['Alibaba','qwen2.5-14b-instruct',0.10,0.30,'Chat',''],
-  ['Alibaba','qwen2.5-7b-instruct',0.05,0.15,'Chat',''],
-  ['Alibaba','qwen2.5-3b-instruct',0.02,0.06,'Chat',''],
-  ['Alibaba','qwen2.5-1.5b-instruct',0.01,0.03,'Chat',''],
-  ['Alibaba','qwen2.5-0.5b-instruct',0.005,0.015,'Chat',''],
-  ['Alibaba','qwen-long-latest',0.06,0.23,'Chat',''],
-  ['ByteDance','doubao-seed-1-8-251228',0.17,1.14,'Chat','Flagship'],
-  ['ByteDance','doubao-seed-1-6',0.17,1.14,'Chat','Popular'],
-  ['ByteDance','doubao-seed-1-6-flash-250615',0.021,0.214,'Chat','Budget'],
-  ['ByteDance','doubao-seed-1-6-thinking-250615',0.28,1.14,'Reasoning','Reasoning'],
-  ['ByteDance','doubao-seed-1-6-vision-250815',0.114,1.143,'Vision','Vision'],
-  ['ByteDance','doubao-seed-code-preview-latest',0.171,1.143,'Code','Code'],
-  ['ByteDance','doubao-1.5-pro-32k',0.80,2.00,'Chat',''],
-  ['ByteDance','doubao-1.5-pro-128k',0.80,2.00,'Chat',''],
-  ['ByteDance','doubao-1.5-lite-32k',0.30,0.80,'Chat',''],
-  ['ByteDance','doubao-1.5-lite-128k',0.30,0.80,'Chat',''],
-  ['ByteDance','doubao-1.5-vision-pro-32k',0.80,2.00,'Vision','Vision'],
-  ['ByteDance','doubao-1.5-vision-lite-32k',0.30,0.80,'Vision','Vision'],
-  ['ByteDance','doubao-pro-4k',0.80,2.00,'Chat',''],
-  ['ByteDance','doubao-pro-32k',0.80,2.00,'Chat',''],
-  ['ByteDance','doubao-pro-128k',0.80,2.00,'Chat',''],
-  ['ByteDance','doubao-lite-4k',0.30,0.80,'Chat',''],
-  ['ByteDance','doubao-lite-32k',0.30,0.80,'Chat',''],
-  ['ByteDance','doubao-lite-128k',0.30,0.80,'Chat',''],
-  ['ByteDance','doubao-vision-pro-32k',0.80,2.00,'Vision','Vision'],
-  ['ByteDance','doubao-vision-lite-32k',0.30,0.80,'Vision','Vision'],
-  ['ByteDance','seed-oss-36b-instruct',0.14,0.43,'Chat','Value'],
-  ['ByteDance','doubao-seedream-5-0',0.031,0.031,'Image','Image'],
-  ['ByteDance','doubao-seedance-2-0',4.00,4.00,'Video','Video'],
-  ['ByteDance','doubao-pro-256k',1.50,3.00,'Chat',''],
-  ['ByteDance','doubao-lite-256k',0.50,1.00,'Chat',''],
-  ['ByteDance','doubao-vision-pro-256k',1.50,3.00,'Vision','Vision'],
-  ['ByteDance','doubao-1.5-pro-256k',1.50,3.00,'Chat',''],
-  ['ByteDance','doubao-1.5-lite-256k',0.50,1.00,'Chat',''],
-  ['ByteDance','doubao-1.5-vision-pro-256k',1.50,3.00,'Vision','Vision'],
-  ['ByteDance','doubao-voice-pro',0.50,1.00,'Audio','Audio'],
-  ['ByteDance','doubao-voice-lite',0.10,0.20,'Audio','Audio'],
-  ['ByteDance','doubao-embedding-v1',0.05,0.05,'Embedding','Embedding'],
-  ['ByteDance','doubao-embedding-v2',0.02,0.02,'Embedding','Embedding'],
-  ['ByteDance','doubao-tts-v1',2.00,2.00,'Audio','Audio'],
-  ['Moonshot','kimi-k2.5',0.60,2.50,'Chat','Flagship'],
-  ['Moonshot','kimi-k2',0.54,2.25,'Chat','Popular'],
-  ['Moonshot','kimi-k2-thinking',0.54,2.25,'Reasoning','Reasoning'],
-  ['Moonshot','kimi-k2-instruct',0.54,2.25,'Chat',''],
-  ['Moonshot','moonshot-v1-128k',8.40,8.40,'Chat',''],
-  ['Moonshot','moonshot-v1-32k',2.10,2.10,'Chat',''],
-  ['Moonshot','moonshot-v1-8k',1.10,1.10,'Chat',''],
-  ['Moonshot','kimi-v1.5',0.54,2.25,'Chat',''],
-  ['Moonshot','kimi-v1.5-32k',2.10,2.10,'Chat',''],
-  ['Moonshot','kimi-v1.5-128k',8.40,8.40,'Chat',''],
-  ['Moonshot','moonshot-v1-vision',2.10,2.10,'Vision','Vision'],
-  ['MiniMax','MiniMax-M2.7',0.30,1.20,'Chat','New'],
-  ['MiniMax','MiniMax-M2.5',0.30,1.20,'Chat','Popular'],
-  ['MiniMax','MiniMax-M2.1',1.89,7.56,'Chat',''],
-  ['MiniMax','abab6.5-chat',0.50,1.50,'Chat',''],
-  ['MiniMax','abab6.5s-chat',0.20,0.60,'Chat',''],
-  ['Zhipu','glm-5.1',1.40,4.40,'Chat','Flagship'],
-  ['Zhipu','glm-5',1.00,3.20,'Chat','Popular'],
-  ['Zhipu','glm-4.7',0.837,2.088,'Chat','Popular'],
-  ['Zhipu','glm-4.7-thinking',0.837,2.088,'Reasoning','Reasoning'],
-  ['Zhipu','glm-4.7-flash',0.93,2.32,'Chat','Fast'],
-  ['Zhipu','glm-4.6',1.80,7.20,'Chat',''],
-  ['Zhipu','glm-4.6-thinking',0.72,1.44,'Reasoning','Reasoning'],
-  ['Zhipu','glm-4.6v',0.90,2.70,'Vision','Vision'],
-  ['Zhipu','glm-4.5',1.44,5.76,'Chat',''],
-  ['Zhipu','glm-4.5-flash',0.018,0.072,'Chat','Budget'],
-  ['Zhipu','glm-4',0.513,1.026,'Chat',''],
-  ['Zhipu','glm-4-air',0.063,0.063,'Chat','Budget'],
-  ['Zhipu','embedding-3',0.068,0.068,'Embedding','Embedding'],
-  ['Zhipu','glm-4-plus',1.50,4.50,'Chat',''],
-  ['Zhipu','glm-4-0520',0.50,1.50,'Chat',''],
-  ['Zhipu','glm-4-long',0.10,0.30,'Chat',''],
-  ['Zhipu','glm-4-flashx',0.01,0.01,'Chat',''],
-  ['Zhipu','glm-4v',0.50,1.50,'Vision','Vision'],
-  ['Zhipu','glm-4v-plus',1.00,3.00,'Vision','Vision'],
-  ['Zhipu','glm-4v-flash',0.10,0.30,'Vision','Vision'],
-  ['Zhipu','glm-3-turbo',0.05,0.05,'Chat',''],
-  ['Zhipu','glm-4-alltools',0.50,1.50,'Chat',''],
-  ['Zhipu','glm-4-voice',1.00,3.00,'Audio','Audio'],
-  ['Zhipu','glm-4-voice-0520',1.00,3.00,'Audio','Audio'],
-  ['Zhipu','cogview-3',0.10,0.10,'Image','Image'],
-  ['Zhipu','cogview-3-plus',0.20,0.20,'Image','Image'],
-  ['Zhipu','cogvideox',1.00,1.00,'Video','Video'],
-  ['Zhipu','cogvideox-flash',0.20,0.20,'Video','Video'],
-  ['Zhipu','charGLM-3',0.10,0.30,'Chat',''],
-  ['Zhipu','embedding-2',0.01,0.01,'Embedding','Embedding'],
-  ['Zhipu','embedding-3-large',0.05,0.05,'Embedding','Embedding'],
-  ['Zhipu','embedding-3-small',0.01,0.01,'Embedding','Embedding'],
-  ['Xiaomi','mimo-v2-pro',2.00,6.00,'Chat','Flagship'],
-  ['Xiaomi','mimo-v2-omni',0.80,4.00,'Chat','Popular'],
-  ['Xiaomi','mimo-v2-flash',0.20,0.60,'Chat','Value'],
-  ['Kuaishou','kling-v3',0.084,0.168,'Video','Video'],
-  ['Kuaishou','kling-v2-6',0.07,1.68,'Video','Video'],
-  ['Midjourney','mj_imagine',0.10,0,'Image','Image'],
-  ['Midjourney','mj_upscale',0.05,0,'Image','Image'],
-  ['Midjourney','mj_variation',0.10,0,'Image','Image'],
-  ['Meta','llama-4-maverick',0.20,0.60,'Chat','Flagship'],
-  ['Meta','llama-4-scout',0.15,0.36,'Chat','Value'],
-  ['Meta','llama-3.3-70b',0.88,0.88,'Chat','Popular'],
-  ['Meta','llama-3.1-405b',2.80,2.80,'Chat','Premium'],
-  ['Meta','llama-3.1-8b',0.18,0.18,'Chat','Budget'],
-  ['Meta','llama-3-70b-instruct',0.55,0.55,'Chat',''],
-  ['Mistral','mistral-large-3',2.00,6.00,'Chat','Flagship'],
-  ['Mistral','mistral-small-3.1',0.10,0.30,'Chat','Budget'],
-  ['Mistral','codestral',0.30,0.90,'Code','Code'],
-  ['Mistral','pixtral-large',2.00,6.00,'Vision','Vision'],
-  ['Mistral','mixtral-8x22b',0.90,0.90,'Chat','MoE'],
-  ['Mistral','mistral-nemo',0.15,0.15,'Chat',''],
-  ['Cohere','command-r-plus',2.50,10.00,'Chat','Flagship'],
-  ['Cohere','command-r',0.15,0.60,'Chat','Value'],
-  ['Cohere','embed-english-v3.0',0.10,0,'Embedding','Embedding'],
-  ['Cohere','embed-multilingual-v3.0',0.10,0,'Embedding','Embedding'],
-  ['Perplexity','sonar-pro',3.00,15.00,'Search','Search'],
-  ['Perplexity','sonar-reasoning',1.00,5.00,'Search','Reasoning'],
-  ['Perplexity','sonar-deep-research',2.00,8.00,'Search','Research'],
-  ['Perplexity','sonar',1.00,1.00,'Search',''],
-  ['Stability AI','sd-3.5-large',0.065,0,'Image','Image'],
-  ['Stability AI','stable-image-ultra',0.08,0,'Image','Premium'],
-  ['Stability AI','sdxl',0.03,0,'Image',''],
-  ['Microsoft','phi-4',0.07,0.07,'Chat','Budget'],
-  ['Microsoft','phi-3.5-moe',0.16,0.16,'Chat','MoE'],
-  ['Microsoft','phi-3.5-mini',0.05,0.05,'Chat',''],
-  ['Amazon','nova-pro',0.80,3.20,'Chat','New'],
-  ['Amazon','nova-lite',0.06,0.24,'Chat','Budget'],
-  ['Amazon','nova-micro',0.02,0.08,'Chat',''],
-  ['OpenRouter','gemini-2.0-flash-lite:free',0,0,'Chat','Free'],
-  ['OpenRouter','gemini-2.0-pro-exp:free',0,0,'Chat','Free'],
-  ['OpenRouter','deepseek-r1:free',0,0,'Reasoning','Free'],
-  ['OpenRouter','llama-3.3-70b:free',0,0,'Chat','Free'],
-  ['OpenRouter','llama-3.1-8b:free',0,0,'Chat','Free'],
-  ['OpenRouter','mistral-7b:free',0,0,'Chat','Free'],
-  ['OpenRouter','phi-3-mini:free',0,0,'Chat','Free'],
-];
+/**
+ * ══════════════════════════════════════════════════════════════════════════════
+ * DIGITALAND NEURAL MATRIX - DYNAMIC MODEL LOADING
+ * ══════════════════════════════════════════════════════════════════════════════
+ */
 
-export const MODELS = R.map(([provider, name, offIn, offOut, type, badge]) => ({
-  id: name, // Use the name directly as ID for gateway compatibility
-  name,
-  provider,
-  type,
-  badge: badge || '',
-  offIn,
-  offOut,
-  ctx: '-',
-  vision: type === 'Vision',
-  tools: type !== 'Image' && type !== 'Audio' && type !== 'Video',
-  reasoning: type === 'Reasoning',
-  speed: 50,
-  intel: 50
-}));
+// We maintain a cache of processed models
+let cachedModels = [];
+
+export const getDynamicModels = async () => {
+  if (cachedModels.length > 0) return cachedModels;
+
+  const { data, error } = await supabase
+    .from('models')
+    .select('*')
+    .eq('is_active', true)
+    .order('provider', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching models:', error);
+    return [];
+  }
+
+  cachedModels = data.map(m => {
+    const name = m.name;
+    const isMini = name.toLowerCase().includes('mini') || name.toLowerCase().includes('flash') || name.toLowerCase().includes('8b');
+    const isReasoning = m.type === 'Reasoning';
+    const isFlagship = m.badge === 'Flagship';
+
+    return {
+      id: m.id,
+      name: m.name,
+      provider: m.provider,
+      type: m.type,
+      badge: m.badge || '',
+      offIn: m.off_in,
+      offOut: m.off_out,
+      ctx: '-',
+      vision: m.type === 'Vision',
+      tools: m.type !== 'Image' && m.type !== 'Audio' && m.type !== 'Video',
+      reasoning: isReasoning,
+      speed: isMini ? 95 : (isFlagship ? 70 : (isReasoning ? 30 : 60)),
+      intel: isReasoning ? 98 : (isFlagship ? 92 : (isMini ? 75 : 80))
+    };
+  });
+
+  return cachedModels;
+};
+
+// Placeholder for initial static load (to prevent breaking UI while fetching)
+export const MODELS = []; 
 
 // Helper functions for consistent pricing
 export const ourPrice = (offPrice) => (offPrice / OFFICIAL_MULT) * MARKUP;
 export const officialPrice = (offPrice) => offPrice;
 export const savingsPercent = () => Math.round((1 - (1/OFFICIAL_MULT)) * 100);
 
-// For the landing page featured section
-export const FEATURED_MODELS = MODELS.filter(m => m.badge === 'Flagship' || m.badge === 'Popular').slice(0, 3);
+// Dynamic helpers
+export const getFeaturedModels = async () => {
+  const models = await getDynamicModels();
+  return models.filter(m => m.badge === 'Flagship' || m.badge === 'Popular').slice(0, 3);
+};
 
-// For the pricing comparison section
 export const PRICING_COMPARE = [
   { model: 'GPT-4o', offIn: 1.375, offOut: 5.50 },
-  { model: 'Claude Opus 4.7', offIn: 2.75, offOut: 13.75 },
-  { model: 'DeepSeek R1', offIn: 0.495, offOut: 1.98 }
+  { model: 'Claude 3.5 Sonnet', offIn: 1.65, offOut: 8.25 },
+  { model: 'DeepSeek V3', offIn: 0.126, offOut: 0.252 }
+];
+
+// For the landing page
+export const FEATURED_MODELS = [
+  { name: 'GPT-4o', provider: 'OpenAI', badge: 'Flagship', offIn: 1.375 },
+  { name: 'Claude 3.5 Sonnet', provider: 'Anthropic', badge: 'Popular', offIn: 1.65 },
+  { name: 'DeepSeek V3', provider: 'DeepSeek', badge: 'Value', offIn: 0.126 }
 ];

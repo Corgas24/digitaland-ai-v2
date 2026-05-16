@@ -190,7 +190,7 @@ export default function Playground() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer ${session?.access_token || ''}\`,
+                    'Authorization': `Bearer ${session?.access_token || ''}`,
             'x-api-key': apiKey || '',
           },
           signal: controller.signal,
@@ -206,7 +206,7 @@ export default function Playground() {
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
-          throw new Error(data.error?.message || \`Erro na Sincronização Neural (${response.status})\`);
+                          throw new Error(data.error?.message || `Erro na Sincronizacao Neural (${response.status})`);
         }
 
         let assistantContent = '';
@@ -217,7 +217,7 @@ export default function Playground() {
           assistantContent = data.data?.[0]?.url || data.choices?.[0]?.message?.content || '';
           if (assistantContent.startsWith('http')) {
             const prefix = currentModelObj?.type === 'Image' ? '!' : '';
-            assistantContent = \`${prefix}[Neural Output](${assistantContent})\`;
+        assistantContent = `${prefix}[Neural Output](${assistantContent})`;
           }
         } else {
           const reader = response.body.getReader();

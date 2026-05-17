@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 
@@ -9,32 +8,43 @@ const corsHeaders = {
 };
 
 const MARKUP = 1.4;
+const OFFICIAL_MULT = 1;
 
-// UNIVERSAL PROFIT CASCADE
+// UNIVERSAL PROFIT CASCADE - Strategic Failover Map (CrazyRouter IDs)
 const CASCADE: Record<string, string[]> = {
-  // TEXT
-  'claude-3-opus': ['claude-3-5-sonnet', 'claude-3-haiku'],
-  'claude-3-5-sonnet': ['claude-3-haiku'],
-  'gpt-4': ['gpt-4o', 'gpt-4o-mini'],
-  'gpt-4o': ['gpt-4o-mini'],
-  'llama-3.1-405b': ['llama-3.1-70b', 'llama-3.1-8b'],
-  'llama-3.1-70b': ['llama-3.1-8b'],
-  'gemini-1.5-pro': ['gemini-1.5-flash'],
-  'mistral-large': ['mistral-medium', 'mistral-small'],
-  'qwen-max': ['qwen-plus', 'qwen-turbo'],
+  // --- TEXT FRONTIER ---
+  'gpt-5': ['gpt-4.1', 'gpt-4o', 'gpt-5-mini'],
+  'gpt-4o': ['gpt-4o-mini', 'claude-sonnet-4-6', 'llama-3.3-70b'],
+  'claude-opus-4-7': ['claude-sonnet-4-6', 'gpt-4o', 'claude-haiku-4-5'],
+  'claude-sonnet-4-6': ['gpt-4o-mini', 'claude-haiku-4-5', 'llama-3.3-70b'],
+  'gemini-3.1-pro': ['gemini-3-flash', 'gpt-4o-mini'],
+  
+  // --- REASONING / RESEARCH ---
+  'o1': ['o1-mini', 'deepseek-r1', 'gpt-4o'],
+  'o1-mini': ['deepseek-r1', 'gpt-4o-mini'],
+  'deepseek-r1': ['o1-mini', 'llama-3.3-70b'],
+  'deepseek-v3': ['gpt-4o-mini', 'llama-3.3-70b', 'qwen3.6-plus'],
+  
+  // --- OPEN SOURCE / Llama ---
+  'llama-3.1-405b': ['llama-3.3-70b', 'llama-3.1-8b'],
+  'llama-3.3-70b': ['llama-3.1-8b'],
+  
+  // --- SPECIALIZED ---
+  'mistral-large-3': ['mistral-small-3.1', 'gpt-4o-mini'],
+  'qwen3-max': ['qwen3.6-plus', 'qwen3-mini'],
+  'grok-4': ['grok-4-fast', 'llama-3.3-70b'],
 
-  // IMAGE
-  'dall-e-3': ['dall-e-2', 'stable-diffusion-xl', 'midjourney'],
-  'stable-diffusion-xl': ['stable-diffusion-v1.5'],
-  'flux-pro': ['flux-dev', 'flux-schnell'],
+  // --- IMAGE GENERATION ---
+  'mj_imagine': ['dall-e-3', 'flux-pro', 'nano-banana-pro'],
+  'dall-e-3': ['dall-e-2', 'flux-schnell', 'sdxl'],
+  'flux-pro': ['flux-dev', 'flux-schnell', 'sdxl'],
 
-  // VIDEO
-  'sora': ['luma-dream-machine', 'runway-gen-2', 'pika-art'],
-  'runway-gen-3': ['runway-gen-2', 'pika-art'],
+  // --- VIDEO & MULTIMODAL ---
+  'runway-gen-3': ['runway-gen-2', 'pika-art', 'veo-3.1'],
+  'sora': ['runway-gen-3', 'runway-gen-2'],
 
-  // AUDIO
-  'whisper-large-v3': ['whisper-large-v2', 'whisper-medium'],
-  'canary': ['whisper-large-v3']
+  // --- AUDIO ---
+  'whisper-1': ['whisper-large-v3', 'whisper-medium'],
 };
 
 serve(async (req) => {
@@ -63,7 +73,7 @@ serve(async (req) => {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('*')
-        .filter('api_keys', 'cs', `[{"key":"${xApiKey}"}]`)
+        .filter('api_keys', 'cs', '[{"key":"' + xApiKey + '"}]')
         .single();
       userProfile = profile;
     }
@@ -92,39 +102,102 @@ serve(async (req) => {
     let finalModelId = originalModelId;
     let usedFallbackProvider = false;
     const tryModels = [originalModelId, ...(CASCADE[originalModelId] || [])];
+    let success = false;
 
     // CASCADE EXECUTION
     for (const model of tryModels) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); 
+
         finalModelId = model;
         incomingBody.model = model;
-        response = await fetch(primaryUrl, {
+        const attemptResponse = await fetch(primaryUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${primaryKey}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': "Bearer " + primaryKey },
           body: JSON.stringify(incomingBody),
+          signal: controller.signal
         });
-        if (response.ok) break;
-      } catch (e) { }
+        
+        clearTimeout(timeoutId);
+        
+        // AGGRESSIVE FALLBACK: If 401/403, the primary key is dead, break loop to hit Fallback Provider immediately
+        if (attemptResponse.status === 401 || attemptResponse.status === 403) {
+          console.log("Primary Provider Auth Error (401/403). Jumping to fallback...");
+          break;
+        }
+
+        if (attemptResponse.ok) {
+          // Extra check for non-streaming: check if JSON contains error or Chinese chars
+          if (!incomingBody.stream) {
+            const clone = attemptResponse.clone();
+            const json = await clone.json();
+            const content = JSON.stringify(json);
+            
+            // Detect Chinese characters (common in SiliconFlow/DeepSeek errors)
+            const hasChinese = /[\u4e00-\u9fa5]/.test(content);
+            const hasError = json.error || json.err || (json.success === false) || (json.code && json.code !== 0);
+            
+            if (hasError || hasChinese) {
+              console.log("Provider returned error or foreign text for " + model + ". Continuing cascade...");
+              continue;
+            }
+          }
+          response = attemptResponse;
+          success = true;
+          break;
+        }
+      } catch (e) {
+        console.log("Cascade attempt for " + model + " failed: " + e.message);
+      }
     }
 
     // FALLBACK PROVIDER
-    if ((!response || !response.ok) && fallbackKey) {
+    if (!success && fallbackKey) {
       usedFallbackProvider = true;
       finalModelId = originalModelId;
       incomingBody.model = originalModelId;
-      response = await fetch(fallbackUrl, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${fallbackKey}`,
-          'HTTP-Referer': 'https://digitaland.ai',
-          'X-Title': 'Digitaland AI Gateway'
-        },
-        body: JSON.stringify(incomingBody),
-      });
+      try {
+        const fallbackResponse = await fetch(fallbackUrl, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': "Bearer " + fallbackKey,
+            'HTTP-Referer': 'https://digitaland.ai',
+            'X-Title': 'Digitaland AI Gateway'
+          },
+          body: JSON.stringify(incomingBody),
+        });
+        if (fallbackResponse) {
+          response = fallbackResponse;
+          if (fallbackResponse.ok) {
+            if (!incomingBody.stream) {
+              const clone = fallbackResponse.clone();
+              const json = await clone.json();
+              const content = JSON.stringify(json);
+              const hasChinese = /[\u4e00-\u9fa5]/.test(content);
+              const hasError = json.error || json.err || (json.success === false) || (json.code && json.code !== 0);
+              if (!hasError && !hasChinese) {
+                success = true;
+              }
+            } else {
+              success = true;
+            }
+          }
+        }
+      } catch (e) {
+        console.log("Fallback attempt failed: " + e.message);
+      }
     }
 
-    if (incomingBody.stream && response.ok) {
+    if (!response) {
+      return new Response(JSON.stringify({ error: { message: "All providers exhausted. Please try again later." } }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const isStream = incomingBody.stream && success && contentType.includes('text/event-stream');
+
+    if (isStream) {
       const upstreamReader = response.body?.getReader();
       const decoder = new TextDecoder();
       let promptTokens = 0;
@@ -160,7 +233,7 @@ serve(async (req) => {
             try {
               const totalIn = promptTokens || 20;
               const totalOut = completionTokens || 40;
-              const cost = ((totalIn / 1000000 * rates.off_in) + (totalOut / 1000000 * rates.off_out)) * MARKUP;
+              const cost = ((totalIn / 1000000 * (rates.off_in / OFFICIAL_MULT)) + (totalOut / 1000000 * (rates.off_out / OFFICIAL_MULT))) * MARKUP;
 
               if (userProfile.id !== 'mock-rooter-id') {
                 const { data: p } = await supabaseAdmin.from('profiles').select('balance').eq('id', userProfile.id).single();
@@ -190,11 +263,14 @@ serve(async (req) => {
         data = { choices: [{ message: { content: text } }] };
       }
 
-      if (response.ok) {
+      const hasChinese = /[\u4e00-\u9fa5]/.test(JSON.stringify(data));
+      const isFailedJson = data.error || data.err || (data.success === false) || (data.code && data.code !== 0);
+
+      if (success && response.ok && !hasChinese && !isFailedJson) {
         const usage = data.usage || data.x_deepseek_usage || data.openrouter_usage;
         const pTokens = usage?.prompt_tokens || 20;
         const cTokens = usage?.completion_tokens || 40;
-        const cost = ((pTokens / 1000000 * rates.off_in) + (cTokens / 1000000 * rates.off_out)) * MARKUP;
+        const cost = ((pTokens / 1000000 * (rates.off_in / OFFICIAL_MULT)) + (cTokens / 1000000 * (rates.off_out / OFFICIAL_MULT))) * MARKUP;
 
         if (userProfile.id !== 'mock-rooter-id') {
           const { data: p } = await supabaseAdmin.from('profiles').select('balance').eq('id', userProfile.id).single();
@@ -211,7 +287,14 @@ serve(async (req) => {
             metadata: { requested: originalModelId, used: finalModelId, provider: usedFallbackProvider ? 'fallback' : 'primary' }
           });
         }
+      } else {
+        // Sanitize error message to ensure no Chinese/Provider leaks
+        if (hasChinese || response.status === 401 || isFailedJson) {
+          data = { error: { message: "Neural Matrix synchronization error. Please try a different model or refresh." } };
+        }
+        return new Response(JSON.stringify(data), { status: response.ok && !isFailedJson ? 400 : response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+
       return new Response(JSON.stringify(data), { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
   } catch (err) { return new Response(JSON.stringify({ error: { message: err.message } }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }

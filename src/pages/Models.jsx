@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getDynamicModels, PROVIDERS, MARKUP, officialPrice, savingsPercent, ourPrice } from '../data/models';
-import { Search, Grid3X3, List, Copy, Check, SlidersHorizontal, X, Loader2, ArrowUpRight } from 'lucide-react';
+import { getDynamicModels, PROVIDERS, MARKUP, OFFICIAL_MULT, ourPrice, officialPrice, savingsPercent } from '../data/models';
+import { Search, Grid3X3, List, Copy, Check, ChevronDown, SlidersHorizontal, X, Loader2, ArrowUpRight } from 'lucide-react';
 
-const DISCOUNT = savingsPercent(); 
+const DISCOUNT = savingsPercent();
 
 const TYPE_ICONS = {
   Chat: '💬', Reasoning: '🧠', Code: '💻', Vision: '👁', Image: '🎨',
@@ -19,7 +19,7 @@ export default function Models() {
   const [selProvider, setSelProvider] = useState('All');
   const [selType, setSelType] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
-  const [sortBy, setSortBy] = useState('default'); 
+  const [sortBy, setSortBy] = useState('default');
   const [copied, setCopied] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
@@ -215,14 +215,14 @@ export default function Models() {
                   const ourIn = ourPrice(m.offIn);
                   const ourOut = ourPrice(m.offOut);
                   const isGeneration = ['Image', 'Video', 'Audio'].includes(m.type);
-                  
-                  const isRecommended = m.name.toLowerCase().includes('mini') || 
-                                      m.name.toLowerCase().includes('8b') || 
+
+                  const isRecommended = m.name.toLowerCase().includes('mini') ||
+                                      m.name.toLowerCase().includes('8b') ||
                                       m.name.toLowerCase().includes('haiku') ||
                                       m.name.toLowerCase().includes('flash');
 
                   return (
-                    <div className="mg-card" key={i} style={{ 
+                    <div className="mg-card" key={i} style={{
                       position: 'relative',
                       border: '1px solid var(--border-light)',
                       borderTop: '3px solid ' + prov.color,
@@ -231,9 +231,9 @@ export default function Models() {
                       overflow: 'hidden'
                     }}>
                       {isRecommended && (
-                        <div style={{ 
-                          position: 'absolute', top: '10px', right: '-35px', 
-                          background: 'var(--primary)', color: '#fff', fontSize: '0.6rem', 
+                        <div style={{
+                          position: 'absolute', top: '10px', right: '-35px',
+                          background: 'var(--primary)', color: '#fff', fontSize: '0.6rem',
                           fontWeight: 900, padding: '4px 40px', transform: 'rotate(45deg)',
                           boxShadow: '0 2px 10px rgba(99,102,241,0.4)', zIndex: 1
                         }}>
@@ -242,32 +242,30 @@ export default function Models() {
                       )}
 
                       <div className="mg-top" style={{ marginBottom: '1.5rem' }}>
-                        <div style={{ 
-                          width: '10px', height: '10px', borderRadius: '50%', 
-                          background: prov.color, boxShadow: '0 0 10px ' + prov.color 
+                        <div style={{
+                          width: '10px', height: '10px', borderRadius: '50%',
+                          background: prov.color, boxShadow: '0 0 10px ' + prov.color
                         }} />
                         <div className="mg-meta">
                           <h4 className="mg-name" style={{ fontSize: '1rem', fontWeight: 800 }}>{m.name}</h4>
                           <span className="mg-provider-name" style={{ color: prov.color, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase' }}>{m.provider}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
-                          <button
-                            className="mg-copy"
-                            onClick={() => handleCopy(m.name, i)}
-                            style={{ background: 'var(--bg-alt)', borderRadius: '8px' }}
-                            title="Copy model ID"
-                          >
-                            {copied === i ? <Check size={13} /> : <Copy size={13} />}
-                          </button>
-                          <Link
-                            to={'/playground?model=' + m.id}
-                            className="mg-copy"
-                            style={{ background: 'var(--primary-soft)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            title="Try in Playground"
-                          >
-                            <ArrowUpRight size={13} />
-                          </Link>
-                        </div>
+                        <button
+                          className="mg-copy"
+                          onClick={() => handleCopy(m.name, i)}
+                          style={{ background: 'var(--bg-alt)', borderRadius: '8px' }}
+                          title="Copy model ID"
+                        >
+                          {copied === i ? <Check size={13} /> : <Copy size={13} />}
+                        </button>
+                        <Link
+                          to={`/playground?model=${m.id}`}
+                          className="mg-copy"
+                          style={{ background: 'var(--primary-soft)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          title="Try in Playground"
+                        >
+                          <ArrowUpRight size={13} />
+                        </Link>
                       </div>
 
                       <div className="mg-prices" style={{ background: 'var(--bg-alt)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
@@ -300,8 +298,8 @@ export default function Models() {
                         {m.badge && <span className={'mg-tag mg-tag-' + m.badge.toLowerCase()} style={{ fontSize: '0.65rem' }}>{m.badge}</span>}
                         <span className="mg-tag mg-tag-type" style={{ fontSize: '0.65rem', background: 'var(--bg-alt)' }}>{TYPE_ICONS[m.type] || ''} {m.type}</span>
                         {(ourIn > 0) && (
-                          <span className="mg-tag mg-tag-save" style={{ 
-                            fontSize: '0.65rem', background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)' 
+                          <span className="mg-tag mg-tag-save" style={{
+                            fontSize: '0.65rem', background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)'
                           }}>
                             -{DISCOUNT}%
                           </span>
@@ -333,7 +331,7 @@ export default function Models() {
                       const ourOut = ourPrice(m.offOut);
                       const offIn = officialPrice(m.offIn);
                       const isGeneration = ['Image', 'Video', 'Audio'].includes(m.type);
-                      
+
                       return (
                         <tr key={i}>
                           <td className="mt-name">
@@ -348,10 +346,10 @@ export default function Models() {
                           <td><span className="mg-tag mg-tag-save" style={{ fontSize: '0.6rem' }}>-{DISCOUNT}%</span></td>
                           <td>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button className="mg-copy" onClick={() => handleCopy(m.name, 't' + i)} title="Copy">
-                                {copied === 't' + i ? <Check size={12} /> : <Copy size={12} />}
+                              <button className="mg-copy" onClick={() => handleCopy(m.name, `t${i}`)} title="Copy">
+                                {copied === `t${i}` ? <Check size={12} /> : <Copy size={12} />}
                               </button>
-                              <Link to={'/playground?model=' + m.id} className="mg-copy" style={{ color: 'var(--primary)', background: 'var(--primary-soft)' }} title="Try">
+                              <Link to={`/playground?model=${m.id}`} className="mg-copy" style={{ color: 'var(--primary)', background: 'var(--primary-soft)' }} title="Try">
                                 <ArrowUpRight size={12} />
                               </Link>
                             </div>
@@ -368,4 +366,4 @@ export default function Models() {
       </div>
     </main>
   );
-                          }
+}

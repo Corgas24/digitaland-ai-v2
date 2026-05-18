@@ -9,7 +9,7 @@
  * ══════════════════════════════════════════════════════════════════════════════
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { 
   Send, Zap, Settings2, Trash2, Cpu, Sparkles, AlertCircle, 
   Settings, ArrowUpRight, Copy, RefreshCcw, StopCircle, 
@@ -23,13 +23,42 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 
+const sanitizeProviderError = (msg) => {
+  if (!msg) return 'Erro desconhecido na rede neural.';
+  
+  const msgStr = typeof msg === 'object' ? JSON.stringify(msg) : String(msg);
+  
+  // Detect Chinese characters or SiliconFlow signature
+  const hasChinese = /[\u4e00-\u9fa5]/.test(msgStr);
+  const isInvalidToken = msgStr.includes('无效的令牌') || msgStr.toLowerCase().includes('invalid token') || msgStr.toLowerCase().includes('unauthorized') || msgStr.toLowerCase().includes('invalid api key') || msgStr.toLowerCase().includes('invalid_token');
+  const isOutOfBalance = msgStr.toLowerCase().includes('quota') || msgStr.toLowerCase().includes('balance') || msgStr.toLowerCase().includes('insufficient_funds');
+  
+  if (hasChinese || isInvalidToken) {
+    return 'Erro de Sincronização Neural: O provedor upstream está com credenciais inválidas ou temporariamente indisponível. Por favor, tente um modelo alternativo ou contacte o suporte.';
+  }
+  
+  if (isOutOfBalance) {
+    return 'Erro de Créditos do Canal: O canal de processamento upstream esgotou a sua cota. Por favor, tente um modelo alternativo.';
+  }
+  
+  // If it's a generic connection error
+  if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError')) {
+    return 'Falha na Ligação: Não foi possível conectar ao núcleo neural. Verifique a sua ligação à internet.';
+  }
+  
+  return msg;
+};
+
 export default function Playground() {
   const { user, refreshUser, isProfileLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlModel = searchParams.get('model');
+  
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedModel, setSelectedModel] = useState(urlModel || 'gpt-4o-mini');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(2048);
@@ -183,13 +212,18 @@ export default function Playground() {
         const isMedia = ['Image', 'Video', 'Audio'].includes(currentModelObj?.type);
         const defaultSystem = "You are Digitaland AI, an ultra-fast neural core. Provide precise, high-performance responses.";
         
-        const response = await fetch('https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway', {
+        const requestHeaders = {
+          'Content-Type': 'application/json',
+        };
+        if (session?.access_token) {
+          requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
+        } else if (apiKey) {
+          requestHeaders['x-api-key'] = apiKey;
+        }
+
+        const response = await fetch('/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ''}`,
-            'x-api-key': apiKey || '',
-          },
+          headers: requestHeaders,
           signal: controller.signal,
           body: JSON.stringify({
             model: selectedModel,
@@ -257,7 +291,7 @@ export default function Playground() {
         if (refreshUser) refreshUser();
         
       } catch (err) {
-        if (err.name !== 'AbortError') setError(err.message);
+        if (err.name !== 'AbortError') setError(sanitizeProviderError(err.message));
       } finally {
         setLoading(false);
         setIsStreaming(false);
@@ -488,8 +522,8 @@ export default function Playground() {
                    {PROVIDERS[currentModelObj?.provider]?.short || 'N'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{currentModelObj?.name}</span>
-                   <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{currentModelObj?.provider}</span>
+                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{currentModelObj?.name || selectedModel}</span>
+                   <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{currentModelObj?.provider || 'Neural Engine'}</span>
                 </div>
              </div>
 

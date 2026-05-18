@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { PRICING_COMPARE, PROVIDERS, ourPrice, officialPrice, savingsPercent } from '../data/models';
-import { ArrowRight, ChevronDown, CheckCircle2, Shield, Zap, Globe, Sparkles, DollarSign, Clock, HelpCircle } from 'lucide-react';
+import { getDynamicModels, PROVIDERS, ourPrice, officialPrice, savingsPercent } from '../data/models';
+import { ArrowRight, ChevronDown, CheckCircle2, Shield, Zap, Globe, Sparkles, DollarSign, Clock, HelpCircle, Loader2 } from 'lucide-react';
 
 const SAVING = savingsPercent();
 
 export default function Pricing() {
+  const [models, setModels] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState(null);
+
+  useEffect(() => {
+    getDynamicModels().then(data => {
+      setModels(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const featuredModels = useMemo(() => {
+    // Select top flagship models for the cards
+    return models.filter(m => m.badge === 'Flagship' || m.badge === 'Popular').slice(0, 3);
+  }, [models]);
+
+  const tableModels = useMemo(() => {
+    // Show a diverse selection in the table
+    return models.slice(0, 12);
+  }, [models]);
 
   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
 
@@ -54,43 +73,46 @@ export default function Pricing() {
          ════════════════════════════════════ */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
-          <div className="pricing-grid-premium">
-            {PRICING_COMPARE.slice(0, 3).map((row, i) => {
-              const providerName = row.model.toLowerCase().includes('gpt') ? 'OpenAI' : 
-                                 row.model.toLowerCase().includes('claude') ? 'Anthropic' : 
-                                 row.model.toLowerCase().includes('gemini') ? 'Google' : 'DeepSeek';
-              const p = PROVIDERS[providerName] || { color: 'var(--primary)' };
-              
-              return (
-                <div className="pricing-card-elite fade-in-up" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
-                  <div className="p-card-header">
-                    <div className="p-card-icon" style={{ background: `${p.color}15`, color: p.color }}>
-                      <Zap size={20} />
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+              <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+            </div>
+          ) : (
+            <div className="pricing-grid-premium">
+              {featuredModels.map((m, i) => {
+                const p = PROVIDERS[m.provider] || { color: 'var(--primary)' };
+                
+                return (
+                  <div className="pricing-card-elite fade-in-up" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+                    <div className="p-card-header">
+                      <div className="p-card-icon" style={{ background: `${p.color}15`, color: p.color }}>
+                        <Zap size={20} />
+                      </div>
+                      <div className="p-card-title">
+                        <h3 style={{ textTransform: 'uppercase' }}>{m.name}</h3>
+                        <span>{m.provider}</span>
+                      </div>
                     </div>
-                    <div className="p-card-title">
-                      <h3>{row.model.toUpperCase()}</h3>
-                      <span>{providerName}</span>
+                    
+                    <div className="p-card-prices">
+                      <div className="p-price-row">
+                        <span className="label">Digitaland</span>
+                        <span className="value">${ourPrice(m.offIn).toFixed(3)}<small>/1M</small></span>
+                      </div>
+                      <div className="p-price-row official">
+                        <span className="label">Official API</span>
+                        <span className="value">${officialPrice(m.offIn).toFixed(3)}<small>/1M</small></span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-card-savings">
+                      <span className="save-tag">SAVE {SAVING}%</span>
                     </div>
                   </div>
-                  
-                  <div className="p-card-prices">
-                    <div className="p-price-row">
-                      <span className="label">Digitaland</span>
-                      <span className="value">${ourPrice(row.offIn)}<small>/1M</small></span>
-                    </div>
-                    <div className="p-price-row official">
-                      <span className="label">Official API</span>
-                      <span className="value">${officialPrice(row.offIn)}<small>/1M</small></span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-card-savings">
-                    <span className="save-tag">SAVE {SAVING}%</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -113,30 +135,37 @@ export default function Pricing() {
             </div>
             
             <div className="pt-body">
-              {PRICING_COMPARE.map((row, i) => (
-                <div className="pt-row" key={i}>
-                  <div className="pt-col model">
-                    <div className="model-info">
-                      <span className="m-name">{row.model}</span>
-                    </div>
-                  </div>
-                  <div className="pt-col price">
-                    <div className="price-compare">
-                      <span className="our-p">${ourPrice(row.offIn)}</span>
-                      <span className="off-p">${officialPrice(row.offIn)}</span>
-                    </div>
-                  </div>
-                  <div className="pt-col price">
-                    <div className="price-compare">
-                      <span className="our-p">${ourPrice(row.offOut)}</span>
-                      <span className="off-p">${officialPrice(row.offOut)}</span>
-                    </div>
-                  </div>
-                  <div className="pt-col savings">
-                    <span className="s-badge">-{SAVING}%</span>
-                  </div>
+              {loading ? (
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                  <Loader2 className="animate-spin" size={24} style={{ margin: '0 auto' }} />
                 </div>
-              ))}
+              ) : (
+                tableModels.map((m, i) => (
+                  <div className="pt-row" key={i}>
+                    <div className="pt-col model">
+                      <div className="model-info">
+                        <span className="m-name">{m.name}</span>
+                        <span style={{ fontSize: '0.65rem', opacity: 0.5, fontWeight: 800, textTransform: 'uppercase', marginLeft: '0.5rem' }}>{m.provider}</span>
+                      </div>
+                    </div>
+                    <div className="pt-col price">
+                      <div className="price-compare">
+                        <span className="our-p">${ourPrice(m.offIn).toFixed(3)}</span>
+                        <span className="off-p">${officialPrice(m.offIn).toFixed(3)}</span>
+                      </div>
+                    </div>
+                    <div className="pt-col price">
+                      <div className="price-compare">
+                        <span className="our-p">${ourPrice(m.offOut).toFixed(3)}</span>
+                        <span className="off-p">${officialPrice(m.offOut).toFixed(3)}</span>
+                      </div>
+                    </div>
+                    <div className="pt-col savings">
+                      <span className="s-badge">-{SAVING}%</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           

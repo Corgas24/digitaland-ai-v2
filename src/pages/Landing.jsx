@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FEATURED_MODELS, PROVIDERS, MARKUP } from '../data/models';
+import { FEATURED_MODELS, PROVIDERS, MARKUP, ourPrice } from '../data/models';
 import { Copy, ArrowRight, Zap, Shield, Code, ChevronDown, CheckCircle2, Globe, Clock, Lock, Terminal, Check, DollarSign, Layers, Search, Server, Sparkles, Cpu, Send } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════
@@ -44,11 +44,11 @@ function ModelCard({ model, provider }) {
       <div className="mce-pricing">
         <div className="mce-price-row">
           <span className="mce-label">Input</span>
-          <span className="mce-value">${(model.offIn * MARKUP).toFixed(4)}</span>
+          <span className="mce-value">${ourPrice(model.offIn).toFixed(3)}</span>
         </div>
         <div className="mce-price-row">
           <span className="mce-label">Output</span>
-          <span className="mce-value">${(model.offOut * MARKUP).toFixed(4)}</span>
+          <span className="mce-value">${ourPrice(model.offOut).toFixed(3)}</span>
         </div>
         <span className="mce-unit">per 1M tokens</span>
       </div>
@@ -477,8 +477,8 @@ export default function Landing() {
                       {m.name}
                     </td>
                     <td className="pt-provider">{m.provider}</td>
-                    <td className="pt-price">${(m.offIn * MARKUP).toFixed(4)}</td>
-                    <td className="pt-price">${(m.offOut * MARKUP).toFixed(4)}</td>
+                    <td className="pt-price">${ourPrice(m.offIn).toFixed(3)}</td>
+                    <td className="pt-price">${ourPrice(m.offOut).toFixed(3)}</td>
                     <td><span className={`mce-badge mce-badge-${(m.badge || '').toLowerCase()}`}>{m.badge}</span></td>
                   </tr>
                 ))}

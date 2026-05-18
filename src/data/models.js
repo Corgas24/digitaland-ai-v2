@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
 
 export const MARKUP = 1.4; 
-export const OFFICIAL_MULT = 1.35; 
+export const OFFICIAL_MULT = 1.9; 
+
 
 export const PROVIDERS = {
   OpenAI: { color: '#10a37f', short: 'O' },
@@ -80,9 +81,9 @@ export const getDynamicModels = async () => {
 export const MODELS = []; 
 
 // Helper functions for consistent pricing
-export const ourPrice = (offPrice) => (offPrice / OFFICIAL_MULT) * MARKUP;
-export const officialPrice = (offPrice) => offPrice;
-export const savingsPercent = () => Math.round((1 - (1/OFFICIAL_MULT)) * 100);
+export const ourPrice = (offPrice) => offPrice * MARKUP;
+export const officialPrice = (offPrice) => offPrice * OFFICIAL_MULT;
+export const savingsPercent = () => Math.round((1 - (MARKUP / OFFICIAL_MULT)) * 100);
 
 // Dynamic helpers
 export const getFeaturedModels = async () => {

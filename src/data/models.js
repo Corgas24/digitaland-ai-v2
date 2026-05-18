@@ -48,7 +48,12 @@ export const getDynamicModels = async () => {
 
   if (error) {
     console.error('Error fetching models:', error);
-    return [];
+    // Return a sentinel object so callers can distinguish "no models" from "query failed"
+    return null;
+  }
+  if (!data || data.length === 0) {
+    console.warn('No active models found in the database.');
+    return null;
   }
 
   cachedModels = data.map(m => {
@@ -57,14 +62,18 @@ export const getDynamicModels = async () => {
     const isReasoning = m.type === 'Reasoning';
     const isFlagship = m.badge === 'Flagship';
 
+    // Guard against NULL columns returned from the database
+    const offIn  = m.off_in  ?? 0;
+    const offOut = m.off_out ?? 0;
+
     return {
       id: m.id,
       name: m.name,
       provider: m.provider,
       type: m.type,
       badge: m.badge || '',
-      offIn: m.off_in,
-      offOut: m.off_out,
+      offIn,
+      offOut,
       ctx: '-',
       vision: m.type === 'Vision',
       tools: m.type !== 'Image' && m.type !== 'Audio' && m.type !== 'Video',

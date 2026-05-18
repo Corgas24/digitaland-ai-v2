@@ -10,6 +10,15 @@ export default defineConfig({
   optimizeDeps: {
     include: ['lucide-react', 'recharts', 'react-markdown']
   },
+  server: {
+    proxy: {
+      '/v1': {
+        target: 'https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/v1/, '')
+      }
+    }
+  },
   build: {
     emptyOutDir: true,
     commonjsOptions: {

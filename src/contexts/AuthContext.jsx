@@ -102,18 +102,42 @@ export const AuthProvider = ({ children }) => {
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading profile:', error.message);
+      }
+
+      // If the profile row doesn't exist yet (e.g. user signed up via OAuth
+      // but the post-signup trigger hasn't fired), attempt to create it.
+      let userProfileData = data ?? null;
+      if (!userProfileData) {
+        try {
+          const { data: inserted } = await supabase
+            .from('profiles')
+            .insert({
+              id:         authUser.id,
+              email:      authUser.email,
+              balance:    0,
+              api_keys:   [],
+              is_admin:   false,
+            })
+            .select()
+            .single();
+          userProfileData = inserted ?? null;
+        } catch (insertErr) {
+          console.error('Could not create missing profile row:', insertErr instanceof Error ? insertErr.message : insertErr);
+        }
+      }
 
       const userData = {
-        id: authUser.id,
-        email: authUser.email,
-        name: authUser.user_metadata?.full_name || authUser.email.split('@')[0],
-        avatar_url: authUser.user_metadata?.avatar_url || null,
-        balance: data?.balance || 0,
-        apiKeys: data?.api_keys || [],
-        isAdmin: data?.is_admin || authUser.email === 'corgasmario@gmail.com',
+        id:         authUser.id,
+        email:      authUser.email,
+        name:       authUser.user_metadata?.full_name || authUser.email.split('@')[0],
+        avatar_url: authUser.user_metadata?.avatar_url ?? null,
+        balance:    userProfileData?.balance ?? 0,
+        apiKeys:    userProfileData?.api_keys ?? [],
+        isAdmin:    userProfileData?.is_admin ?? authUser.email === 'corgasmario@gmail.com',
       };
       
       console.log('DEBUG: User Profile Loaded:', userData);
@@ -141,29 +165,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithEmail = async (email, password) => {
-    if (email === 'rooter' && password === '123456') {
-      let parsedMock = null;
-      try {
-        const savedMock = localStorage.getItem('mock_rooter_data');
-        parsedMock = savedMock ? JSON.parse(savedMock) : null;
-      } catch (e) {
-        console.warn('LocalStorage blocked by browser privacy settings.');
-      }
-
-      const mockUser = {
-        id: 'mock-rooter-id',
-        email: 'rooter@digitaland.ai',
-        name: 'Admin Account',
-        balance: parsedMock?.balance ?? 100,
-        apiKeys: parsedMock?.apiKeys ?? [],
-        isAdmin: true,
-        access_token: 'mock-rooter-token' 
-      };
-      setUser(mockUser);
-      setLoading(false);
-      return { data: { user: mockUser, session: { access_token: 'mock-rooter-token' } }, error: null };
-    }
-
     return await supabase.auth.signInWithPassword({ email, password });
   };
 
@@ -183,14 +184,29 @@ export const AuthProvider = ({ children }) => {
   const updateBalance = async (amount) => {
     if (!user) return;
     const newBalance = user.balance + amount;
+    const prevBalance = user.balance;
     setUser(prev => ({ ...prev, balance: newBalance }));
-    
+
     if (user.id === 'mock-rooter-id') {
       try {
         localStorage.setItem('mock_rooter_data', JSON.stringify({ ...user, balance: newBalance }));
-      } catch (e) {}
-    } else {
-      await supabase.from('profiles').update({ balance: newBalance }).eq('id', user.id);
+      } catch (e) { /* localStorage unavailable — dev-only fallback */ }
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ balance: newBalance })
+        .eq('id', user.id);
+      if (error) {
+        // Roll back optimistic UI update
+        console.error('[AuthContext] Failed to persist balance update — rolling back UI:', error.message);
+        setUser(prev => ({ ...prev, balance: prevBalance }));
+      }
+    } catch (e) {
+      console.error('[AuthContext] Balance persistence error:', e);
+      setUser(prev => ({ ...prev, balance: prevBalance }));
     }
   };
 
@@ -198,27 +214,54 @@ export const AuthProvider = ({ children }) => {
     if (!user) return;
     const updatedApiKeys = [...user.apiKeys, apiKeyData];
     setUser(prev => ({ ...prev, apiKeys: updatedApiKeys }));
-    
+
     if (user.id === 'mock-rooter-id') {
       try {
         localStorage.setItem('mock_rooter_data', JSON.stringify({ ...user, apiKeys: updatedApiKeys }));
       } catch (e) {}
-    } else {
-      await supabase.from('profiles').update({ api_keys: updatedApiKeys }).eq('id', user.id);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ api_keys: updatedApiKeys })
+        .eq('id', user.id);
+      if (error) {
+        console.error('[AuthContext] Failed to persist new API key — rolling back UI:', error.message);
+        setUser(prev => ({ ...prev, apiKeys: user.apiKeys }));
+      }
+    } catch (e) {
+      console.error('[AuthContext] API key persistence error:', e);
+      setUser(prev => ({ ...prev, apiKeys: user.apiKeys }));
     }
   };
 
   const removeApiKey = async (id) => {
     if (!user) return;
+    const originalKeys   = user.apiKeys;
     const updatedApiKeys = user.apiKeys.filter(key => key.id !== id);
     setUser(prev => ({ ...prev, apiKeys: updatedApiKeys }));
-    
+
     if (user.id === 'mock-rooter-id') {
       try {
         localStorage.setItem('mock_rooter_data', JSON.stringify({ ...user, apiKeys: updatedApiKeys }));
       } catch (e) {}
-    } else {
-      await supabase.from('profiles').update({ api_keys: updatedApiKeys }).eq('id', user.id);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ api_keys: updatedApiKeys })
+        .eq('id', user.id);
+      if (error) {
+        console.error('[AuthContext] Failed to persist API key removal — rolling back UI:', error.message);
+        setUser(prev => ({ ...prev, apiKeys: originalKeys }));
+      }
+    } catch (e) {
+      console.error('[AuthContext] API key removal persistence error:', e);
+      setUser(prev => ({ ...prev, apiKeys: originalKeys }));
     }
   };
 

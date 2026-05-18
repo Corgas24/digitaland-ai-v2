@@ -25,28 +25,32 @@ import { getDynamicModels, PROVIDERS } from '../data/models';
 
 const sanitizeProviderError = (msg) => {
   if (!msg) return 'Erro desconhecido na rede neural.';
-  
+
+  // If it's an Error instance, use its message directly
+  if (msg instanceof Error) return sanitizeProviderError(msg.message);
+
   const msgStr = typeof msg === 'object' ? JSON.stringify(msg) : String(msg);
-  
-  // Detect Chinese characters or SiliconFlow signature
-  const hasChinese = /[\u4e00-\u9fa5]/.test(msgStr);
-  const isInvalidToken = msgStr.includes('无效的令牌') || msgStr.toLowerCase().includes('invalid token') || msgStr.toLowerCase().includes('unauthorized') || msgStr.toLowerCase().includes('invalid api key') || msgStr.toLowerCase().includes('invalid_token');
-  const isOutOfBalance = msgStr.toLowerCase().includes('quota') || msgStr.toLowerCase().includes('balance') || msgStr.toLowerCase().includes('insufficient_funds');
-  
+
+  // Detect Chinese characters or SiliconFlow / DeepSeek garbage output
+  const hasChinese       = /[\u4e00-\u9fa5]/.test(msgStr);
+  const isInvalidToken   = msgStr.includes('无效的令牌')
+    || /invalid\s+token|unauthorized|invalid\s+api\s+key|invalid_token/i.test(msgStr);
+  const isOutOfBalance   = /quota|insufficient_funds|out of balance/i.test(msgStr);
+
   if (hasChinese || isInvalidToken) {
     return 'Erro de Sincronização Neural: O provedor upstream está com credenciais inválidas ou temporariamente indisponível. Por favor, tente um modelo alternativo ou contacte o suporte.';
   }
-  
+
   if (isOutOfBalance) {
     return 'Erro de Créditos do Canal: O canal de processamento upstream esgotou a sua cota. Por favor, tente um modelo alternativo.';
   }
-  
-  // If it's a generic connection error
-  if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError')) {
+
+  // Generic connection errors
+  if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError') || msgStr.includes('Network request failed')) {
     return 'Falha na Ligação: Não foi possível conectar ao núcleo neural. Verifique a sua ligação à internet.';
   }
-  
-  return msg;
+
+  return msgStr;
 };
 
 export default function Playground() {
@@ -81,9 +85,12 @@ export default function Playground() {
   const [models, setModels] = useState([]);
   const [isModelsLoading, setIsModelsLoading] = useState(true);
 
-  useEffect(() => {
+   useEffect(() => {
     getDynamicModels().then(data => {
-      setModels(data);
+      setModels(data ?? []);
+      setIsModelsLoading(false);
+    }).catch(err => {
+      console.error('Failed to load models:', err);
       setIsModelsLoading(false);
     });
   }, []);
@@ -288,7 +295,7 @@ export default function Playground() {
         setMessages(finalMessages);
         setStreamingMessage('');
         await saveConversation(finalMessages, selectedModel);
-        if (refreshUser) refreshUser();
+        if (refreshUser) await refreshUser();
         
       } catch (err) {
         if (err.name !== 'AbortError') setError(sanitizeProviderError(err.message));
@@ -303,6 +310,8 @@ export default function Playground() {
 
   const stopGeneration = () => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
+    setStreamingMessage('');
+    setError(null);
   };
 
   const copyToClipboard = (text) => navigator.clipboard.writeText(text);
@@ -529,8 +538,10 @@ export default function Playground() {
 
              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button onClick={startNewConversation} style={{ color: 'var(--text-muted)', transition: '0.2s', background: 'none', border: 'none', cursor: 'pointer' }} title="New Chat"><Trash2 size={18} /></button>
-                <div style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)' }}>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)' }}>${user?.balance?.toFixed(4)}</span>
+                   <div style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)' }}>
+                    ${typeof user?.balance === 'number' ? user.balance.toFixed(4) : '0.0000'}
+                  </span>
                 </div>
              </div>
           </div>
@@ -798,7 +809,7 @@ export default function Playground() {
                   </div>
                   {[
                     { label: 'Creativity', val: temperature, set: setTemperature, min: 0, max: 2, step: 0.1 },
-                    { label: 'Response Depth', val: maxTokens, set: setMaxTokens, min: 256, max: 128000, step: 1024 },
+                    { label: 'Response Depth', val: maxTokens, set: setMaxTokens, min: 256, max: 8192, step: 256 },
                     { label: 'Prob. Threshold', val: topP, set: setTopP, min: 0, max: 1, step: 0.05 }
                   ].map(p => (
                     <div key={p.label}>

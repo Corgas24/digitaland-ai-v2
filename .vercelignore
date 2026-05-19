@@ -1,5 +1,4 @@
 node_modules
 .npm
 .git
-.github
 dist

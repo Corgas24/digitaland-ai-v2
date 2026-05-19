@@ -133,25 +133,18 @@ async function atomicBill(
     console.warn("atomicBill RPC unavailable, falling back:", (e as Error).message);
   }
 
-  // ── Legacy fallback: separate SELECT + UPDATE (non-atomic, race-prone) ────
-  const { data: p } = await supabaseAdmin
-    .from("profiles")
-    .select("balance")
-    .eq("id", userId)
-    .single();
-  await supabaseAdmin
-    .from("profiles")
-    .update({
-      balance:      (p?.balance ?? 0) - cost,
-      last_request_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
+  // ── Legacy fallback: direct UPDATE + INSERT (no RPC dependency) ─────────────
+  // cost já chegou com Math.max(raw, MINIMUM_CHARGE) aplicado acima
+  await supabaseAdmin.from("profiles").update({
+    balance:         supabaseAdmin.raw(`GREATEST(COALESCE(balance, 0) - ${cost}, 0)`),
+    last_request_at: new Date().toISOString(),
+  }).eq("id", userId);
   await supabaseAdmin.from("logs").insert({
-    user_id:    userId,
-    model:      finalModelId,
-    total_tokens: tokensIn + tokensOut,
+    user_id:       userId,
+    model:         finalModelId,
+    total_tokens:  tokensIn + tokensOut,
     cost,
-    metadata,
+    meta:          metadata,
   });
 }
 

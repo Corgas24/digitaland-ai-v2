@@ -16,7 +16,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_PROJECT_REF: fycqiwfbhqbltsthrpxk
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF:  fycqiwfbhqbltsthrpxk
     steps:
       - uses: actions/checkout@v4
 
@@ -27,14 +28,23 @@ jobs:
 
       - name: Deploy Gateway Function
         run: |
+          echo "Project: $SUPABASE_PROJECT_REF"
+          echo "Token set: $([ -n \"$SUPABASE_ACCESS_TOKEN\" ] && echo YES || echo NO)"
           supabase functions deploy gateway --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          UPSTREAM_API_KEY: ${{ secrets.UPSTREAM_API_KEY }}
-          UPSTREAM_API_URL: ${{ secrets.UPSTREAM_API_URL }}
-          FALLBACK_API_KEY: ${{ secrets.FALLBACK_API_KEY }}
-          FALLBACK_API_URL: ${{ secrets.FALLBACK_API_URL }}
-          MINIMUM_CHARGE: ${{ secrets.MINIMUM_CHARGE || '0.001' }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          SUPABASE_PROJECT_REF:  fycqiwfbhqbltsthrpxk
+          UPSTREAM_API_KEY:      ${{ secrets.UPSTREAM_API_KEY }}
+          UPSTREAM_API_URL:      ${{ secrets.UPSTREAM_API_URL }}
+          FALLBACK_API_KEY:      ${{ secrets.FALLBACK_API_KEY }}
+          FALLBACK_API_URL:      ${{ secrets.FALLBACK_API_URL }}
+          MINIMUM_CHARGE:        ${{ secrets.MINIMUM_CHARGE || '0.001' }}
+          STRIPE_SECRET_KEY:     ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           BILLING_EXEMPT_USER_ID: ${{ secrets.BILLING_EXEMPT_USER_ID }}
+
+      - name: Upload Migration SQL
+        run: |
+          echo "Migration SQL uploaded — run it manually in Supabase SQL Editor:"
+          echo "https://supabase.com/dashboard/project/fycqiwfbhqbltsthrpxk/sql/new"
+          cat supabase/migrations/20250519_create_billing_rpc.sql

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getDynamicModels, PROVIDERS, ourPrice, officialPrice, savingsPercent } from '../data/models';
+import { getDynamicModels, PROVIDERS, ourPrice, crazyrouterPrice, savingsPercent } from '../data/models';
 import { ArrowRight, ChevronDown, CheckCircle2, Shield, Zap, Globe, Sparkles, DollarSign, Clock, HelpCircle, Loader2 } from 'lucide-react';
 
 const SAVING = savingsPercent();
@@ -31,9 +31,9 @@ export default function Pricing() {
 
   const FAQ_DATA = [
     { q: 'What is Digitaland.ai?', a: 'Digitaland.ai is a unified AI API gateway providing access to 300+ frontier models from OpenAI, Anthropic, Google, xAI, Meta, Mistral, and more through a single endpoint.' },
-    { q: 'How does the pay-as-you-go billing work?', a: `We operate on a pure usage-based model. You add credits to your balance, and tokens are deducted in real-time as you make requests. Our rates are consistently ~${SAVING}% lower than official direct-from-provider pricing.` },
+    { q: 'How does the pay-as-you-go billing work?', a: `We operate on a pure usage-based model. You add credits to your balance, and tokens are deducted in real-time as you make requests. Our rates are consistently ~{SAVING}% lower than CrazyRouter pricing.` },
     { q: 'Is there a minimum monthly commitment?', a: 'No. There are no monthly fees, no minimum usage requirements, and your credits never expire. You only pay for what you build.' },
-    { q: 'How do you achieve lower prices than official APIs?', a: 'Through our global routing infrastructure and high-volume partnerships, we optimize request flow to provide the most competitive rates on the market without compromising on speed or privacy.' },
+    { q: 'How do you achieve lower prices than CrazyRouter?', a: 'Through our global routing infrastructure and high-volume partnerships, we optimize request flow to provide rates below CrazyRouter without compromising on speed or privacy.' },
   ];
 
   return (
@@ -57,7 +57,7 @@ export default function Pricing() {
 
           <p className="hero-sub fade-in-up delay-2">
             No subscriptions. No hidden fees. Access the world's most powerful AI models 
-            at rates up to {SAVING}% below official pricing.
+            at rates up to {SAVING}% below CrazyRouter pricing.
           </p>
 
           <div className="hero-btns fade-in-up delay-3" style={{ marginBottom: 0 }}>
@@ -94,16 +94,16 @@ export default function Pricing() {
                       </div>
                     </div>
                     
-                    <div className="p-card-prices">
-                      <div className="p-price-row">
-                        <span className="label">Digitaland</span>
-                        <span className="value">${ourPrice(m.offIn).toFixed(3)}<small>/1M</small></span>
+                      <div className="p-card-prices">
+                        <div className="p-price-row">
+                          <span className="label">Digitaland</span>
+                          <span className="value">${ourPrice(m.offIn).toFixed(3)}<small>/1M</small></span>
+                        </div>
+                        <div className="p-price-row official">
+                          <span className="label">CrazyRouter</span>
+                          <span className="value">${crazyrouterPrice(m.offIn).toFixed(3)}<small>/1M</small></span>
+                        </div>
                       </div>
-                      <div className="p-price-row official">
-                        <span className="label">Official API</span>
-                        <span className="value">${officialPrice(m.offIn).toFixed(3)}<small>/1M</small></span>
-                      </div>
-                    </div>
                     
                     <div className="p-card-savings">
                       <span className="save-tag">SAVE {SAVING}%</span>
@@ -123,7 +123,7 @@ export default function Pricing() {
         <div className="container">
           <div className="section-title">
             <h2>Detailed Price Comparison</h2>
-            <p>Compare our rates against official direct-from-provider pricing</p>
+            <p>Our rates vs CrazyRouter — always {SAVING}% below</p>
           </div>
 
           <div className="pricing-table-premium fade-in-up">
@@ -151,13 +151,13 @@ export default function Pricing() {
                     <div className="pt-col price">
                       <div className="price-compare">
                         <span className="our-p">${ourPrice(m.offIn).toFixed(3)}</span>
-                        <span className="off-p">${officialPrice(m.offIn).toFixed(3)}</span>
+                        <span className="off-p">${crazyrouterPrice(m.offIn).toFixed(3)}</span>
                       </div>
                     </div>
                     <div className="pt-col price">
                       <div className="price-compare">
                         <span className="our-p">${ourPrice(m.offOut).toFixed(3)}</span>
-                        <span className="off-p">${officialPrice(m.offOut).toFixed(3)}</span>
+                        <span className="off-p">${crazyrouterPrice(m.offOut).toFixed(3)}</span>
                       </div>
                     </div>
                     <div className="pt-col savings">

@@ -22,6 +22,7 @@ import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
+import { safeFetch } from '../lib/safeFetch';
 
 const sanitizeProviderError = (msg) => {
   if (!msg) return 'Erro desconhecido na rede neural.';
@@ -67,10 +68,13 @@ export default function Playground() {
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(2048);
   const [topP, setTopP] = useState(1);
-  const [showSettings, setShowSettings] = useState(true);
-  const [activeTab, setActiveTab] = useState('models'); 
+  const [showSettings, setShowSettings] = useState(() => {
+    const saved = window.localStorage.getItem('showSettings');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [activeTab, setActiveTab] = useState('models');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('All'); 
+  const [filterType, setFilterType] = useState('All');
   const [error, setError] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
@@ -84,6 +88,11 @@ export default function Playground() {
   const startTimeRef = useRef(null);
   const [models, setModels] = useState([]);
   const [isModelsLoading, setIsModelsLoading] = useState(true);
+
+  // Persist settings panel open/close state
+  useEffect(() => {
+    window.localStorage.setItem('showSettings', String(showSettings));
+  }, [showSettings]);
 
    useEffect(() => {
     getDynamicModels().then(data => {
@@ -228,7 +237,7 @@ export default function Playground() {
           requestHeaders['x-api-key'] = apiKey;
         }
 
-        const response = await fetch('/v1/chat/completions', {
+        const response = await safeFetch('/v1/chat/completions', {
           method: 'POST',
           headers: requestHeaders,
           signal: controller.signal,
@@ -354,56 +363,84 @@ export default function Playground() {
         </div>
       )}
 
-      <style>{`
-        @keyframes fadeInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .neural-pulse {
-          animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.5; }
-          100% { opacity: 1; }
-        }
+       <style>{`
+         @keyframes fadeInRight {
+           from { opacity: 0; transform: translateX(20px); }
+           to { opacity: 1; transform: translateX(0); }
+         }
+         .neural-pulse {
+           animation: pulse 2s infinite;
+         }
+         @keyframes pulse {
+           0% { opacity: 1; }
+           50% { opacity: 0.5; }
+           100% { opacity: 1; }
+         }
 
-        /* Responsive Improvements */
-        @media (max-width: 1200px) {
-          .neural-sidebar {
-             transform: translateX(-100%);
-          }
-          .neural-sidebar.open {
-             transform: translateX(0);
-          }
-          .sidebar-toggle {
-             display: flex !important;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .viewport-container {
-             padding: 1rem !important;
-          }
-          .status-bar {
-             padding: 0 1rem !important;
-             gap: 0.5rem !important;
-          }
-          .status-bar-info {
+         /* Sidebar text labels hidden on mobile when collapsed */
+         @media (max-width: 1200px) {
+           .neural-sidebar .category-text {
              display: none !important;
-          }
-          .input-container {
-             padding: 0.75rem !important;
-          }
-          .welcome-title {
-             font-size: 2rem !important;
-          }
-          .input-box {
-             font-size: 0.9rem !important;
-             padding: 0.75rem 3rem 0.75rem 1rem !important;
-          }
-        }
-      `}</style>
+           }
+           .neural-sidebar.open .category-text {
+             display: block !important;
+           }
+         }
+
+         /* Responsive sidebar - always visible, never fully hidden */
+         @media (max-width: 1200px) {
+           .neural-sidebar {
+              width: 60px !important;
+              min-width: 60px !important;
+              transform: translateX(0) !important;
+              overflow: hidden !important;
+              transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                          min-width 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+           }
+           .neural-sidebar.open {
+              width: 340px !important;
+              min-width: 340px !important;
+           }
+           .sidebar-toggle {
+              display: flex !important;
+              left: 70px;
+           }
+         }
+
+         @media (max-width: 768px) {
+           .neural-sidebar {
+              width: 52px !important;
+              min-width: 52px !important;
+           }
+           .neural-sidebar.open {
+              width: 290px !important;
+              min-width: 290px !important;
+           }
+           .sidebar-toggle {
+              left: 62px;
+           }
+           .viewport-container {
+              padding: 1rem !important;
+           }
+           .status-bar {
+              padding: 0 1rem !important;
+              gap: 0.5rem !important;
+           }
+           .status-bar-info {
+              display: none !important;
+           }
+           .input-container {
+              padding: 0.75rem !important;
+           }
+           .welcome-title {
+              font-size: 2rem !important;
+           }
+           .input-box {
+              font-size: 0.9rem !important;
+              padding: 0.75rem 3rem 0.75rem 1rem !important;
+           }
+         }
+       `}</style>
       {/* Dynamic Background Mesh */}
       <div className="mesh-bg" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
         <div className="mesh-blob blob-1" style={{ position: 'absolute', width: '800px', height: '800px', top: '-20%', left: '-10%', opacity: 0.1, background: 'var(--primary)', borderRadius: '50%', filter: 'blur(100px)', animation: 'blob-move 20s infinite alternate' }} />
@@ -434,22 +471,22 @@ export default function Playground() {
           {showSettings ? <X size={20} /> : <ChevronRight size={20} />}
         </button>
 
-        {/* 1. NEURAL CORE SLIDE (LEFT - FLOATING) */}
-        <div className={`neural-sidebar ${showSettings ? 'open' : ''}`} style={{ 
-          width: '85px', 
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          background: 'var(--surface)', 
-          borderRight: '1px solid var(--border)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', 
-          padding: '1.5rem 0', gap: '1.5rem', zIndex: 110,
-          boxShadow: 'var(--shadow-lg)',
-          backdropFilter: 'blur(30px)',
-          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}>
-          {[
+         {/* 1. NEURAL CORE SLIDE (LEFT - ALWAYS VISIBLE) */}
+         <div className="neural-sidebar-category" style={{ 
+           width: '85px', 
+           position: 'absolute',
+           left: 0,
+           top: 0,
+           bottom: 0,
+           background: 'var(--surface)', 
+           borderRight: '1px solid var(--border)',
+           display: 'flex', flexDirection: 'column', alignItems: 'center', 
+           padding: '1.5rem 0', gap: '1.5rem', zIndex: 110,
+           boxShadow: 'var(--shadow-lg)',
+           backdropFilter: 'blur(30px)',
+           transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+         }}>
+           {[
             { id: 'Chat', icon: MessageSquare, label: 'Chat', color: '#10b981' },
             { id: 'Image', icon: ImageIcon, label: 'Images', color: '#ec4899' },
             { id: 'Video', icon: Film, label: 'Videos', color: '#f59e0b' },
@@ -458,7 +495,7 @@ export default function Playground() {
           ].map(cat => (
             <button
               key={cat.id}
-              onClick={() => { setFilterType(cat.id); setActiveTab('models'); }}
+              onClick={() => { setFilterType(cat.id); setActiveTab('models'); setShowSettings(true); }}
               style={{
                 width: '64px', height: '64px', borderRadius: '16px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -471,10 +508,10 @@ export default function Playground() {
               title={cat.label}
             >
               <cat.icon size={20} />
-              <span style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cat.label}</span>
+              <span className="category-text" style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cat.label}</span>
             </button>
           ))}
-        </div>
+         </div>
 
         {/* 2. MAIN CONTENT AREA (CENTERED FOCUS) */}
         <div className="chat-main-area" style={{ 
@@ -789,7 +826,7 @@ export default function Playground() {
                         {pModels.map(model => {
                           const isSelected = selectedModel === model.id;
                           return (
-                            <button key={model.id} onClick={() => { setSelectedModel(model.id); setShowSettings(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem', borderRadius: '12px', border: '1px solid transparent', textAlign: 'left', background: isSelected ? 'var(--primary-soft)' : 'transparent', borderColor: isSelected ? 'var(--primary-glow)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', transition: '0.2s', width: '100%' }}>
+                            <button key={model.id} onClick={() => { setSelectedModel(model.id); }} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem', borderRadius: '12px', border: '1px solid transparent', textAlign: 'left', background: isSelected ? 'var(--primary-soft)' : 'transparent', borderColor: isSelected ? 'var(--primary-glow)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', transition: '0.2s', width: '100%' }}>
                               <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: isSelected ? 'var(--primary)' : 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={16} color={isSelected ? '#fff' : 'var(--text-muted)'} /></div>
                               <div style={{ flex: 1 }}><div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{model.name}</div></div>
                             </button>
@@ -824,7 +861,7 @@ export default function Playground() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   <button onClick={startNewConversation} style={{ width: '100%', padding: '1rem', borderRadius: '14px', background: 'var(--primary)', color: '#fff', fontSize: '0.8rem', fontWeight: 900, marginBottom: '1rem', boxShadow: '0 5px 15px var(--primary-glow)' }}>New Digitaland Link</button>
                   {conversations.map(conv => (
-                    <button key={conv.id} onClick={() => { loadConversation(conv); setShowSettings(false); }} style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: currentConvId === conv.id ? 'var(--primary-soft)' : 'transparent', border: '1px solid', borderColor: currentConvId === conv.id ? 'var(--primary-glow)' : 'transparent', textAlign: 'left', transition: '0.2s' }}>
+                    <button key={conv.id} onClick={() => { loadConversation(conv); }} style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: currentConvId === conv.id ? 'var(--primary-soft)' : 'transparent', border: '1px solid', borderColor: currentConvId === conv.id ? 'var(--primary-glow)' : 'transparent', textAlign: 'left', transition: '0.2s' }}>
                       <div style={{ fontSize: '0.8rem', fontWeight: 800, color: currentConvId === conv.id ? 'var(--primary)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{conv.title}</div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{new Date(conv.updated_at).toLocaleDateString()}</div>
                     </button>

@@ -1,58 +1,44 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { copyFileSync, existsSync, mkdirSync } from 'fs'
+import { copyFileSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'copy-vercel-config',
-      // Runs after Vite finishes writing the build output
+      name: 'copy-vercel-assets',
       closeBundle() {
-        const dist = resolve(__dirname, 'dist')
-        const srcDir = __dirname
-
+        const dist  = resolve(__dirname, 'dist')
         const files = [
-          { src: resolve(srcDir, 'vercel.json'),      dst: resolve(dist, 'vercel.json') },
-          { src: resolve(srcDir, 'public', '_redirects'), dst: resolve(dist, '_redirects') },
+          { src: resolve(__dirname, 'vercel.json'),       dst: resolve(dist, 'vercel.json') },
+          { src: resolve(__dirname, 'public', '_redirects'), dst: resolve(dist, '_redirects') },
         ]
-
-        for (const { src, dst } of files) {
-          if (existsSync(src)) {
-            copyFileSync(src, dst)
-            console.log(`[copy-vercel-config] → ${dst}`)
-          } else {
-            console.warn(`[copy-vercel-config] SOURCE NOT FOUND: ${src}`)
+        for (const f of files) {
+          if (existsSync(f.src)) {
+            copyFileSync(f.src, f.dst)
+            console.log(`[copy-vercel-assets] copied → ${f.dst}`)
           }
         }
       }
     }
   ],
-  define: {
-    'process.env': {}
-  },
-  optimizeDeps: {
-    include: ['lucide-react', 'recharts', 'react-markdown']
-  },
+  define: { 'process.env': {} },
+  optimizeDeps: { include: ['lucide-react', 'recharts', 'react-markdown'] },
   server: {
     proxy: {
       '/v1': {
         target: 'https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/v1/, '')
+        rewrite: p => p.replace(/^\/v1/, ''),
       }
     }
   },
   build: {
     emptyOutDir: true,
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true
-    }
+    commonjsOptions: { include: [/node_modules/], transformMixedEsModules: true }
   }
 })

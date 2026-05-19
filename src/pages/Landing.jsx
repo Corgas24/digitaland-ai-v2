@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FEATURED_MODELS, PROVIDERS, MARKUP, ourPrice } from '../data/models';
+import { FEATURED_MODELS, PROVIDERS, MARKUP, ourPrice, savingsPercent } from '../data/models';
 import { Copy, ArrowRight, Zap, Shield, Code, ChevronDown, CheckCircle2, Globe, Clock, Lock, Terminal, Check, DollarSign, Layers, Search, Server, Sparkles, Cpu, Send } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════
@@ -57,21 +57,23 @@ function ModelCard({ model, provider }) {
 }
 
 export default function Landing() {
-  const [openFaq, setOpenFaq] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [termStep, setTermStep] = useState(0);
+   const [openFaq, setOpenFaq] = useState(null);
+   const [copied, setCopied] = useState(false);
+   const [termStep, setTermStep] = useState(0);
+   const savPct = savingsPercent();
 
-  const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
+   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
 
-  const handleCopy = (text) => {
+   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const faqSavings = `up to ${savPct}% below CrazyRouter pricing`;
   const faqs = [
     { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 300+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
-    { q: "How does pricing work?", a: "We offer competitive, usage-based pricing with rates up to 23% below official API pricing. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs." },
+    { q: "How does pricing work?", a: `We offer competitive, usage-based pricing with rates ${faqSavings}. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs.` },
     { q: "Is it really OpenAI-compatible?", a: "Yes! Just change your base_url to https://api.digitaland.ai/v1 and use your Digitaland API key. Works with the official OpenAI SDK, LangChain, LlamaIndex, and any other OpenAI-compatible library." },
     { q: "Which models are supported?", a: "We support 300+ models including GPT-5.5, Claude 4.7, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
     { q: "How does Digitaland protect my data?", a: "Enterprise-grade encryption for all data in transit and at rest. We operate a strict zero-log policy — your prompts, completions, and API keys are never stored, logged, or used for training." },
@@ -177,7 +179,7 @@ export default function Landing() {
             { num: '300+', label: 'AI Models', icon: <Layers size={20} /> },
             { num: '99.9%', label: 'Uptime SLA', icon: <Server size={20} /> },
             { num: '<200ms', label: 'Avg Latency', icon: <Zap size={20} /> },
-            { num: '~23%', label: 'Cheaper vs Official', icon: <DollarSign size={20} /> },
+            { num: `~${savPct}%`, label: 'Below CrazyRouter', icon: <DollarSign size={20} /> },
           ].map((s, i) => (
             <div className="stat-item" key={i}>
               <div className="stat-icon">{s.icon}</div>
@@ -391,8 +393,8 @@ export default function Landing() {
                 color: '#ec4899',
                 bg: 'rgba(236,72,153,0.08)',
                 title: 'Transparent Pricing',
-                desc: 'Usage-based pricing with rates consistently below official API costs. No monthly commitments, no hidden fees, no surprises on your invoice.',
-                highlight: 'Up to 23% savings'
+                desc: 'Usage-based pricing with rates consistently below CrazyRouter. No monthly commitments, no hidden fees, no surprises on your invoice.',
+                highlight: `Up to ${savPct}% cheaper than CrazyRouter`
               },
               {
                 icon: <Globe size={24} />,
@@ -453,7 +455,7 @@ export default function Landing() {
         <div className="container">
           <div className="section-title">
             <h2>Transparent pricing — always fair</h2>
-            <p>Competitive rates, consistently below official pricing. No hidden fees, ever.</p>
+            <p>Competitive rates, consistently below CrazyRouter. No hidden fees, ever.</p>
           </div>
 
           <div className="pricing-table-wrap glass-card">

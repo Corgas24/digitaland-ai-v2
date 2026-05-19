@@ -7,10 +7,31 @@ class ErrorBoundary extends Component {
   }
 
   static getDerivedStateFromError(error) {
+    const msg = String(error?.message || error || '');
+    const isSupabaseNotFound =
+      msg.includes('NOT_FOUND') ||
+      msg.includes('Requested function was not found') ||
+      msg.includes('requested path is invalid');
+
+    if (isSupabaseNotFound) {
+      // Suppress Supabase 404 errors — log them for debugging but don't crash the UI
+      console.warn('[ErrorBoundary] Supabase edge function 404 absorbed:', msg);
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
+    const msg = String(error?.message || error || '');
+    const isSupabaseNotFound =
+      msg.includes('NOT_FOUND') ||
+      msg.includes('Requested function was not found') ||
+      msg.includes('requested path is invalid');
+
+    if (isSupabaseNotFound) {
+      console.warn('[ErrorBoundary] Supabase edge function 404 (unhandled):', msg);
+      return;
+    }
     console.error('Error caught by boundary:', error, errorInfo);
   }
 

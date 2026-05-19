@@ -63,28 +63,31 @@ export default function Dashboard() {
     fetchData();
   }, [user?.id, user?.balance]);
 
-  // Process data for AreaChart (Daily Spend)
-  const chartData = useMemo(() => {
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
-    }).reverse();
+   // Process data for AreaChart (Daily Spend)
+   const chartData = useMemo(() => {
+     const last7Days = [...Array(7)].map((_, i) => {
+       const d = new Date();
+       d.setDate(d.getDate() - i);
+       return d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+     }).reverse();
 
-    return last7Days.map(date => {
-      // Use a more robust date comparison that works across timezones
-      const dayLogs = usageLogs.filter(l => {
-        const logDate = new Date(l.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
-        return logDate === date;
-      });
-      
-      return { 
-        date: date.split('-').slice(1).join('/'), 
-        requests: dayLogs.length,
-        spend: Number(dayLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0).toFixed(6))
-      };
-    });
-  }, [usageLogs]);
+     return last7Days.map(date => {
+       // Use a more robust date comparison that works across timezones
+       const dayLogs = usageLogs.filter(l => {
+         const logDate = new Date(l.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+         return logDate === date;
+       });
+       
+       const rawSpend = dayLogs.reduce((acc, curr) => acc + (curr.cost || 0), 0);
+       const spend = Number.isFinite(rawSpend) ? Math.min(rawSpend, 1e9).toFixed(6) : '0.000000';
+       
+       return { 
+         date: date.split('-').slice(1).join('/'), 
+         requests: dayLogs.length,
+         spend: Number(spend)
+       };
+     });
+   }, [usageLogs]);
 
   // Process data for Model Analytics
   const modelStats = useMemo(() => {
@@ -93,7 +96,11 @@ export default function Dashboard() {
       stats[log.model] = (stats[log.model] || 0) + 1;
     });
     return Object.entries(stats)
-      .map(([model, count]) => ({ model, count, percentage: (count / usageLogs.length) * 100 }))
+      .map(([model, count]) => ({ 
+        model, 
+        count, 
+        percentage: usageLogs.length > 0 ? (count / usageLogs.length) * 100 : 0 
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [usageLogs]);
@@ -108,7 +115,7 @@ export default function Dashboard() {
         id: `t-${t.id}`,
         icon: <DollarSign size={14} />,
         action: 'Payment Successful',
-        detail: `$${t.amount.toFixed(2)} added to balance`,
+        detail: `$${(Number.isFinite(t.amount) ? t.amount.toFixed(2) : '0.00')} added to balance`,
         time: new Date(t.created_at),
         timestamp: new Date(t.created_at).getTime()
       });
@@ -357,10 +364,11 @@ export default function Dashboard() {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />
                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={(v) => `$${v}`} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={(v) => `$${Number.isFinite(v) ? v.toFixed(4) : '0.00'}`} />
                         <Tooltip 
                           contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '0.8rem' }}
                           itemStyle={{ color: 'var(--primary)' }}
+                          formatter={(value) => `$${Number.isFinite(Number(value)) ? Number(value).toFixed(4) : '$0.00'}`}
                         />
                         <Area 
                           type="monotone" 
@@ -382,7 +390,10 @@ export default function Dashboard() {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <span style={{ display: 'block', color: 'var(--text-dim)', fontWeight: 700 }}>
-                        ${usageLogs.reduce((acc, l) => acc + (l.cost || 0), 0).toFixed(4)}
+                        ${usageLogs.reduce((acc, l) => {
+                          const c = l.cost || 0;
+                          return acc + (Number.isFinite(c) ? c : 0);
+                        }, 0).toFixed(4)}
                       </span>
                       <span>Total Spend (Last 100)</span>
                     </div>
@@ -650,7 +661,7 @@ export default function Dashboard() {
                           </span>
                         </td>
                         <td style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>
-                          <span style={{ color: 'var(--green)' }}>-${(log.cost || 0).toFixed(4)} <small style={{ color: 'var(--text-muted)' }}>/ {log.total_tokens} tokens</small></span>
+                          <span style={{ color: 'var(--green)' }}>-${(Number.isFinite(log.cost) ? log.cost.toFixed(4) : '0.00')} <small style={{ color: 'var(--text-muted)' }}>/ {log.total_tokens} tokens</small></span>
                         </td>
                         <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                           {new Date(log.created_at).toLocaleString()}
@@ -730,7 +741,7 @@ export default function Dashboard() {
                       <tr key={t.id}>
                         <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{new Date(t.created_at).toLocaleDateString()}</td>
                         <td style={{ fontWeight: 600 }}>{t.description}</td>
-                        <td style={{ fontFamily: 'var(--mono)', color: 'var(--green)' }}>+${t.amount.toFixed(2)}</td>
+                        <td style={{ fontFamily: 'var(--mono)', color: 'var(--green)' }}>+${(Number.isFinite(t.amount) ? t.amount.toFixed(2) : '0.00')}</td>
                         <td>
                           <span className="s-badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--green)' }}>
                             {t.status.toUpperCase()}

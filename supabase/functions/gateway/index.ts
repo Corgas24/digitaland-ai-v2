@@ -4,11 +4,19 @@ import { withSupabase } from "jsr:@supabase/server@^1";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 // These must be kept in sync with src/data/models.js:
-//   MARKUP  — platform profit margin applied to the upstream cost
-//   OFF_MUL — multiplier used to reconstruct the "official" list price from
-//             the off_in / off_out values stored in the models table.
-const MARKUP      = 1.4;
-const OFF_MUL     = 1.9;
+//   MARKUP  — Digitaland markup over the CrazyRouter base price.
+//              off_in / off_out in the DB are CrazyRouter prices (not scaled).
+//              cost = (pToks/1e6 × off_in + cToks/1e6 × off_out) × MARKUP
+//              → Digitaland charges 40% above CrazyRouter per-request cost.
+const MARKUP = 1.4;
+
+// Minimum charge per request — ensures even "free" models deduct at least this amount.
+// Override via env var (set as string, parsed as float) to tune without redeploying code.
+const MINIMUM_CHARGE: number = (() => {
+  const val = Deno.env.get("MINIMUM_CHARGE");
+  const n = val ? parseFloat(val) : NaN;
+  return Number.isFinite(n) ? n : 0.001;
+})();
 
 // The name of the env var that gates admin / billing-exempt access.
 // Set this to a random high-entropy string in your Supabase Secrets dashboard
@@ -417,10 +425,14 @@ export default {
                   try {
                     const totalIn  = promptToks || 1;
                     const totalOut = complToks  || 1;
-                    const cost = (
-                      (totalIn  / 1_000_000 * (rates.off_in  / OFF_MUL))
-                    + (totalOut / 1_000_000 * (rates.off_out / OFF_MUL))
-                    ) * MARKUP;
+                    // off_in / off_out = CrazyRouter raw price per 1M tokens.
+                    // MARKUP = 1.4 is applied directly (no OFF_MUL division).
+                    const cost = Math.max(
+                      ((totalIn  / 1_000_000 * rates.off_in)
+                    + (totalOut / 1_000_000 * rates.off_out))
+                    * MARKUP,
+                      MINIMUM_CHARGE
+                    );
 
                     await atomicBill(
                       ctx.supabaseAdmin,
@@ -460,10 +472,14 @@ export default {
             const usage  = data.usage ?? data.x_deepseek_usage ?? data.openrouter_usage;
             const pToks  = (usage?.prompt_tokens      ?? 1) as number;
             const cToks  = (usage?.completion_tokens  ?? 1) as number;
-            const cost   = (
-              (pToks / 1_000_000 * (rates.off_in  / OFF_MUL))
-            + (cToks / 1_000_000 * (rates.off_out / OFF_MUL))
-            ) * MARKUP;
+            // off_in / off_out = CrazyRouter base price per 1M tokens.
+            // MARKUP = 1.4 applied directly here (no OFF_MUL divisor).
+            const cost   = Math.max(
+              ((pToks / 1_000_000 * rates.off_in)
+            + (cToks / 1_000_000 * rates.off_out))
+            * MARKUP,
+              MINIMUM_CHARGE
+            );
 
             try {
               await atomicBill(

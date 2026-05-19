@@ -4,6 +4,7 @@ import { Key, CreditCard, BarChart3, Settings, Activity, Plus, Check, ArrowRight
 import { useAuth } from '../contexts/AuthContext';
 import { getStripe } from '../lib/stripe';
 import { supabase } from '../lib/supabase';
+import { safeFetch } from '../lib/safeFetch';
 
 const CREDIT_PACKAGES = [
   { amount: 10, price: 10, popular: false },
@@ -37,7 +38,7 @@ export default function Billing() {
       // 1. Call your Supabase Edge Function to create a Checkout Session
       const { data: { session: authSession } } = await supabase.auth.getSession();
       
-      const response = await fetch(`https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/create-stripe-session`, {
+      const response = await safeFetch(`https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/create-stripe-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

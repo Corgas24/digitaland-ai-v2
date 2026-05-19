@@ -15,6 +15,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: fycqiwfbhqbltsthrpxk
     steps:
       - uses: actions/checkout@v4
 
@@ -25,14 +27,14 @@ jobs:
 
       - name: Deploy Gateway Function
         run: |
-          supabase functions deploy gateway --project-ref fycqiwfbhqbltsthrpxk --no-verify-jwt
+          supabase functions deploy gateway --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           UPSTREAM_API_KEY: ${{ secrets.UPSTREAM_API_KEY }}
           UPSTREAM_API_URL: ${{ secrets.UPSTREAM_API_URL }}
           FALLBACK_API_KEY: ${{ secrets.FALLBACK_API_KEY }}
           FALLBACK_API_URL: ${{ secrets.FALLBACK_API_URL }}
-          MINIMUM_CHARGE: ${{ vars.MINIMUM_CHARGE || '0.001' }}
+          MINIMUM_CHARGE: ${{ secrets.MINIMUM_CHARGE || '0.001' }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           BILLING_EXEMPT_USER_ID: ${{ secrets.BILLING_EXEMPT_USER_ID }}

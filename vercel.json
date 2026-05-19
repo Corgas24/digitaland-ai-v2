@@ -5,10 +5,8 @@
       "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway/:path*"
     },
     {
-      "source": "/((?!v1/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+  ]
 }

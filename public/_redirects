@@ -2,4 +2,4 @@
 # O vercel.json já faz isso, este arquivo é um fallback caso o vercel.json
 # seja ignorado por qualquer motivo (ex: build output dir diferente).
 /v1/:splat  https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway/:splat  200!
-/:splat     /index.html  200!
+/:splat     /  200!

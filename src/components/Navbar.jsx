@@ -14,6 +14,7 @@ const Navbar = memo(function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <nav className="navbar">
@@ -24,16 +25,22 @@ const Navbar = memo(function Navbar() {
           <span className="logo-ext">.ai</span>
         </Link>
         
-        <div className="nav-links">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/models" className="nav-link">Models</Link>
-          <Link to="/pricing" className="nav-link">Pricing</Link>
-          <Link to="/docs" className="nav-link">Docs</Link>
+        <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <Link to="/" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/models" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Models</Link>
+          <Link to="/pricing" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+          <Link to="/docs" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
           {user && (
             <>
-              <Link to="/playground" className="nav-link">Playground</Link>
-              <Link to="/dashboard" className="nav-link">Dashboard</Link>
+              <Link to="/playground" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Playground</Link>
+              <Link to="/dashboard" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
             </>
+          )}
+          {!user && mobileMenuOpen && (
+             <div className="auth-group-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+               <Link to="/signin" className="nav-link-signin" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+               <Link to="/playground" className="btn-nav-primary" onClick={() => setMobileMenuOpen(false)}>Get API Key</Link>
+             </div>
           )}
         </div>
 
@@ -60,6 +67,10 @@ const Navbar = memo(function Navbar() {
               <Link to="/playground" className="btn-nav-primary">Get API Key</Link>
             </div>
           )}
+          
+          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '1.5rem', marginLeft: '0.5rem', display: 'none' }}>
+            ☰
+          </button>
         </div>
       </div>
     </nav>

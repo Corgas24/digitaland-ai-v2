@@ -32,7 +32,15 @@ export default function Models() {
 
   const providers = useMemo(() => {
     const counts = {};
-    models.forEach(m => { counts[m.provider] = (counts[m.provider] || 0) + 1; });
+    models.forEach(m => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || m.name.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || m.type.toLowerCase().includes(q);
+      const matchType = selType === 'All' || m.type === selType;
+      
+      if (matchSearch && matchType) {
+        counts[m.provider] = (counts[m.provider] || 0) + 1;
+      }
+    });
     return Object.entries(counts).sort((a, b) => {
       const aTop = TOP_PROVIDERS.indexOf(a[0]);
       const bTop = TOP_PROVIDERS.indexOf(b[0]);
@@ -41,13 +49,21 @@ export default function Models() {
       if (bTop !== -1) return 1;
       return b[1] - a[1];
     });
-  }, [models]);
+  }, [models, search, selType]);
 
   const types = useMemo(() => {
     const counts = {};
-    models.forEach(m => { counts[m.type] = (counts[m.type] || 0) + 1; });
+    models.forEach(m => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || m.name.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || m.type.toLowerCase().includes(q);
+      const matchProvider = selProvider === 'All' || m.provider === selProvider;
+      
+      if (matchSearch && matchProvider) {
+        counts[m.type] = (counts[m.type] || 0) + 1;
+      }
+    });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [models]);
+  }, [models, search, selProvider]);
 
   const filtered = useMemo(() => {
     let result = models.filter(m => {

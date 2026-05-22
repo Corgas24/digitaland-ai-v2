@@ -157,164 +157,176 @@ export default function Billing() {
 
       {/* Main Content */}
       <main className="dash-main">
-        <div className="dash-header">
+        <div className="dash-header" style={{ marginBottom: '2rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Billing</h2>
-            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Add credits to your account. Pay as you go, no subscriptions.</p>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Billing Dashboard</h2>
+            <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Manage your funds, add credits, and view transaction history.</p>
           </div>
         </div>
 
         {showSuccess && (
-          <div className="success-banner" style={{ background: 'var(--green-soft)', color: 'var(--green)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="success-banner smooth-slide-down" style={{ background: 'var(--green-soft)', color: 'var(--green)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Check size={20} /> Credits requested! In production, balance updates after successful payment.
           </div>
         )}
 
         {error && (
-          <div className="error-banner" style={{ background: 'rgba(255, 95, 86, 0.1)', color: '#ff5f56', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          <div className="error-banner smooth-slide-down" style={{ background: 'rgba(255, 95, 86, 0.1)', color: '#ff5f56', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
 
-        {/* Stats */}
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div className="label">Current Balance</div>
-            <div className="value" style={{ color: 'var(--green)' }}>${currentBalance.toFixed(2)}</div>
-          </div>
-          <div className="stat-card">
-            <div className="label">Total Spent (All Time)</div>
-            <div className="value">$0.00</div>
-          </div>
-          <div className="stat-card">
-            <div className="label">Last Purchase</div>
-            <div className="value">$0.00</div>
-          </div>
-        </div>
-
-        {/* Credit Packages */}
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Add Credits</h3>
-          <div className="credit-packages">
-            {CREDIT_PACKAGES.map((pkg) => (
-              <div
-                key={pkg.amount}
-                className={`credit-package ${selectedPackage === pkg.amount ? 'selected' : ''} ${pkg.popular ? 'popular' : ''}`}
-                onClick={() => {
-                  setSelectedPackage(pkg.amount);
-                  setCustomAmount('');
-                }}
-              >
-                {pkg.popular && <span className="popular-badge">Most Popular</span>}
-                <div className="package-amount">${pkg.amount}</div>
-                <div className="package-credits">{pkg.amount} credits</div>
+        {/* 2-COLUMN LAYOUT */}
+        <div className="billing-container">
+          
+          {/* LEFT COLUMN: BALANCE & HISTORY */}
+          <div className="billing-col-left">
+            <div className="balance-glow-card">
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700, marginBottom: '0.5rem' }}>
+                Available Balance
+              </p>
+              <h1 style={{ fontSize: '4rem', fontWeight: 900, fontFamily: 'var(--mono)', lineHeight: 1, marginBottom: '1.5rem' }} className="gradient-text">
+                ${currentBalance.toFixed(4)}
+              </h1>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', textAlign: 'left' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Total Spent (All Time)</div>
+                  <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>$0.00</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Last Purchase</div>
+                  <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>$0.00</div>
+                </div>
               </div>
-            ))}
+            </div>
+
+            <div className="card" style={{ marginTop: '2rem', padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Transaction History</h3>
+              </div>
+              <table className="key-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      No transactions found.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="custom-amount" style={{ marginTop: '1.5rem' }}>
-            <label style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'block' }}>
-              Or enter a custom amount
-            </label>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div className="input-wrapper" style={{ flex: 1, maxWidth: '200px' }}>
-                <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>$</span>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={customAmount}
-                  onChange={(e) => {
-                    setCustomAmount(e.target.value);
-                    if (e.target.value) setSelectedPackage(null);
+          {/* RIGHT COLUMN: ADD CREDITS STICKY MODULE */}
+          <div className="billing-col-right">
+            <div className="add-credits-sticky">
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Plus size={20} className="text-primary" /> Add Credits
+              </h3>
+
+              {/* Pill Selector */}
+              <div className="pill-grid">
+                {CREDIT_PACKAGES.filter(p => p.amount <= 100).map((pkg) => (
+                  <div
+                    key={pkg.amount}
+                    className={`credit-pill ${selectedPackage === pkg.amount ? 'selected' : ''} ${pkg.popular ? 'popular' : ''}`}
+                    onClick={() => {
+                      setSelectedPackage(pkg.amount);
+                      setCustomAmount('');
+                    }}
+                  >
+                    ${pkg.amount}
+                  </div>
+                ))}
+                <div 
+                  className={`credit-pill ${!selectedPackage ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedPackage(null);
+                    if (!customAmount) setCustomAmount('10');
                   }}
-                  style={{ paddingLeft: '2rem' }}
-                  min="5"
-                  step="1"
-                />
+                >
+                  Custom
+                </div>
               </div>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Minimum $5</span>
+
+              {/* Custom Input (Sliding) */}
+              {!selectedPackage && (
+                <div className="smooth-slide-down" style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'block' }}>
+                    Custom Amount (Min $5)
+                  </label>
+                  <div className="input-wrapper">
+                    <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>$</span>
+                    <input
+                      type="number"
+                      placeholder="50"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      style={{ paddingLeft: '2rem', width: '100%' }}
+                      className="dash-input"
+                      min="5"
+                      step="1"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Checkout Panel */}
+              <div className="checkout-panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Total to Pay</span>
+                  <span style={{ fontWeight: 800, fontFamily: 'var(--mono)', fontSize: '1.5rem' }} className="gradient-text">
+                    ${customAmount || selectedPackage || 0}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <button 
+                    className="btn btn-primary btn-large" 
+                    style={{ width: '100%', background: '#000', color: '#fff', border: '1px solid #333' }} 
+                    onClick={handleStripeCheckout}
+                    disabled={loading || (!selectedPackage && !customAmount)}
+                  >
+                    <CreditCard size={18} style={{ marginRight: '0.5rem' }} /> 
+                    {loading ? 'Redirecting...' : 'Pay with Card / Apple Pay'}
+                  </button>
+                  
+                  <div style={{ width: '100%', position: 'relative', zIndex: 10 }}>
+                    <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                      <PayPalButtons 
+                        style={{ layout: "vertical", shape: "rect", color: "gold", height: 44 }} 
+                        createOrder={createPayPalOrder}
+                        onApprove={onPayPalApprove}
+                        disabled={loading || (!selectedPackage && !customAmount)}
+                      />
+                    </PayPalScriptProvider>
+                  </div>
+                  
+                  <button 
+                    className="btn btn-outline" 
+                    style={{ width: '100%', fontSize: '0.85rem', padding: '0.6rem' }} 
+                    onClick={handleCryptoCheckout}
+                    disabled={loading || (!selectedPackage && !customAmount)}
+                  >
+                    Pay with Cryptocurrency
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem' }}>
+                  Credits never expire. Secure payments.
+                </p>
+              </div>
+
             </div>
           </div>
-        </div>
-
-
-
-        {/* Summary */}
-        <div className="card" style={{ background: 'var(--bg-alt)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--text-dim)' }}>Selected amount</span>
-            <span style={{ fontWeight: 700, fontFamily: 'var(--mono)', fontSize: '1.2rem' }}>
-              ${customAmount || selectedPackage || 0}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-dim)' }}>Processing fee</span>
-            <span style={{ fontFamily: 'var(--mono)', color: 'var(--green)' }}>$0.00</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <span style={{ fontWeight: 700 }}>Total</span>
-            <span style={{ fontWeight: 800, fontFamily: 'var(--mono)', fontSize: '1.5rem' }} className="gradient-text">
-              ${customAmount || selectedPackage || 0}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
-            <button 
-              className="btn btn-primary btn-large" 
-              style={{ width: '100%', background: '#000', color: '#fff', border: '1px solid #333' }} 
-              onClick={handleStripeCheckout}
-              disabled={loading || (!selectedPackage && !customAmount)}
-            >
-              <CreditCard size={18} style={{ marginRight: '0.5rem' }} /> 
-              {loading ? 'Redirecting...' : 'Pay with Card or Apple Pay'}
-            </button>
-            
-            <div style={{ width: '100%', position: 'relative', zIndex: 10 }}>
-              <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                <PayPalButtons 
-                  style={{ layout: "vertical", shape: "rect", color: "gold" }} 
-                  createOrder={createPayPalOrder}
-                  onApprove={onPayPalApprove}
-                  disabled={loading || (!selectedPackage && !customAmount)}
-                />
-              </PayPalScriptProvider>
-            </div>
-            
-            <button 
-              className="btn btn-outline" 
-              style={{ width: '100%', marginTop: '0.5rem' }} 
-              onClick={handleCryptoCheckout}
-              disabled={loading || (!selectedPackage && !customAmount)}
-            >
-              Pay with Cryptocurrency
-            </button>
-          </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem' }}>
-            Credits never expire. Secure payment via Stripe.
-          </p>
-        </div>
-
-        {/* Transaction History */}
-        <div className="card" style={{ marginTop: '2rem', padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)' }}>
-            <h3 style={{ margin: 0 }}>Transaction History</h3>
-          </div>
-          <table className="key-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan="4" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                  No transactions found.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          
         </div>
       </main>
     </div>

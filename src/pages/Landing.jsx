@@ -109,13 +109,13 @@ export default function Landing() {
           </div>
           
           <h1 className="hero-headline-lg fade-in-up delay-1">
-            <span>Next-Gen</span> API for<br />
-            <span className="hero-gradient-text">Neural Intelligence</span>
+            <span>One API.</span> Every<br />
+            <span className="hero-gradient-text">Frontier AI Model.</span>
           </h1>
           
-          <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600 }}>
-            Unified access to 300+ AI models. Optimized for speed, 
-            secured with end-to-end encryption, and priced for scale.
+          <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
+            Access <strong>GPT-4o, Claude 3.5 Sonnet, DeepSeek V3, Llama 3</strong> and 300+ other models instantly. 
+            Enterprise-grade speed, zero logging, and pure pay-as-you-go pricing — guaranteed <strong>40% cheaper</strong> than OpenRouter.
           </p>
 
           <div className="hero-input-group glass-card fade-in-up delay-2" style={{ boxShadow: '0 0 30px rgba(99,102,241,0.2)' }}>

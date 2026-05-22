@@ -45,7 +45,7 @@ export default function Dashboard() {
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [copied, setCopied] = useState(null);
-  const location = useLocation();
+
   
   // Billing States
   const [showTopUp, setShowTopUp] = useState(false);

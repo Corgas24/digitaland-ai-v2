@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, ProtectedRoute } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { PaymentProvider } from './contexts/PaymentContext';
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
@@ -31,6 +32,11 @@ function ScrollToTop() {
 
 function App() {
   return (
+    <PayPalScriptProvider options={{
+      "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || 'test',
+      currency: 'USD',
+      intent: 'capture',
+    }}>
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider>
         <ScrollToTop />
@@ -92,6 +98,7 @@ function App() {
         </div>
       </ThemeProvider>
     </BrowserRouter>
+    </PayPalScriptProvider>
   );
 }
 

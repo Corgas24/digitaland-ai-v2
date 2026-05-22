@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, Lock, CreditCard, Check, AlertCircle } from 'lucide-react';
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { safeFetch } from '../lib/safeFetch';
@@ -112,7 +112,27 @@ export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
   const onPayPalApprove = async (data, actions) => {
     try {
       setLoading(true);
-      await actions.order.capture();
+      setError(null);
+
+      // Capture server-side to credit balance securely
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+
+      const response = await fetch(
+        `https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/capture-paypal-order`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authSession?.access_token}`,
+          },
+          body: JSON.stringify({ orderID: data.orderID }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.error) throw new Error(result.error);
+
       setShowSuccess(true);
       setLoading(false);
       setTimeout(() => {
@@ -255,14 +275,12 @@ export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
           </button>
 
           <div style={{ position: 'relative', zIndex: 10, minHeight: '45px' }}>
-            <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-              <PayPalButtons
-                style={{ layout: "horizontal", color: "black", shape: "rect", height: 45 }}
-                createOrder={createPayPalOrder}
-                onApprove={onPayPalApprove}
-                disabled={loading || !currentAmount || currentAmount < 5}
-              />
-            </PayPalScriptProvider>
+            <PayPalButtons
+              style={{ layout: "horizontal", color: "black", shape: "rect", height: 45 }}
+              createOrder={createPayPalOrder}
+              onApprove={onPayPalApprove}
+              disabled={loading || !currentAmount || currentAmount < 5}
+            />
           </div>
         </div>
 

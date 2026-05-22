@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Key, CreditCard, BarChart3, Settings, Activity, Plus, Check, ArrowRight } from 'lucide-react';
+import { Key, CreditCard, BarChart3, Settings, Activity, Plus, Check, Shield, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getStripe } from '../lib/stripe';
 import { supabase } from '../lib/supabase';
@@ -223,6 +223,31 @@ export default function Billing() {
                 </tbody>
               </table>
             </div>
+
+            {/* Persuasion / Trust Indicators */}
+            <div style={{ marginTop: '2.5rem', padding: '2rem', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.1)', borderRadius: '24px' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Shield size={20} className="text-green" style={{ color: 'var(--green)' }} /> Why choose Digitaland.ai?
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.3rem', color: 'var(--text)' }}>No Expiration</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Your credits never expire. Use them at your own pace without monthly subscriptions.</p>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.3rem', color: 'var(--text)' }}>Volume Discounts</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Scale affordably. Larger credit packages automatically unlock better API rates.</p>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.3rem', color: 'var(--text)' }}>100% Secure</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Enterprise-grade 256-bit encryption. We never store your payment details.</p>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.3rem', color: 'var(--text)' }}>Instant Access</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Credits are applied instantly to your account after a successful transaction.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* RIGHT COLUMN: ADD CREDITS STICKY MODULE */}
@@ -319,9 +344,10 @@ export default function Billing() {
                     Pay with Cryptocurrency
                   </button>
                 </div>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem' }}>
-                  Credits never expire. Secure payments.
-                </p>
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                  <Lock size={12} />
+                  <span>Payments are secure and encrypted. Powered by <strong>Stripe</strong> & <strong>PayPal</strong>.</span>
+                </div>
               </div>
 
             </div>

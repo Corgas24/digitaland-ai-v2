@@ -1,7 +1,7 @@
 import { memo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+
 
 const Icon = {
   Moon: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
@@ -12,7 +12,7 @@ const Icon = {
 
 const Navbar = memo(function Navbar() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -45,9 +45,7 @@ const Navbar = memo(function Navbar() {
         </div>
 
         <div className="nav-actions">
-          <button className="theme-toggle" onClick={toggleTheme} title="Toggle Theme" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', padding: '0.5rem', borderRadius: '8px' }}>
-            {theme === 'dark' ? <Icon.Sun /> : <Icon.Moon />}
-          </button>
+
           
           {user ? (
             <div className="user-dropdown-elite">

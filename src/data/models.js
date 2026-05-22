@@ -4,29 +4,26 @@ import { supabase } from '../lib/supabase';
 // DIGITALAND — PRICING ENGINE
 // ══════════════════════════════════════════════════════════════════════════════
 //
-//  MARKUP = 0.6  → Digitaland cobra 60% do preço OpenRouter (40% mais barato)
+//  MARKUP = 1.4  → Digitaland cobra 1.4x o custo (40% de margem de lucro sobre o custo CrazyRouter)
+//  OFFICIAL_MULT = 2.0 → O preço "oficial" do mercado (OpenRouter/etc) é assumido como 2x o custo CrazyRouter
 //
 //  Estrutura dos preços no Supabase (tabela `models`):
-//    off_in, off_out  =  OpenRouter list_price  (preço bruto da OpenRouter)
+//    off_in, off_out  =  Custo CrazyRouter puro
 //
 //  Para o GATEWAY (custo real cobrado do usuário por requisição):
 //    cost = (pToks/1e6 × offIn + cToks/1e6 × offOut) × MARKUP
-//         = (pToks × offIn + cToks × offOut) / 1e6 × 0.6
+//         = (pToks × offIn + cToks × offOut) / 1e6 × 1.4
 //    garante piso MINIMUM_CHARGE com Math.max(cost, MINIMUM_CHARGE)
 //
 //  Para a LANDING / UI (preço exibido ao usuário, por 1M tokens):
-//    ourPrice(off)         = off × MARKUP        (= OpenRouter × 0.6)
-//    openrouterPrice(off)  = off × 1.0           (= preço OpenRouter puro)
-//    savingsPercent()      = (1 − MARKUP/1.0) × 100  = 40% abaixo da OpenRouter
+//    ourPrice(off)         = off × MARKUP        (= Custo × 1.4)
+//    openrouterPrice(off)  = off × OFFICIAL_MULT (= Custo × 2.0)
+//    savingsPercent()      = (1 − MARKUP/OFFICIAL_MULT) × 100  = 30% de poupança vs Oficial
 //
-//  Resumo por modelo com off_in=$1.45 (preço OpenRouter):
-//    openrouterPrice(1.45) = 1.45   (preço OpenRouter — referência)
-//    ourPrice(1.45)        = 0.87   (Digitaland — 40% abaixo da OpenRouter)
-//    Gateway cobra por req = offReal × 0.6  (desconto direto aplicado)
 // ══════════════════════════════════════════════════════════════════════════════
 
-export const MARKUP         = 0.6;
-export const OFFICIAL_MULT  = 1;   // 1 = preço Supabase já é OpenRouter direto
+export const MARKUP         = 1.4;
+export const OFFICIAL_MULT  = 2.0;
 export const MINIMUM_CHARGE = 0.001;
 
 // ─── PROVIDERS ────────────────────────────────────────────────────────────────

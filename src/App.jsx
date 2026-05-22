@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, ProtectedRoute } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { PaymentProvider } from './contexts/PaymentContext';
-import { PayPalScriptProvider, usePayPalScriptReducer } from '@paypal/react-paypal-js';
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
@@ -22,9 +22,6 @@ import Billing from './pages/Billing';
 import Admin from './pages/Admin';
 import Legal from './pages/Legal';
 
-const SUPABASE_URL = 'https://fycqiwfbhqbltsthrpxk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Y3Fpd2ZiaHFibHRzdGhycHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MTUwMDcsImV4cCI6MjA4NTQ5MTAwN30.HecOV_tntiiL3n8I4x66nhyfjRC0iFW5qxpSU1U9BHM';
-
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -33,46 +30,13 @@ function ScrollToTop() {
   return null;
 }
 
-// This inner component runs INSIDE PayPalScriptProvider so it can use the dispatch hook
-function PayPalBootstrapper() {
-  const [, dispatch] = usePayPalScriptReducer();
-
-  useEffect(() => {
-    fetch(`${SUPABASE_URL}/functions/v1/paypal-config`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY },
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.clientId) {
-          // Inject the real client ID and load the PayPal JS SDK
-          dispatch({
-            type: 'resetOptions',
-            value: {
-              'client-id': data.clientId,
-              currency: 'USD',
-              intent: 'capture',
-            },
-          });
-        }
-      })
-      .catch(err => console.error('PayPal config fetch failed:', err));
-  }, [dispatch]);
-
-  return null;
-}
-
 function App() {
   return (
-    // Always mounted — deferLoading=true means SDK won't load until we dispatch resetOptions with the real client ID
-    <PayPalScriptProvider
-      options={{
-        'client-id': 'placeholder-loading',
-        currency: 'USD',
-        intent: 'capture',
-      }}
-      deferLoading={true}
-    >
-      <PayPalBootstrapper />
+    <PayPalScriptProvider options={{
+      'client-id': import.meta.env.VITE_PAYPAL_CLIENT_ID,
+      currency: 'USD',
+      intent: 'capture',
+    }}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ThemeProvider>
           <ScrollToTop />

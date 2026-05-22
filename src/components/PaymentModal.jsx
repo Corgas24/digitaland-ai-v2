@@ -126,9 +126,10 @@ export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
   };
 
   const handleRevolutCheckout = () => {
+    // Hidden until Revolut keys are provided by the user
     setLoading(true);
     setTimeout(() => {
-      setError('Revolut Business integration is currently pending activation. Please use Stripe or PayPal for now.');
+      setError('Revolut Business integration is currently pending activation.');
       setLoading(false);
     }, 1000);
   };
@@ -251,16 +252,6 @@ export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
           >
             <CreditCard size={20} />
             {loading ? 'Processing...' : `Pay $${currentAmount || '0'} with Stripe`}
-          </button>
-
-          <button 
-            className="btn-outline btn-3d" 
-            onClick={handleRevolutCheckout} 
-            disabled={loading}
-            style={{ width: '100%', padding: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', fontSize: '1.1rem', background: '#000', color: '#fff', border: '1px solid #333' }}
-          >
-            <Shield size={20} />
-            Pay with Revolut Pay
           </button>
 
           <div style={{ position: 'relative', zIndex: 10, minHeight: '45px' }}>

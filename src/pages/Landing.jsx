@@ -199,23 +199,23 @@ export default function Landing() {
           {/* Left Side: Content (Asymmetric Narrow) */}
           <div className="fade-in-left" style={{ position: 'relative', zIndex: 10 }}>
             <div className="glass-card" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem', color: 'var(--primary)', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '2rem', letterSpacing: '2px', border: '1px solid var(--primary)' }}>
-              <Sparkles size={14} /> LIVE NEURAL LABORATORY
+              <Sparkles size={14} /> LABORATÓRIO NEURAL AO VIVO
             </div>
             
             <h2 style={{ fontSize: '4.2rem', fontWeight: 950, lineHeight: 0.9, marginBottom: '2.5rem', letterSpacing: '-4px', color: 'var(--text)' }}>
-              Experience <br /><span className="hero-gradient-text">Neural Edge</span>
+              A Suprema <br /><span className="hero-gradient-text">All-in-One API</span>
             </h2>
             
             <p style={{ fontSize: '1.2rem', color: 'var(--text-dim)', lineHeight: 1.8, marginBottom: '3.5rem', fontWeight: 500, maxWidth: '90%' }}>
-              Test our infrastructure directly. Switch between models with near-zero latency and feel the power of our optimized gateway.
+              Testa a nossa infraestrutura diretamente. Alterna entre os modelos de IA mais avançados do mundo com latência quase zero e sente o poder da nossa gateway otimizada.
             </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '4rem' }}>
               {[
-                'Unified API for all major LLMs',
-                'Intelligent Edge caching layer',
-                'Real-time token usage analytics',
-                'Guaranteed 40% below OpenRouter pricing'
+                'Acesso unificado a 300+ LLMs via All-in-One API',
+                'Cache Inteligente na Edge para resposta instantânea',
+                'Analítica de utilização de tokens em tempo real',
+                'Garantia de lucro: Preços mais baixos do mercado'
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary)', flexShrink: 0 }}>

@@ -213,9 +213,9 @@ export default function Landing() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '4rem' }}>
               {[
                 'Unified API for all major LLMs',
-                'Intelligent SHA-256 caching layer',
+                'Intelligent Edge caching layer',
                 'Real-time token usage analytics',
-                '1.4x optimized profit-markup model'
+                'Guaranteed 40% below OpenRouter pricing'
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary)', flexShrink: 0 }}>
@@ -256,17 +256,17 @@ export default function Landing() {
                  </div>
                  <div>
                     <p style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', marginBottom: '0.25rem' }}>Neural Gateway <span style={{ color: '#22c55e', fontSize: '0.8rem', marginLeft: '1rem', fontWeight: 900, textTransform: 'uppercase' }}>● ONLINE</span></p>
-                    <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-4o_MAX</p>
+                    <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-5.5_ULTRA</p>
                  </div>
               </div>
 
               {/* Chat Body */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', marginBottom: '4rem' }}>
                  <div className="glass-card" style={{ padding: '1.5rem 2rem', borderRadius: '30px 4px 30px 30px', alignSelf: 'flex-end', maxWidth: '80%', fontSize: '1.1rem', fontWeight: 600, border: '1px solid var(--primary)' }}>
-                    Analyze high-frequency token streams.
+                    Deploy autonomous multi-agent reasoning for system diagnostics.
                  </div>
                  <div className="glass-card" style={{ padding: '1.5rem 2rem', borderRadius: '4px 30px 30px 30px', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '1.1rem', fontWeight: 600, background: 'rgba(255,255,255,0.02)' }}>
-                    Processing... Latency: <span style={{ color: '#22c55e' }}>8ms</span>. Stream optimized via Node_Alpha.
+                    Processing... Latency: <span style={{ color: '#22c55e' }}>4ms</span>. Multi-agent cluster initialized via Node_Prime.
                  </div>
               </div>
 

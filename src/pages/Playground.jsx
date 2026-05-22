@@ -877,7 +877,7 @@ export default function Playground() {
                <div style={{ background: 'var(--primary-soft)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--primary-glow)' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Digitaland Credits</div>
                   <div style={{ fontSize: '1.8rem', fontWeight: 950, fontFamily: 'var(--mono)', color: 'var(--text)' }}>${user?.balance?.toFixed(5) || '0.00000'}</div>
-                  <button onClick={() => navigate('/dashboard?tab=billing')} style={{ width: '100%', marginTop: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.75rem', fontWeight: 900 }}>RECHARGE BALANCE</button>
+                  <button onClick={() => openPaymentModal()} style={{ width: '100%', marginTop: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.75rem', fontWeight: 900 }}>RECHARGE BALANCE</button>
                </div>
             </div>
           </aside>

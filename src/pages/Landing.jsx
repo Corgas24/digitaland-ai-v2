@@ -70,7 +70,7 @@ export default function Landing() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const faqSavings = `up to ${savPct}% below CrazyRouter pricing`;
+  const faqSavings = `up to ${savPct}% below OpenRouter pricing`;
   const faqs = [
     { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 300+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
     { q: "How does pricing work?", a: `We offer competitive, usage-based pricing with rates ${faqSavings}. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs.` },
@@ -179,7 +179,7 @@ export default function Landing() {
             { num: '300+', label: 'AI Models', icon: <Layers size={20} /> },
             { num: '99.9%', label: 'Uptime SLA', icon: <Server size={20} /> },
             { num: '<200ms', label: 'Avg Latency', icon: <Zap size={20} /> },
-            { num: `~${savPct}%`, label: 'Below CrazyRouter', icon: <DollarSign size={20} /> },
+            { num: `~${savPct}%`, label: 'Below OpenRouter', icon: <DollarSign size={20} /> },
           ].map((s, i) => (
             <div className="stat-item" key={i}>
               <div className="stat-icon">{s.icon}</div>
@@ -393,8 +393,8 @@ export default function Landing() {
                 color: '#ec4899',
                 bg: 'rgba(236,72,153,0.08)',
                 title: 'Transparent Pricing',
-                desc: 'Usage-based pricing with rates consistently below CrazyRouter. No monthly commitments, no hidden fees, no surprises on your invoice.',
-                highlight: `Up to ${savPct}% cheaper than CrazyRouter`
+                desc: 'Usage-based pricing with rates consistently below OpenRouter. No monthly commitments, no hidden fees, no surprises on your invoice.',
+                highlight: `Up to ${savPct}% cheaper than OpenRouter`
               },
               {
                 icon: <Globe size={24} />,
@@ -455,7 +455,7 @@ export default function Landing() {
         <div className="container">
           <div className="section-title">
             <h2>Transparent pricing — always fair</h2>
-            <p>Competitive rates, consistently below CrazyRouter. No hidden fees, ever.</p>
+            <p>Competitive rates, consistently below OpenRouter. No hidden fees, ever.</p>
           </div>
 
           <div className="pricing-table-wrap glass-card">

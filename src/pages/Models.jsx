@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getDynamicModels, PROVIDERS, MARKUP, ourPrice, crazyrouterPrice, savingsPercent } from '../data/models';
+import { getDynamicModels, PROVIDERS, MARKUP, ourPrice, openrouterPrice, savingsPercent } from '../data/models';
 import { Search, Grid3X3, List, Copy, Check, ChevronDown, SlidersHorizontal, X, Loader2, ArrowUpRight } from 'lucide-react';
 
 const DISCOUNT = savingsPercent();
@@ -335,7 +335,7 @@ export default function Models() {
                       <th>Type</th>
                       <th>Price (In/Gen)</th>
                       <th>Price (Out)</th>
-                      <th>CrazyRouter</th>
+                      <th>OpenRouter</th>
                       <th>Save</th>
                       <th></th>
                     </tr>
@@ -345,7 +345,7 @@ export default function Models() {
                       const prov = PROVIDERS[m.provider] || { color: '#666', short: m.provider[0] };
                       const ourIn = ourPrice(m.offIn);
                       const ourOut = ourPrice(m.offOut);
-                      const offIn = crazyrouterPrice(m.offIn);
+                      const offIn = openrouterPrice(m.offIn);
                       const isGeneration = ['Image', 'Video', 'Audio'].includes(m.type);
 
                       return (

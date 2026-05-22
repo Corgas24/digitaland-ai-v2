@@ -784,15 +784,16 @@ export default function Playground() {
             onClick={() => setShowSettings(true)}
             style={{
               position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
-              background: 'var(--surface)', border: '1px solid var(--border)', borderRight: 'none',
-              padding: '1rem 0.5rem', borderRadius: '12px 0 0 12px', color: 'var(--text-muted)',
-              cursor: 'pointer', zIndex: 140, boxShadow: '-5px 0 15px rgba(0,0,0,0.2)',
+              width: '36px', height: '70px',
+              background: 'var(--primary)', border: '1px solid var(--primary-glow)', borderRight: 'none',
+              borderRadius: '16px 0 0 16px', color: '#fff',
+              cursor: 'pointer', zIndex: 9999, boxShadow: '-5px 0 20px var(--primary-glow)',
               transition: '0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.paddingLeft = '1rem'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.paddingLeft = '0.5rem'; }}
+            onMouseEnter={e => { e.currentTarget.style.width = '42px'; }}
+            onMouseLeave={e => { e.currentTarget.style.width = '36px'; }}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={24} />
           </button>
         )}
         {showSettings && (

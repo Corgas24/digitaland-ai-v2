@@ -23,7 +23,6 @@ export default function Billing() {
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedMethod, setSelectedMethod] = useState('stripe');
   const navigate = useNavigate();
 
   const handleStripeCheckout = async () => {
@@ -76,7 +75,6 @@ export default function Billing() {
    };
 
    const handleCryptoCheckout = () => {
-     setSelectedMethod('crypto');
      setLoading(true);
      setTimeout(() => {
        alert('Cryptocurrency payments coming soon.');
@@ -239,62 +237,7 @@ export default function Billing() {
           </div>
         </div>
 
-        {/* Payment Methods */}
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Payment Method</h3>
-          
-          <button 
-            className={`payment-method-btn ${selectedMethod === 'stripe' ? 'selected-method' : ''}`} 
-            onClick={() => setSelectedMethod('stripe')} 
-            style={{ border: selectedMethod === 'stripe' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <CreditCard size={24} color={selectedMethod === 'stripe' ? 'var(--primary)' : 'currentColor'} />
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: 600 }}>Credit / Debit Card</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Visa, Mastercard, Amex, Apple Pay</div>
-              </div>
-            </div>
-            {selectedMethod === 'stripe' && <Check size={18} color="var(--primary)" />}
-          </button>
 
-           <button 
-             className={`payment-method-btn ${selectedMethod === 'paypal' ? 'selected-method' : ''}`} 
-             onClick={() => setSelectedMethod('paypal')} 
-             style={{ marginTop: '0.75rem', border: selectedMethod === 'paypal' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
-           >
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                 <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797H9.605c-.519 0-.96.384-1.04.9l-.89 5.636a.641.641 0 0 1-.633.545l.034-.075Z" fill="#003087"/>
-                 <path d="M21.898 6.534c-.993 5.081-4.383 7.277-8.716 7.277h-2.21l-1.1 6.99a.535.535 0 0 1-.528.454H6.052a.319.319 0 0 1-.316-.368l.087-.55 1.54-9.77.067-.347a.535.535 0 0 1 .528-.454h1.673c5.12 0 9.128-2.08 10.267-8.232Z" fill="#002F86"/>
-                 <path d="M9.958 6.732a.57.57 0 0 1 .562-.482h5.992c.71 0 1.373.046 1.98.144.17.028.336.06.5.097.163.037.323.08.479.128.078.024.155.05.23.077l.035.012c.28.101.541.222.782.362a5.43 5.43 0 0 0-.983-4.287C18.422.504 16.413 0 13.844 0H6.384c-.524 0-.972.383-1.054.901L2.223 20.597a.762.762 0 0 0 .752.878h5.448l1.369-8.678.166-1.065Z" fill="#009CDE"/>
-               </svg>
-               <div style={{ textAlign: 'left' }}>
-                 <div style={{ fontWeight: 600 }}>PayPal</div>
-                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Fast & secure checkout</div>
-               </div>
-             </div>
-             {selectedMethod === 'paypal' && <Check size={18} color="var(--primary)" />}
-           </button>
-
-           <button 
-             className={`payment-method-btn ${selectedMethod === 'crypto' ? 'selected-method' : ''}`} 
-             onClick={handleCryptoCheckout} 
-             style={{ marginTop: '0.75rem', border: selectedMethod === 'crypto' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
-           >
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                 <circle cx="12" cy="12" r="10" fill="#F7931A"/>
-                 <path d="M15.5 10.5c.3-2-1.2-3-3.3-3.7l.7-2.8-1.7-.4-.7 2.7c-.4-.1-.9-.2-1.3-.3l.7-2.7-1.7-.4-.7 2.8c-.4-.1-.7-.2-1-.2v-.1l-2.3-.6-.5 1.8s1.2.3 1.2.3c.7.2.8.6.8 1l-1.9 7.6c-.1.3-.4.7-1 .5 0 0-1.2-.3-1.2-.3l-.8 2 2.2.5c.4.1.8.2 1.2.3l-.7 2.8 1.7.4.7-2.8c.5.1.9.2 1.3.3l-.7 2.8 1.7.4.7-2.8c2.9.5 5.1.3 6-2.3.7-2.1 0-3.3-1.5-4.1 1.1-.3 1.9-1 2.1-2.5zm-3.8 5.3c-.5 2.1-4 1-5.1.7l.9-3.6c1.1.3 4.7.8 4.2 2.9zm.5-5.4c-.5 1.9-3.3.9-4.3.7l.8-3.3c1 .2 4 .7 3.5 2.6z" fill="white"/>
-               </svg>
-               <div style={{ textAlign: 'left' }}>
-                 <div style={{ fontWeight: 600 }}>Cryptocurrency</div>
-                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bitcoin, Ethereum, USDT</div>
-               </div>
-             </div>
-             {selectedMethod === 'crypto' && <Check size={18} color="var(--primary)" />}
-           </button>
-        </div>
 
         {/* Summary */}
         <div className="card" style={{ background: 'var(--bg-alt)' }}>
@@ -314,16 +257,17 @@ export default function Billing() {
               ${customAmount || selectedPackage || 0}
             </span>
           </div>
-          {selectedMethod === 'stripe' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
             <button 
               className="btn btn-primary btn-large" 
-              style={{ width: '100%' }} 
+              style={{ width: '100%', background: '#000', color: '#fff', border: '1px solid #333' }} 
               onClick={handleStripeCheckout}
               disabled={loading || (!selectedPackage && !customAmount)}
             >
-              {loading ? 'Redirecting to Stripe...' : 'Add Credits via Stripe'} {!loading && <Plus size={18} />}
+              <CreditCard size={18} style={{ marginRight: '0.5rem' }} /> 
+              {loading ? 'Redirecting...' : 'Pay with Card or Apple Pay'}
             </button>
-          ) : selectedMethod === 'paypal' ? (
+            
             <div style={{ width: '100%', position: 'relative', zIndex: 10 }}>
               <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
                 <PayPalButtons 
@@ -334,16 +278,16 @@ export default function Billing() {
                 />
               </PayPalScriptProvider>
             </div>
-          ) : (
+            
             <button 
-              className="btn btn-primary btn-large" 
-              style={{ width: '100%' }} 
+              className="btn btn-outline" 
+              style={{ width: '100%', marginTop: '0.5rem' }} 
               onClick={handleCryptoCheckout}
               disabled={loading || (!selectedPackage && !customAmount)}
             >
-              {loading ? 'Processing...' : 'Pay with Crypto'} {!loading && <Plus size={18} />}
+              Pay with Cryptocurrency
             </button>
-          )}
+          </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem' }}>
             Credits never expire. Secure payment via Stripe.
           </p>

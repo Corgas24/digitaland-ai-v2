@@ -180,8 +180,10 @@ export default function Billing() {
         <div className="billing-container">
           
           {/* LEFT COLUMN: BALANCE & HISTORY */}
-          <div className="billing-col-left">
-            <div className="balance-glow-card">
+          <div className="billing-col-left" style={{ position: 'relative' }}>
+            <div className="glow-orb" style={{ top: '-50px', left: '-50px' }}></div>
+            
+            <div className="balance-glow-card card-3d">
               <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700, marginBottom: '0.5rem' }}>
                 Available Balance
               </p>
@@ -251,8 +253,9 @@ export default function Billing() {
           </div>
 
           {/* RIGHT COLUMN: ADD CREDITS STICKY MODULE */}
-          <div className="billing-col-right">
-            <div className="add-credits-sticky">
+          <div className="billing-col-right" style={{ position: 'relative' }}>
+            <div className="glow-orb" style={{ bottom: '-50px', right: '-50px', background: 'var(--secondary)' }}></div>
+            <div className="add-credits-sticky card-3d">
               <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Plus size={20} className="text-primary" /> Add Credits
               </h3>
@@ -315,7 +318,7 @@ export default function Billing() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <button 
-                    className="btn btn-primary btn-large" 
+                    className="btn btn-primary btn-large btn-3d" 
                     style={{ width: '100%', background: '#000', color: '#fff', border: '1px solid #333' }} 
                     onClick={handleStripeCheckout}
                     disabled={loading || (!selectedPackage && !customAmount)}

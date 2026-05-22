@@ -202,7 +202,7 @@ export default function Playground() {
     }
 
     if (user.balance <= 0) {
-      setError('Créditos Neurais Insuficientes. Adicione fundos no Dashboard.');
+      setError('Insufficient Neural Credits. Please add funds in the Dashboard.');
       return;
     }
 

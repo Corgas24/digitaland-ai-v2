@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, Lock, CreditCard, Check, AlertCircle } from 'lucide-react';
-import { PayPalButtons } from "@paypal/react-paypal-js";
+import { X, Lock, CreditCard, Check, AlertCircle } from 'lucide-react';
+import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { safeFetch } from '../lib/safeFetch';
@@ -16,6 +16,7 @@ const CREDIT_PACKAGES = [
 
 export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
   const { user } = useAuth();
+  const [{ isPending: paypalPending, isRejected: paypalRejected }] = usePayPalScriptReducer();
   const [selectedPackage, setSelectedPackage] = useState(prefilledAmount || 50);
   const [customAmount, setCustomAmount] = useState(prefilledAmount ? String(prefilledAmount) : '');
   const [loading, setLoading] = useState(false);
@@ -274,13 +275,36 @@ export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
             {loading ? 'Processing...' : `Pay $${currentAmount || '0'} with Stripe`}
           </button>
 
-          <div style={{ position: 'relative', zIndex: 10, minHeight: '45px' }}>
-            <PayPalButtons
-              style={{ layout: "horizontal", color: "black", shape: "rect", height: 45 }}
-              createOrder={createPayPalOrder}
-              onApprove={onPayPalApprove}
-              disabled={loading || !currentAmount || currentAmount < 5}
-            />
+          <div style={{ position: 'relative', zIndex: 10, minHeight: '50px' }}>
+            {paypalPending ? (
+              <div style={{
+                height: '45px', borderRadius: '8px', background: 'var(--surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--text-muted)', fontSize: '0.85rem', gap: '0.5rem',
+                border: '1px solid var(--border-light)'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25"/>
+                  <path d="M21 12a9 9 0 01-9 9" strokeLinecap="round"/>
+                </svg>
+                Loading PayPal...
+              </div>
+            ) : paypalRejected ? (
+              <div style={{
+                height: '45px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#ef4444', fontSize: '0.85rem', border: '1px solid rgba(239,68,68,0.2)'
+              }}>
+                PayPal unavailable — use Stripe instead
+              </div>
+            ) : (
+              <PayPalButtons
+                style={{ layout: "horizontal", color: "black", shape: "rect", height: 45 }}
+                createOrder={createPayPalOrder}
+                onApprove={onPayPalApprove}
+                disabled={loading || !currentAmount || currentAmount < 5}
+              />
+            )}
           </div>
         </div>
 

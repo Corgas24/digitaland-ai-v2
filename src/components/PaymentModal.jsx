@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, Lock, CreditCard, Check, AlertCircle } from 'lucide-react';
-import { PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { safeFetch } from '../lib/safeFetch';
@@ -255,12 +255,14 @@ export default function PaymentModal({ isOpen, onClose, prefilledAmount }) {
           </button>
 
           <div style={{ position: 'relative', zIndex: 10, minHeight: '45px' }}>
-            <PayPalButtons
-              style={{ layout: "horizontal", color: "black", shape: "rect", height: 45 }}
-              createOrder={createPayPalOrder}
-              onApprove={onPayPalApprove}
-              disabled={loading || !currentAmount || currentAmount < 5}
-            />
+            <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+              <PayPalButtons
+                style={{ layout: "horizontal", color: "black", shape: "rect", height: 45 }}
+                createOrder={createPayPalOrder}
+                onApprove={onPayPalApprove}
+                disabled={loading || !currentAmount || currentAmount < 5}
+              />
+            </PayPalScriptProvider>
           </div>
         </div>
 

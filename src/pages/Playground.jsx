@@ -21,6 +21,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePayment } from '../contexts/PaymentContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 import { safeFetch } from '../lib/safeFetch';
 
@@ -56,6 +57,7 @@ const sanitizeProviderError = (msg) => {
 
 export default function Playground() {
   const { user, refreshUser, isProfileLoading } = useAuth();
+  const { openPaymentModal } = usePayment();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlModel = searchParams.get('model');
@@ -203,6 +205,7 @@ export default function Playground() {
 
     if (user.balance <= 0) {
       setError('Insufficient Neural Credits. Please add funds in the Dashboard.');
+      openPaymentModal();
       return;
     }
 
@@ -575,11 +578,11 @@ export default function Playground() {
 
              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button onClick={startNewConversation} style={{ color: 'var(--text-muted)', transition: '0.2s', background: 'none', border: 'none', cursor: 'pointer' }} title="New Chat"><Trash2 size={18} /></button>
-                   <div style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)' }}>
+                <button onClick={() => openPaymentModal()} style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)', cursor: 'pointer', outline: 'none' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)' }}>
                     ${typeof user?.balance === 'number' ? user.balance.toFixed(4) : '0.0000'}
                   </span>
-                </div>
+                </button>
              </div>
           </div>
 

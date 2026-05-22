@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Key, CreditCard, BarChart3, Settings, Activity, Plus, Check, Shield, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getStripe } from '../lib/stripe';
-import { supabase } from '../lib/supabase';
-import { safeFetch } from '../lib/safeFetch';
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { usePayment } from '../contexts/PaymentContext';
 
 const CREDIT_PACKAGES = [
   { amount: 10, price: 10, popular: false },
@@ -18,119 +15,8 @@ const CREDIT_PACKAGES = [
 
 export default function Billing() {
   const { user } = useAuth();
-  const [selectedPackage, setSelectedPackage] = useState(50);
-  const [customAmount, setCustomAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
-
-  const handleStripeCheckout = async () => {
-    const amount = customAmount || selectedPackage;
-    if (!amount || amount < 5) {
-      alert('Please select or enter an amount of at least $5');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // 1. Call your Supabase Edge Function to create a Checkout Session
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      
-      const response = await safeFetch(`https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/create-stripe-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authSession?.access_token}`,
-        },
-        body: JSON.stringify({ amount, userId: user.id }),
-      });
-      
-      const result = await response.json();
-      
-      if (result.error) throw new Error(result.error);
-
-      // 2. Redirect to Stripe Checkout URL
-      if (result.url) {
-        window.location.href = result.url;
-      } else {
-        throw new Error('No checkout URL received from server');
-      }
-
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setError(`Checkout error: ${err.message}`);
-      setLoading(false);
-    }
-  };
-
-   const handlePaypalCheckout = () => {
-     setLoading(true);
-     setTimeout(() => {
-       alert('PayPal Checkout is being integrated. Use Stripe for now.');
-       setLoading(false);
-     }, 1000);
-   };
-
-   const handleCryptoCheckout = () => {
-     setLoading(true);
-     setTimeout(() => {
-       alert('Cryptocurrency payments coming soon.');
-       setLoading(false);
-     }, 1000);
-   };
-
-  const createPayPalOrder = async (data, actions) => {
-    const amount = customAmount || selectedPackage;
-    if (!amount || amount < 5) {
-      alert('Please select or enter an amount of at least $5');
-      return null;
-    }
-    
-    try {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      
-      const response = await fetch(`https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/create-paypal-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authSession?.access_token}`,
-        },
-        body: JSON.stringify({ amount }),
-      });
-      
-      const result = await response.json();
-      
-      if (result.error) throw new Error(result.error);
-      
-      return result.orderID; // Return the order ID to PayPal SDK
-    } catch (err) {
-      console.error('PayPal Order error:', err);
-      setError(`PayPal error: ${err.message}`);
-      throw err;
-    }
-  };
-
-  const onPayPalApprove = async (data, actions) => {
-    try {
-      setLoading(true);
-      // Let PayPal capture the order on the frontend (or do it in webhook)
-      // Since our webhook handles 'CHECKOUT.ORDER.APPROVED', we don't strictly need to capture here,
-      // but usually the frontend triggers the capture:
-      const details = await actions.order.capture();
-      setShowSuccess(true);
-      setLoading(false);
-      // Wait for webhook to update DB, or optimistic update
-      setTimeout(() => window.location.reload(), 3000);
-    } catch (err) {
-      console.error('PayPal Capture error:', err);
-      setError(`Capture error: ${err.message}`);
-      setLoading(false);
-    }
-  };
-
+  const { openPaymentModal } = usePayment();
+  
   const currentBalance = user?.balance || 0;
 
   return (
@@ -164,17 +50,7 @@ export default function Billing() {
           </div>
         </div>
 
-        {showSuccess && (
-          <div className="success-banner smooth-slide-down" style={{ background: 'var(--green-soft)', color: 'var(--green)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Check size={20} /> Credits requested! In production, balance updates after successful payment.
-          </div>
-        )}
-
-        {error && (
-          <div className="error-banner smooth-slide-down" style={{ background: 'rgba(255, 95, 86, 0.1)', color: '#ff5f56', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-            {error}
-          </div>
-        )}
+        {/* Error/Success handling now in PaymentModal */}
 
         {/* 2-COLUMN LAYOUT */}
         <div className="billing-container">
@@ -253,106 +129,16 @@ export default function Billing() {
           </div>
 
           {/* RIGHT COLUMN: ADD CREDITS STICKY MODULE */}
-          <div className="billing-col-right" style={{ position: 'relative' }}>
-            <div className="glow-orb" style={{ bottom: '-50px', right: '-50px', background: 'var(--secondary)' }}></div>
-            <div className="add-credits-sticky card-3d">
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="billing-col-right">
+            <div className="card-3d glass-card" style={{ padding: '2rem', borderRadius: '24px', position: 'sticky', top: '2rem', zIndex: 10 }}>
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '0.25rem' }}>Fund your API</h3>
+                <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Pay as you go. No hidden fees.</p>
+              </div>
+              
+              <button onClick={() => openPaymentModal()} className="magic-btn btn-3d" style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', fontSize: '1.1rem' }}>
                 <Plus size={20} className="text-primary" /> Add Credits
-              </h3>
-
-              {/* Pill Selector */}
-              <div className="pill-grid">
-                {CREDIT_PACKAGES.filter(p => p.amount <= 100).map((pkg) => (
-                  <div
-                    key={pkg.amount}
-                    className={`credit-pill ${selectedPackage === pkg.amount ? 'selected' : ''} ${pkg.popular ? 'popular' : ''}`}
-                    onClick={() => {
-                      setSelectedPackage(pkg.amount);
-                      setCustomAmount('');
-                    }}
-                  >
-                    ${pkg.amount}
-                  </div>
-                ))}
-                <div 
-                  className={`credit-pill ${!selectedPackage ? 'selected' : ''}`}
-                  onClick={() => {
-                    setSelectedPackage(null);
-                    if (!customAmount) setCustomAmount('10');
-                  }}
-                >
-                  Custom
-                </div>
-              </div>
-
-              {/* Custom Input (Sliding) */}
-              {!selectedPackage && (
-                <div className="smooth-slide-down" style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.5rem', display: 'block' }}>
-                    Custom Amount (Min $5)
-                  </label>
-                  <div className="input-wrapper">
-                    <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>$</span>
-                    <input
-                      type="number"
-                      placeholder="50"
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      style={{ paddingLeft: '2rem', width: '100%' }}
-                      className="dash-input"
-                      min="5"
-                      step="1"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Checkout Panel */}
-              <div className="checkout-panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                  <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Total to Pay</span>
-                  <span style={{ fontWeight: 800, fontFamily: 'var(--mono)', fontSize: '1.5rem' }} className="gradient-text">
-                    ${customAmount || selectedPackage || 0}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <button 
-                    className="btn btn-primary btn-large btn-3d" 
-                    style={{ width: '100%', background: '#000', color: '#fff', border: '1px solid #333' }} 
-                    onClick={handleStripeCheckout}
-                    disabled={loading || (!selectedPackage && !customAmount)}
-                  >
-                    <CreditCard size={18} style={{ marginRight: '0.5rem' }} /> 
-                    {loading ? 'Redirecting...' : 'Pay with Card / Apple Pay'}
-                  </button>
-                  
-                  <div style={{ width: '100%', position: 'relative', zIndex: 10 }}>
-                    <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                      <PayPalButtons 
-                        style={{ layout: "vertical", shape: "rect", color: "gold", height: 44 }} 
-                        createOrder={createPayPalOrder}
-                        onApprove={onPayPalApprove}
-                        disabled={loading || (!selectedPackage && !customAmount)}
-                      />
-                    </PayPalScriptProvider>
-                  </div>
-                  
-                  <button 
-                    className="btn btn-outline" 
-                    style={{ width: '100%', fontSize: '0.85rem', padding: '0.6rem' }} 
-                    onClick={handleCryptoCheckout}
-                    disabled={loading || (!selectedPackage && !customAmount)}
-                  >
-                    Pay with Cryptocurrency
-                  </button>
-                </div>
-                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                  <Lock size={12} />
-                  <span>Payments are secure and encrypted. Powered by <strong>Stripe</strong> & <strong>PayPal</strong>.</span>
-                </div>
-              </div>
-
+              </button>
             </div>
           </div>
           

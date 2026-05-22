@@ -11,12 +11,14 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePayment } from '../contexts/PaymentContext';
 
 const DEMO_KEYS = [];
 const MODEL_USAGE = [];
 
 export default function Dashboard() {
   const { user, updateBalance, addApiKey, removeApiKey, isProfileLoading } = useAuth();
+  const { openPaymentModal } = usePayment();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -295,7 +297,7 @@ export default function Dashboard() {
               `$${user?.balance?.toFixed(5) || '0.00000'}`
             )}
           </p>
-          <button onClick={() => navigate('/dashboard/billing')} className="btn-solid" style={{ width: '100%', marginTop: '1.25rem', padding: '0.6rem', fontSize: '0.85rem', justifyContent: 'center' }}>
+          <button onClick={() => openPaymentModal()} className="btn-solid" style={{ width: '100%', marginTop: '1.25rem', padding: '0.6rem', fontSize: '0.85rem', justifyContent: 'center' }}>
             <Plus size={14} /> Add Credits
           </button>
         </div>
@@ -726,7 +728,7 @@ export default function Dashboard() {
                       )}
                     </div>
                   </div>
-                  <button className="btn-solid" onClick={() => setShowTopUp(true)} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
+                  <button className="btn-solid" onClick={() => openPaymentModal()} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
                     <Plus size={16} /> Add Credits
                   </button>
                 </div>
@@ -734,7 +736,7 @@ export default function Dashboard() {
                 <div className="card span-2">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Payment Methods</h3>
-                    <button className="btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Add Method</button>
+                    <button className="btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => openPaymentModal()}>Add Method</button>
                   </div>
                   <div style={{ padding: '2rem', border: '1px dashed var(--border)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>
                     <CreditCard size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />

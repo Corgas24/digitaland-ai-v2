@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, ProtectedRoute } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { PaymentProvider } from './contexts/PaymentContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
@@ -36,8 +37,9 @@ function App() {
 
       
         <AuthProvider>
-          <Navbar />
-          <Routes>
+          <PaymentProvider>
+            <Navbar />
+            <Routes>
             <Route path="/" element={<><Landing /><Footer /></>} />
             <Route path="/models" element={<><Models /><Footer /></>} />
             <Route path="/pricing" element={<><Pricing /><Footer /></>} />
@@ -82,8 +84,10 @@ function App() {
             } />
           </Routes>
           <CookieConsent />
+          </PaymentProvider>
         </AuthProvider>
-      </div>
+      
+        </div>
       </ThemeProvider>
     </BrowserRouter>
   );

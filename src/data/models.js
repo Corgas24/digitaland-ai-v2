@@ -142,15 +142,15 @@ export const getFeaturedModels = async () => {
 // Números de referência na tabela da página de Pricing
 // off_in deve ser o preço OpenRouter puro (não multiplicado)
 export const PRICING_COMPARE = [
-  { model: 'GPT-4o',            offIn: 1.375, offOut: 5.50  },
-  { model: 'Claude 3.5 Sonnet', offIn: 1.65,  offOut: 8.25  },
-  { model: 'DeepSeek V3',       offIn: 0.126, offOut: 0.252 }
+  { model: 'GPT-5.5',            offIn: 2.75,  offOut: 16.50 },
+  { model: 'Claude Opus 4.7',    offIn: 2.75,  offOut: 13.75 },
+  { model: 'Gemini 3.1 Pro',     offIn: 1.10,  offOut: 6.60  }
 ];
 
 // Modelos hardcoded usados no grid da landing page
 // offIn = preço OpenRouter puro — ourPrice() aplica markup 1.4 automaticamente
 export const FEATURED_MODELS = [
-  { name: 'GPT-4o',            provider: 'OpenAI',    badge: 'Flagship', offIn: 1.375 },
-  { name: 'Claude Sonnet 4.6', provider: 'Anthropic', badge: 'Popular',  offIn: 1.65  },
-  { name: 'DeepSeek V3',       provider: 'DeepSeek',  badge: 'Value',    offIn: 0.126 }
+  { name: 'GPT-5.5',             provider: 'OpenAI',    badge: 'Flagship', offIn: 2.75 },
+  { name: 'Claude Opus 4.7',     provider: 'Anthropic', badge: 'Popular',  offIn: 2.75 },
+  { name: 'Gemini 3.1 Pro',      provider: 'Google',    badge: 'Flagship', offIn: 1.10 }
 ];

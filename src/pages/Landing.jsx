@@ -114,7 +114,7 @@ export default function Landing() {
           </h1>
           
           <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
-            Access <strong>GPT-4o, Claude 3.5 Sonnet, DeepSeek V3, Llama 3</strong> and 300+ other models instantly. 
+            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
             Enterprise-grade speed, zero logging, and pure pay-as-you-go pricing — guaranteed <strong>40% cheaper</strong> than OpenRouter.
           </p>
 

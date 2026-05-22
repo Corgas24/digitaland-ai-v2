@@ -779,6 +779,22 @@ export default function Playground() {
         </div>
 
         {/* 3. NEURAL CONFIG PANEL (FLOATING SIDEBAR) */}
+        {!showSettings && (
+          <button 
+            onClick={() => setShowSettings(true)}
+            style={{
+              position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRight: 'none',
+              padding: '1rem 0.5rem', borderRadius: '12px 0 0 12px', color: 'var(--text-muted)',
+              cursor: 'pointer', zIndex: 140, boxShadow: '-5px 0 15px rgba(0,0,0,0.2)',
+              transition: '0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.paddingLeft = '1rem'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.paddingLeft = '0.5rem'; }}
+          >
+            <ChevronLeft size={20} />
+          </button>
+        )}
         {showSettings && (
           <aside style={{ 
             width: '340px', 

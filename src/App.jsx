@@ -6,6 +6,7 @@ import { PaymentProvider } from './contexts/PaymentContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
+import DisclaimerModal from './components/DisclaimerModal';
 
 // Direct imports for maximum stability
 import Landing from './pages/Landing';
@@ -84,6 +85,7 @@ function App() {
             } />
           </Routes>
           <CookieConsent />
+          <DisclaimerModal />
           </PaymentProvider>
         </AuthProvider>
       

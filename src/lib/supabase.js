@@ -10,15 +10,48 @@ const supabaseAnonKey =
     ? import.meta.env.VITE_SUPABASE_ANON_KEY.trim()
     : '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  const missing = [];
-  if (!supabaseUrl)  missing.push('VITE_SUPABASE_URL');
-  if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
+let supabaseInstance;
 
-  throw new Error(
-    `[supabase] Missing required environment variable(s): ${missing.join(', ')}. ` +
-    'Add them to your .env file before starting the development server.',
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    '[supabase] Warning: Missing required environment variable(s): ' +
+    `${!supabaseUrl ? 'VITE_SUPABASE_URL ' : ''}${!supabaseAnonKey ? 'VITE_SUPABASE_ANON_KEY' : ''}. ` +
+    'Returning a proxy Supabase client to prevent application crash.'
   );
+
+  // Return a safe dummy proxy that won't throw when methods are called
+  const dummyHandler = {
+    get: function(target, prop) {
+      if (prop === 'auth') {
+        return {
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+          getSession: async () => ({ data: { session: null }, error: null }),
+          getUser: async () => ({ data: { user: null }, error: null }),
+          signInWithPassword: async () => ({ data: {}, error: new Error('Database offline') }),
+          signUp: async () => ({ data: {}, error: new Error('Database offline') }),
+          signOut: async () => ({ error: null }),
+        };
+      }
+      return () => ({
+        select: () => ({
+          eq: () => ({
+            order: () => Promise.resolve({ data: [], error: new Error('Database offline') }),
+            maybeSingle: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+            single: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+          }),
+          order: () => Promise.resolve({ data: [], error: new Error('Database offline') }),
+          maybeSingle: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+          single: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+        }),
+        insert: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+        update: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+        delete: () => Promise.resolve({ data: null, error: new Error('Database offline') }),
+      });
+    }
+  };
+  supabaseInstance = new Proxy({}, dummyHandler);
+} else {
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseInstance;

@@ -20,6 +20,7 @@ const CATEGORIES = [
 export default function Models() {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,10 +31,16 @@ export default function Models() {
 
   // 1. Fetch Dynamic Models from Supabase
   useEffect(() => {
-    getDynamicModels().then(data => {
-      setModels(data || []);
-      setLoading(false);
-    });
+    getDynamicModels()
+      .then(data => {
+        setModels(data || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load models:', err);
+        setError(err);
+        setLoading(false);
+      });
   }, []);
 
   // Reset page when filtering or searching
@@ -678,7 +685,16 @@ export default function Models() {
         </div>
 
         {/* Main Content Area */}
-        {loading ? (
+        {error ? (
+          <div className="models-empty-state" style={{ padding: '4rem 2rem', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '20px', background: 'rgba(239, 68, 68, 0.02)' }}>
+            <span style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</span>
+            <h3 style={{ color: '#ef4444' }}>Ligação à Base de Dados Falhou</h3>
+            <p style={{ maxWidth: '460px', margin: '0.5rem auto 1.5rem', color: 'var(--text-muted)' }}>
+              Não foi possível estabelecer ligação com o servidor da base de dados Digitaland. Por favor, tente recarregar a página.
+            </p>
+            <button className="btn-reset" onClick={() => window.location.reload()}>Tentar Novamente</button>
+          </div>
+        ) : loading ? (
           <div className="models-loading-state">
             <Loader2 size={32} className="animate-spin" style={{ color: 'var(--primary)', marginBottom: '1.25rem' }} />
             <h3>Synchronizing Database</h3>

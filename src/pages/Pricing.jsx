@@ -11,6 +11,7 @@ const GLOBAL_SAVING = savingsPercent();
 export default function Pricing() {
   const [models, setModels]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -19,28 +20,44 @@ export default function Pricing() {
   const [selectedTier, setSelectedTier] = useState('flagship'); // mini | flagship | sonnet
 
   useEffect(() => {
-    getDynamicModels().then(data => {
-      setModels(data || []);
-      setLoading(false);
-    });
+    getDynamicModels()
+      .then(data => {
+        setModels(data || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load pricing models:', err);
+        setError(err);
+        setLoading(false);
+      });
   }, []);
 
   const featuredModels = useMemo(() => {
     // Select top flagship models for the spotlight cards
-    if (!models || models.length === 0) return [];
+    if (!models || models.length === 0) {
+      return [
+        { name: 'GPT-4o', provider: 'OpenAI', badge: 'Flagship', offIn: 2.50, offOut: 10.00 },
+        { name: 'Claude 3.5 Sonnet', provider: 'Anthropic', badge: 'Popular', offIn: 3.00, offOut: 15.00 },
+        { name: 'Gemini 1.5 Pro', provider: 'Google', badge: 'Flagship', offIn: 1.25, offOut: 5.00 }
+      ];
+    }
     return models.filter(m => m.badge === 'Flagship' || m.badge === 'Popular').slice(0, 3);
   }, [models]);
 
   // Find model for calculator comparison dynamically
   const calcModel = useMemo(() => {
-    if (!models || models.length === 0) return null;
+    const activeModels = (models && models.length > 0) ? models : [
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', offIn: 0.15, offOut: 0.60 },
+      { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', offIn: 2.50, offOut: 10.00 },
+      { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', offIn: 3.00, offOut: 15.00 }
+    ];
     if (selectedTier === 'mini') {
-      return models.find(m => m.id.includes('mini') || m.name.toLowerCase().includes('mini')) || models[0];
+      return activeModels.find(m => m.id.includes('mini') || m.name.toLowerCase().includes('mini')) || activeModels[0];
     }
     if (selectedTier === 'sonnet') {
-      return models.find(m => m.id.includes('sonnet') || m.name.toLowerCase().includes('sonnet') || m.name.toLowerCase().includes('opus')) || models[0];
+      return activeModels.find(m => m.id.includes('sonnet') || m.name.toLowerCase().includes('sonnet') || m.name.toLowerCase().includes('opus')) || activeModels[0];
     }
-    return models.find(m => m.id === 'gpt-4o' || (m.name.toLowerCase().includes('4o') && !m.name.toLowerCase().includes('mini'))) || models.find(m => m.badge === 'Flagship') || models[0];
+    return activeModels.find(m => m.id === 'gpt-4o' || (m.name.toLowerCase().includes('4o') && !m.name.toLowerCase().includes('mini'))) || activeModels.find(m => m.badge === 'Flagship') || activeModels[0];
   }, [models, selectedTier]);
 
   // Compute calculated pricing
@@ -59,7 +76,18 @@ export default function Pricing() {
   }, [calcModel, tokenVolume]);
 
   const filteredModels = useMemo(() => {
-    if (!models) return [];
+    if (!models || models.length === 0) {
+      return [
+        { name: 'GPT-4o', provider: 'OpenAI', offIn: 2.50, offOut: 10.00 },
+        { name: 'GPT-4o-mini', provider: 'OpenAI', offIn: 0.15, offOut: 0.60 },
+        { name: 'Claude 3.5 Sonnet', provider: 'Anthropic', offIn: 3.00, offOut: 15.00 },
+        { name: 'Claude 3.5 Haiku', provider: 'Anthropic', offIn: 0.80, offOut: 4.00 },
+        { name: 'Gemini 1.5 Pro', provider: 'Google', offIn: 1.25, offOut: 5.00 },
+        { name: 'Gemini 1.5 Flash', provider: 'Google', offIn: 0.075, offOut: 0.30 },
+        { name: 'DeepSeek-V3', provider: 'DeepSeek', offIn: 0.14, offOut: 0.28 },
+        { name: 'DeepSeek-R1', provider: 'DeepSeek', offIn: 0.55, offOut: 2.19 }
+      ];
+    }
     return models.filter(m => {
       if (!m) return false;
       const query = searchQuery ? searchQuery.toLowerCase() : '';

@@ -24,6 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../contexts/PaymentContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 import { safeFetch } from '../lib/safeFetch';
+import ProviderLogo from '../components/ProviderLogo';
 
 const sanitizeProviderError = (msg) => {
   if (!msg) return 'Erro desconhecido na rede neural.';
@@ -567,15 +568,7 @@ export default function Playground() {
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary-glow)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
              >
-                {currentModelObj?.provider === 'DeepSeek' ? (
-                  <img src="/deepseek-logo.png" alt="DeepSeek" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'contain', background: '#ffffff', padding: '2px' }} />
-                ) : currentModelObj?.provider === 'Alibaba' || currentModelObj?.name?.toLowerCase().includes('qwen') ? (
-                  <img src="/qwen-logo.png" alt="Qwen" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'contain', background: '#ffffff', padding: '2px' }} />
-                ) : (
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: PROVIDERS[currentModelObj?.provider]?.color || 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '0.65rem' }}>
-                     {PROVIDERS[currentModelObj?.provider]?.short || 'N'}
-                  </div>
-                )}
+                <ProviderLogo provider={currentModelObj?.provider} name={currentModelObj?.name} size={24} style={{ borderRadius: '50%' }} />
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{currentModelObj?.name || selectedModel}</span>
                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{currentModelObj?.provider || 'Neural Engine'}</span>
@@ -665,14 +658,8 @@ export default function Playground() {
                             <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                                <User size={12} />
                             </div>
-                          ) : model?.provider === 'DeepSeek' ? (
-                            <img src="/deepseek-logo.png" alt="DeepSeek" style={{ width: '24px', height: '24px', borderRadius: '6px', objectFit: 'contain', background: '#ffffff', padding: '2px' }} />
-                          ) : model?.provider === 'Alibaba' || model?.name?.toLowerCase().includes('qwen') ? (
-                            <img src="/qwen-logo.png" alt="Qwen" style={{ width: '24px', height: '24px', borderRadius: '6px', objectFit: 'contain', background: '#ffffff', padding: '2px' }} />
                           ) : (
-                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: provider.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                               {provider.short}
-                            </div>
+                            <ProviderLogo provider={model?.provider} name={model?.name} size={24} style={{ borderRadius: '6px' }} />
                           )}
                          <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>{isUser ? 'Client Command' : (model?.name || 'Digitaland Response')}</span>
                       </div>

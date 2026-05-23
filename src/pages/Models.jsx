@@ -5,6 +5,7 @@ import {
   Search, Copy, Check, ChevronDown, SlidersHorizontal, X, Loader2, ArrowUpRight, 
   Sparkles, Shield, Cpu, Zap, Activity, Info, Database 
 } from 'lucide-react';
+import ProviderLogo from '../components/ProviderLogo';
 
 const DISCOUNT = savingsPercent();
 
@@ -318,15 +319,7 @@ export default function Models() {
 
                     {/* Header info */}
                     <div className="pm-card-header">
-                      {m.provider === 'DeepSeek' ? (
-                        <img src="/deepseek-logo.png" alt="DeepSeek" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
-                      ) : m.provider === 'Alibaba' || m.name.toLowerCase().includes('qwen') ? (
-                        <img src="/qwen-logo.png" alt="Qwen" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
-                      ) : (
-                        <div className="pm-provider-avatar" style={{ background: `${brandColor}12`, color: brandColor }}>
-                          {prov.short}
-                        </div>
-                      )}
+                      <ProviderLogo provider={m.provider} name={m.name} size={42} style={{ borderRadius: '12px' }} />
                       <div className="pm-provider-meta">
                         <div className="pm-provider-name">{m.provider}</div>
                         <h3 className="pm-model-name" title={m.name}>{m.name}</h3>

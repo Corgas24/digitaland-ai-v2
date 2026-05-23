@@ -211,9 +211,7 @@ export default {
 
         // ── 2. CHECK BILLING EXEMPTION ──────────────────────────────────────
         const billingExemptId = getBillingExemptId();
-        const isBillingExempt = billingExemptId
-          ? userProfile.id === billingExemptId
-          : false;
+        const isBillingExempt = (billingExemptId && userProfile.id === billingExemptId) || userProfile.is_admin === true;
 
         // ── 3. PARSE REQUEST ────────────────────────────────────────────────
         const incomingBody    = await req.json();
@@ -234,9 +232,6 @@ export default {
           );
         }
 
-        const fallbackUrl = Deno.env.get("FALLBACK_API_URL") ?? "https://openrouter.ai/api/v1/chat/completions";
-        const fallbackKey = Deno.env.get("FALLBACK_API_KEY") ?? Deno.env.get("OPENROUTER_API_KEY");
-
         // ── 5. LOAD BILLING RATES (use original model; cascaded model rates
         //       are looked up again after the cascade finishes) ───────────────
         const { data: billingModel } = await ctx.supabaseAdmin
@@ -252,14 +247,10 @@ export default {
           off_out: (ratesRaw.off_out ?? 0) as number,
         };
 
-        // ── 6. INTELLIGENT ROUTING: CASCADE + FALLBACK ──────────────────────
+        // ── 6. INTELLIGENT ROUTING: CASCADE ──────────────────────────────────
         //
-        // Strategy A — Primary upstream provider with cascade failover
-        // Strategy B — Fallback provider (OpenRouter) with cascade failover
-        //
-        // Proprietary-model guard: if the primary URL resolves to SiliconFlow
-        // (which doesn't proxy GPT / Claude / Gemini etc.), skip it for those
-        // models and go straight to the fallback provider.
+        // Exclusively routing through primary upstream provider (CrazyRouter) with cascade failover.
+        // SiliconFlow bypass is kept for compatibility if the upstream URL is customized.
 
         const isPrimarySiliconFlow   = primaryUrl.includes("siliconflow");
         const proprietaryKeywords    = ["gpt", "claude", "gemini", "o1", "dall-e", "mj_imagine", "sora", "runway"];
@@ -270,10 +261,10 @@ export default {
 
         const tryModels      = [originalModelId, ...(CASCADE[originalModelId] ?? [])];
         let   finalModelId   = originalModelId;
-        let   usedFallback   = false;
+        const usedFallback   = false;
         let   response:     Response | null = null;
 
-        // ── Strategy A: primary provider ────────────────────────────────────
+        // ── Primary provider ────────────────────────────────────────────────
         if (!shouldSkipPrimary) {
           for (const model of tryModels) {
             try {
@@ -293,9 +284,9 @@ export default {
 
               clearTimeout(timeoutId);
 
-              // 401 / 403 → primary key is dead → jump to fallback immediately
+              // 401 / 403 → primary key is dead → exit cascade and fail immediately
               if (attempt.status === 401 || attempt.status === 403) {
-                console.log(`[gateway] Primary auth error (${attempt.status}). Switching to fallback.`);
+                console.log(`[gateway] Primary auth error (${attempt.status}). Exiting immediately.`);
                 break;
               }
 
@@ -324,44 +315,6 @@ export default {
           }
         } else {
           console.log(`[gateway] Skipping SiliconFlow for proprietary model ${originalModelId}.`);
-        }
-
-        // ── Strategy B: fallback provider ───────────────────────────────────
-        if (!response && fallbackKey) {
-          usedFallback = true;
-          for (const model of tryModels) {
-            try {
-              finalModelId = model;
-              const attempt = await fetch(fallbackUrl, {
-                method:  "POST",
-                headers: {
-                  "Content-Type":  "application/json",
-                  "Authorization": `Bearer ${fallbackKey}`,
-                  "HTTP-Referer":  "https://digitaland.ai",
-                  "X-Title":       "Digitaland AI Gateway",
-                },
-                body:    JSON.stringify({ ...incomingBody, model }),
-              });
-
-              if (attempt.ok) {
-                if (!incomingBody.stream) {
-                  const clone = attempt.clone();
-                  const json  = await clone.json().catch(() => ({}));
-                  const text  = JSON.stringify(json);
-                  const bad   = /[\u4e00-\u9fa5]/.test(text)
-                    || json.error
-                    || json.err
-                    || json.success === false
-                    || (json.code && json.code !== 0);
-                  if (bad) continue;
-                }
-                response = attempt;
-                break;
-              }
-            } catch (e) {
-              console.log(`[gateway] Fallback ${model} failed:`, (e as Error).message);
-            }
-          }
         }
 
         // ── 7. NO PROVIDER AVAILABLE ────────────────────────────────────────

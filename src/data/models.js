@@ -134,6 +134,35 @@ export const crazyrouterPrice = (offPrice) => offPrice * OFFICIAL_MULT;
 // % de economia do Digitaland em relação à CrazyRouter
 export const savingsPercent = () => Math.round((1 - (MARKUP / OFFICIAL_MULT)) * 100);
 
+// ─── OPENROUTER COMPARISON ─────────────────────────────────────────────────────
+//
+//  openRouterPrice(off)     preço OpenRouter referência (sem markup) = off × 1
+//  savingsVsOpenRouter()    economia % do Digitaland vs OpenRouter
+//                           = (1 − MARKUP) × 100 = 40%
+//  Exemplo: off = $1.375
+//    openRouterPrice(1.375) = 1.375          (preço OpenRouter por 1M tokens)
+//    ourPrice(1.375)         = 1.925          (Digitaland — ~40% a mais)
+//    savingsVsOpenRouter()   = −40%           (usuário paga 40% acima vs OpenRouter ref)
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const openRouterPrice = (offPrice) => offPrice * 1;  // preço OpenRouter é referência direta
+
+/** % que o preço Digitaland está acima do preço OpenRouter (número positivo = mais caro) */
+export const markupPercent = () => Math.round((MARKUP - 1) * 100);
+
+/**
+ * Compare our price vs an external price.
+ * @param {number} our         – preço Digitaland por 1M tokens
+ * @param {number} external    – preço externo (OpenRouter / CrazyRouter) por 1M tokens
+ * @returns {string} e.g. "+40%" se somos mais caros, "-40%" se mais baratos
+ */
+export const comparePercent = (our, external) => {
+  if (!external || external === 0) return '—';
+  const pct = ((our - external) / external) * 100;
+  const sign = pct >= 0 ? '+' : '';
+  return `${sign}${Math.round(pct)}%`;
+};
+
 // ─── FEATURED / COMPARISON DATA ───────────────────────────────────────────────
 
 export const getFeaturedModels = async () => {

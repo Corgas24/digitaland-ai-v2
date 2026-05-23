@@ -354,6 +354,8 @@ export default function Models() {
                         <img src="/stability-logo.png" alt="Stability AI" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
                       ) : m.provider === 'Midjourney' ? (
                         <img src="/midjourney-logo.png" alt="Midjourney" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'ByteDance' ? (
+                        <img src="/bytedance-logo.png" alt="ByteDance" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
                       ) : (
                         <div className="pm-provider-avatar" style={{ background: `${brandColor}12`, color: brandColor }}>
                           {prov.short}

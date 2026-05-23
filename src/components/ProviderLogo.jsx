@@ -168,6 +168,26 @@ export default function ProviderLogo({ provider, name = '', size = 32, style = {
     );
   }
 
+  // 2.95 ByteDance Image Logo Integration
+  if (provName === 'ByteDance') {
+    return (
+      <img 
+        src="/bytedance-logo.png" 
+        alt="ByteDance" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
   // 3. Fallbacks to Premium Inline SVGs for all other major AIs
   const svgStyle = {
     width: size,

@@ -29,27 +29,27 @@ export const MINIMUM_CHARGE = 0.001;
 // ─── PROVIDERS ────────────────────────────────────────────────────────────────
 
 export const PROVIDERS = {
-  OpenAI:    { color: '#10a37f', short: 'O'  },
-  Anthropic: { color: '#d97757', short: 'A'  },
-  Google:    { color: '#4285f4', short: 'G'  },
-  Meta:      { color: '#0668E1', short: 'M'  },
-  Mistral:   { color: '#f5d142', short: 'Mi' },
-  DeepSeek:  { color: '#4d6eff', short: 'D'  },
-  xAI:       { color: '#ffffff', short: 'X'  },
-  Alibaba:   { color: '#ff6600', short: 'Al' },
-  ByteDance: { color: '#3370ff', short: 'BD' },
-  Moonshot:  { color: '#4058f2', short: 'Mo' },
-  MiniMax:   { color: '#1dcd8d', short: 'MM' },
-  Zhipu:     { color: '#3c3ffb', short: 'ZP' },
-  Xiaomi:    { color: '#ff6900', short: 'Xi' },
-  Kuaishou:  { color: '#ff4d00', short: 'Ks' },
-  Midjourney:{ color: '#ffffff', short: 'MJ' },
-  Cohere:    { color: '#3cffc8', short: 'Co' },
-  Perplexity:{ color: '#00a3ff', short: 'Px' },
-  'Stability AI': { color: '#7e22ce', short: 'SD' },
-  Microsoft: { color: '#00a4ef', short: 'MS' },
-  Amazon:    { color: '#ff9900', short: 'Am' },
-  OpenRouter:{ color: '#6d28d9', short: 'OR' },
+  OpenAI:    { color: '#10a37f', short: 'O',  logo: 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg' },
+  Anthropic: { color: '#f5efe6', short: 'A',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/anthropic.svg' },
+  Google:    { color: '#1a73e8', short: 'G',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/gemini.svg' },
+  Meta:      { color: '#0668E1', short: 'M',  logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg' },
+  Mistral:   { color: '#f5d142', short: 'Mi', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Mistral_AI_logo.svg' },
+  DeepSeek:  { color: '#4d6eff', short: 'D',  logo: 'https://avatars.githubusercontent.com/u/148330874?s=200&v=4' },
+  xAI:       { color: '#000000', short: 'X',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/xai.svg' },
+  Alibaba:   { color: '#ff6600', short: 'Al', logo: 'https://www.vectorlogo.zone/logos/alibaba/alibaba-icon.svg' },
+  ByteDance: { color: '#3370ff', short: 'BD', logo: 'https://avatars.githubusercontent.com/u/16743285?s=200&v=4' },
+  Moonshot:  { color: '#4058f2', short: 'Mo', logo: 'https://avatars.githubusercontent.com/u/132961858?s=200&v=4' },
+  MiniMax:   { color: '#1dcd8d', short: 'MM', logo: 'https://avatars.githubusercontent.com/u/105740440?s=200&v=4' },
+  Zhipu:     { color: '#3c3ffb', short: 'ZP', logo: 'https://avatars.githubusercontent.com/u/106727244?s=200&v=4' },
+  Xiaomi:    { color: '#ff6900', short: 'Xi', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ae/Xiaomi_logo_%282021-%29.svg' },
+  Kuaishou:  { color: '#ff4d00', short: 'Ks', logo: 'https://avatars.githubusercontent.com/u/14605963?s=200&v=4' },
+  Midjourney:{ color: '#ffffff', short: 'MJ', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/Midjourney_Emblem.png' },
+  Cohere:    { color: '#3cffc8', short: 'Co', logo: 'https://avatars.githubusercontent.com/u/95642823?s=200&v=4' },
+  Perplexity:{ color: '#00a3ff', short: 'Px', logo: 'https://avatars.githubusercontent.com/u/118367098?s=200&v=4' },
+  'Stability AI': { color: '#7e22ce', short: 'SD', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Stability_AI_logo.svg' },
+  Microsoft: { color: '#00a4ef', short: 'MS', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg' },
+  Amazon:    { color: '#ff9900', short: 'Am', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg' },
+  OpenRouter:{ color: '#6d28d9', short: 'OR', logo: 'https://avatars.githubusercontent.com/u/134468641?s=200&v=4' },
 };
 
 // ─── DYNAMIC MODEL LOADING ────────────────────────────────────────────────────
@@ -75,10 +75,11 @@ export const getDynamicModels = async () => {
   }
 
   cachedModels = data.map(m => {
-    const name = m.name;
-    const isMini      = name.toLowerCase().includes('mini')
-                     || name.toLowerCase().includes('flash')
-                     || name.toLowerCase().includes('8b');
+    const name = m.name || '';
+    const nameLower = name.toLowerCase();
+    const isMini      = nameLower.includes('mini')
+                     || nameLower.includes('flash')
+                     || nameLower.includes('8b');
     const isReasoning = m.type === 'Reasoning';
     const isFlagship  = m.badge === 'Flagship';
 
@@ -87,10 +88,10 @@ export const getDynamicModels = async () => {
     const offOut = m.off_out ?? 0;
 
     return {
-      id:         m.id,
-      name:       m.name,
-      provider:   m.provider,
-      type:       m.type,
+      id:         m.id || '',
+      name:       name || 'Unnamed Model',
+      provider:   m.provider || 'Other',
+      type:       m.type || 'Chat',
       badge:      m.badge || '',
       offIn,      // preço Crazy input
       offOut,     // preço Crazy output

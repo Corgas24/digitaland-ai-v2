@@ -1,7 +1,7 @@
 import { memo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+
 
 const Icon = {
   Moon: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
@@ -12,8 +12,9 @@ const Icon = {
 
 const Navbar = memo(function Navbar() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <nav className="navbar">
@@ -24,23 +25,27 @@ const Navbar = memo(function Navbar() {
           <span className="logo-ext">.ai</span>
         </Link>
         
-        <div className="nav-links">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/models" className="nav-link">Models</Link>
-          <Link to="/pricing" className="nav-link">Pricing</Link>
-          <Link to="/docs" className="nav-link">Docs</Link>
+        <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <Link to="/" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/models" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Models</Link>
+          <Link to="/pricing" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+          <Link to="/docs" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
           {user && (
             <>
-              <Link to="/playground" className="nav-link">Playground</Link>
-              <Link to="/dashboard" className="nav-link">Dashboard</Link>
+              <Link to="/playground" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Playground</Link>
+              <Link to="/dashboard" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
             </>
+          )}
+          {!user && mobileMenuOpen && (
+             <div className="auth-group-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+               <Link to="/signin" className="nav-link-signin" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+               <Link to="/playground" className="btn-nav-primary" onClick={() => setMobileMenuOpen(false)}>Get API Key</Link>
+             </div>
           )}
         </div>
 
         <div className="nav-actions">
-          <button className="theme-toggle" onClick={toggleTheme} title="Toggle Theme" style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', padding: '0.5rem', borderRadius: '8px' }}>
-            {theme === 'dark' ? <Icon.Sun /> : <Icon.Moon />}
-          </button>
+
           
           {user ? (
             <div className="user-dropdown-elite">
@@ -60,6 +65,10 @@ const Navbar = memo(function Navbar() {
               <Link to="/playground" className="btn-nav-primary">Get API Key</Link>
             </div>
           )}
+          
+          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '1.5rem', marginLeft: '0.5rem', display: 'none' }}>
+            ☰
+          </button>
         </div>
       </div>
     </nav>

@@ -21,6 +21,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePayment } from '../contexts/PaymentContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 import { safeFetch } from '../lib/safeFetch';
 
@@ -56,6 +57,7 @@ const sanitizeProviderError = (msg) => {
 
 export default function Playground() {
   const { user, refreshUser, isProfileLoading } = useAuth();
+  const { openPaymentModal } = usePayment();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlModel = searchParams.get('model');
@@ -202,7 +204,8 @@ export default function Playground() {
     }
 
     if (user.balance <= 0) {
-      setError('Créditos Neurais Insuficientes. Adicione fundos no Dashboard.');
+      setError('Insufficient Neural Credits. Please add funds in the Dashboard.');
+      openPaymentModal();
       return;
     }
 
@@ -581,11 +584,11 @@ export default function Playground() {
 
              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button onClick={startNewConversation} style={{ color: 'var(--text-muted)', transition: '0.2s', background: 'none', border: 'none', cursor: 'pointer' }} title="New Chat"><Trash2 size={18} /></button>
-                   <div style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)' }}>
+                <button onClick={() => openPaymentModal()} style={{ background: 'var(--primary-soft)', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--primary-glow)', cursor: 'pointer', outline: 'none' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)' }}>
                     ${typeof user?.balance === 'number' ? user.balance.toFixed(4) : '0.0000'}
                   </span>
-                </div>
+                </button>
              </div>
           </div>
 
@@ -792,6 +795,23 @@ export default function Playground() {
         </div>
 
         {/* 3. NEURAL CONFIG PANEL (FLOATING SIDEBAR) */}
+        {!showSettings && (
+          <button 
+            onClick={() => setShowSettings(true)}
+            style={{
+              position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
+              width: '36px', height: '70px',
+              background: 'var(--primary)', border: '1px solid var(--primary-glow)', borderRight: 'none',
+              borderRadius: '16px 0 0 16px', color: '#fff',
+              cursor: 'pointer', zIndex: 9999, boxShadow: '-5px 0 20px var(--primary-glow)',
+              transition: '0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.width = '42px'; }}
+            onMouseLeave={e => { e.currentTarget.style.width = '36px'; }}
+          >
+            <ChevronLeft size={24} />
+          </button>
+        )}
         {showSettings && (
           <aside style={{ 
             width: '340px', 
@@ -890,7 +910,7 @@ export default function Playground() {
                <div style={{ background: 'var(--primary-soft)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--primary-glow)' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Digitaland Credits</div>
                   <div style={{ fontSize: '1.8rem', fontWeight: 950, fontFamily: 'var(--mono)', color: 'var(--text)' }}>${user?.balance?.toFixed(5) || '0.00000'}</div>
-                  <button onClick={() => navigate('/dashboard?tab=billing')} style={{ width: '100%', marginTop: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.75rem', fontWeight: 900 }}>RECHARGE BALANCE</button>
+                  <button onClick={() => openPaymentModal()} style={{ width: '100%', marginTop: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.75rem', fontWeight: 900 }}>RECHARGE BALANCE</button>
                </div>
             </div>
           </aside>

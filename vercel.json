@@ -1,12 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/api/sync-models",
+      "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/sync-models"
+    },
+    {
       "source": "/v1/:path*",
       "destination": "https://fycqiwfbhqbltsthrpxk.supabase.co/functions/v1/gateway/:path*"
     },
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/sync-models",
+      "schedule": "0 4 * * *"
     }
   ]
 }

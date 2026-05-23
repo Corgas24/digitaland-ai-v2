@@ -4,12 +4,11 @@ import { supabase } from '../lib/supabase';
 // DIGITALAND — PRICING ENGINE
 // ══════════════════════════════════════════════════════════════════════════════
 //
-//  MARKUP = 1.4  → Digitaland cobra 40% acima do preço CrazyRouter
-//                   (ou seja, Digitaland é 26% mais barato que Crazy Router
-//                   com markup interno de 1.9).
+//  MARKUP = 1.4  → Digitaland cobra 1.4x o custo (40% de margem de lucro sobre o custo CrazyRouter)
+//  OFFICIAL_MULT = 2.0 → O preço "oficial" do mercado (OpenRouter/etc) é assumido como 2x o custo CrazyRouter
 //
 //  Estrutura dos preços no Supabase (tabela `models`):
-//    off_in, off_out  =  CrazyRouter list_price  (preço bruto da Crazy)
+//    off_in, off_out  =  Custo CrazyRouter puro
 //
 //  Para o GATEWAY (custo real cobrado do usuário por requisição):
 //    cost = (pToks/1e6 × offIn + cToks/1e6 × offOut) × MARKUP
@@ -17,18 +16,14 @@ import { supabase } from '../lib/supabase';
 //    garante piso MINIMUM_CHARGE com Math.max(cost, MINIMUM_CHARGE)
 //
 //  Para a LANDING / UI (preço exibido ao usuário, por 1M tokens):
-//    ourPrice(off)         = off × MARKUP        (= Crazy × 1.4)
-//    crazyrouterPrice(off) = off × 1.0            (= preço Crazy puro)
-//    savingsPercent()      = (1 − MARKUP/1.0) × 100  = 40% abaixo de Crazy
+//    ourPrice(off)         = off × MARKUP        (= Custo × 1.4)
+//    openrouterPrice(off)  = off × OFFICIAL_MULT (= Custo × 2.0)
+//    savingsPercent()      = (1 − MARKUP/OFFICIAL_MULT) × 100  = 30% de poupança vs Oficial
 //
-//  Resumo por modelo com off_in=$1.45 (preço Crazy):
-//    crazyrouterPrice(1.45) = 1.45   (preço Crazy — referência)
-//    ourPrice(1.45)         = 2.03   (Digitaland — 40% acima de Crazy)
-//    Gateway cobra por req = offReal × 1.4  (markup direto, sem intermediário)
 // ══════════════════════════════════════════════════════════════════════════════
 
 export const MARKUP         = 1.4;
-export const OFFICIAL_MULT  = 1;   // 1 = preço Supabase já é CrazyRouter direto
+export const OFFICIAL_MULT  = 2.0;
 export const MINIMUM_CHARGE = 0.001;
 
 // ─── PROVIDERS ────────────────────────────────────────────────────────────────
@@ -87,7 +82,7 @@ export const getDynamicModels = async () => {
     const isReasoning = m.type === 'Reasoning';
     const isFlagship  = m.badge === 'Flagship';
 
-    // off_in / off_out === preço CrazyRouter direto (por 1M tokens)
+    // off_in / off_out === preço OpenRouter direto (por 1M tokens)
     const offIn  = m.off_in  ?? 0;
     const offOut = m.off_out ?? 0;
 
@@ -116,22 +111,22 @@ export const MODELS = [];   // placeholder — dados reais vêm do Supabase
 // ─── PRICING HELPERS ─────────────────────────────────────────────────────────
 //
 //  ourPrice(off)           preço Digitaland ao usuário  = off × 1.4
-//  crazyrouterPrice(off)   preço CrazyRouter de referência = off × 1.0
+//  OpenRouterPrice(off)   preço OpenRouter de referência = off × 1.0
 //  savingsPercent()        (1−MARKUP) × 100 = 40%  → Digitaland 40% mais barato
 //
 //  Exemplo: off = $1.45 (preço Crazy para aquele modelo)
-//    crazyrouterPrice(1.45) = 1.45          (preço Crazy web)
+//    OpenRouterPrice(1.45) = 1.45          (preço Crazy web)
 //    ourPrice(1.45)         = 2.03          (preço Digitaland — 40% acima)
 //    Usuário paga em tempo real: cost = (tokens/1M × off) × 1.4  (= ourPrice)
 
-// Preço Digitaland — aplica MARKUP=1.4 sobre o preço CrazyRouter.
+// Preço Digitaland — aplica MARKUP=1.4 sobre o preço OpenRouter.
 // Usado em toda a UI (Pricing, Models, Landing, Dashboard).
 export const ourPrice = (offPrice) => Math.max(offPrice * MARKUP, MINIMUM_CHARGE);
 
-// Preço CrazyRouter de referência — usado apenas para comparação na UI.
-export const crazyrouterPrice = (offPrice) => offPrice * OFFICIAL_MULT;
+// Preço OpenRouter de referência — usado apenas para comparação na UI.
+export const openrouterPrice = (offPrice) => offPrice * OFFICIAL_MULT;
 
-// % de economia do Digitaland em relação à CrazyRouter
+// % de economia do Digitaland em relação à OpenRouter
 export const savingsPercent = () => Math.round((1 - (MARKUP / OFFICIAL_MULT)) * 100);
 
 // ─── OPENROUTER COMPARISON ─────────────────────────────────────────────────────
@@ -171,17 +166,17 @@ export const getFeaturedModels = async () => {
 };
 
 // Números de referência na tabela da página de Pricing
-// off_in deve ser o preço CrazyRouter puro (não multiplicado)
+// off_in deve ser o preço OpenRouter puro (não multiplicado)
 export const PRICING_COMPARE = [
-  { model: 'GPT-4o',            offIn: 1.375, offOut: 5.50  },
-  { model: 'Claude 3.5 Sonnet', offIn: 1.65,  offOut: 8.25  },
-  { model: 'DeepSeek V3',       offIn: 0.126, offOut: 0.252 }
+  { model: 'GPT-5.5',            offIn: 2.75,  offOut: 16.50 },
+  { model: 'Claude Opus 4.7',    offIn: 2.75,  offOut: 13.75 },
+  { model: 'Gemini 3.1 Pro',     offIn: 1.10,  offOut: 6.60  }
 ];
 
 // Modelos hardcoded usados no grid da landing page
-// offIn = preço CrazyRouter puro — ourPrice() aplica markup 1.4 automaticamente
+// offIn = preço OpenRouter puro — ourPrice() aplica markup 1.4 automaticamente
 export const FEATURED_MODELS = [
-  { name: 'GPT-4o',            provider: 'OpenAI',    badge: 'Flagship', offIn: 1.375 },
-  { name: 'Claude Sonnet 4.6', provider: 'Anthropic', badge: 'Popular',  offIn: 1.65  },
-  { name: 'DeepSeek V3',       provider: 'DeepSeek',  badge: 'Value',    offIn: 0.126 }
+  { name: 'GPT-5.5',             provider: 'OpenAI',    badge: 'Flagship', offIn: 2.75 },
+  { name: 'Claude Opus 4.7',     provider: 'Anthropic', badge: 'Popular',  offIn: 2.75 },
+  { name: 'Gemini 3.1 Pro',      provider: 'Google',    badge: 'Flagship', offIn: 1.10 }
 ];

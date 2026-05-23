@@ -70,7 +70,7 @@ export default function Landing() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const faqSavings = `up to ${savPct}% below CrazyRouter pricing`;
+  const faqSavings = `up to ${savPct}% below OpenRouter pricing`;
   const faqs = [
     { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 300+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
     { q: "How does pricing work?", a: `We offer competitive, usage-based pricing with rates ${faqSavings}. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs.` },
@@ -109,13 +109,13 @@ export default function Landing() {
           </div>
           
           <h1 className="hero-headline-lg fade-in-up delay-1">
-            <span>Next-Gen</span> API for<br />
-            <span className="hero-gradient-text">Neural Intelligence</span>
+            <span>One API.</span> Every<br />
+            <span className="hero-gradient-text">Frontier AI Model.</span>
           </h1>
           
-          <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600 }}>
-            Unified access to 300+ AI models. Optimized for speed, 
-            secured with end-to-end encryption, and priced for scale.
+          <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
+            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
+            Enterprise-grade speed, zero logging, and pure pay-as-you-go pricing — guaranteed <strong>40% cheaper</strong> than OpenRouter.
           </p>
 
           <div className="hero-input-group glass-card fade-in-up delay-2" style={{ boxShadow: '0 0 30px rgba(99,102,241,0.2)' }}>
@@ -179,7 +179,7 @@ export default function Landing() {
             { num: '300+', label: 'AI Models', icon: <Layers size={20} /> },
             { num: '99.9%', label: 'Uptime SLA', icon: <Server size={20} /> },
             { num: '<200ms', label: 'Avg Latency', icon: <Zap size={20} /> },
-            { num: `~${savPct}%`, label: 'Below CrazyRouter', icon: <DollarSign size={20} /> },
+            { num: `~${savPct}%`, label: 'Below OpenRouter', icon: <DollarSign size={20} /> },
           ].map((s, i) => (
             <div className="stat-item" key={i}>
               <div className="stat-icon">{s.icon}</div>
@@ -203,19 +203,19 @@ export default function Landing() {
             </div>
             
             <h2 style={{ fontSize: '4.2rem', fontWeight: 950, lineHeight: 0.9, marginBottom: '2.5rem', letterSpacing: '-4px', color: 'var(--text)' }}>
-              Experience <br /><span className="hero-gradient-text">Neural Edge</span>
+              The Ultimate <br /><span className="hero-gradient-text">All-in-One API</span>
             </h2>
             
             <p style={{ fontSize: '1.2rem', color: 'var(--text-dim)', lineHeight: 1.8, marginBottom: '3.5rem', fontWeight: 500, maxWidth: '90%' }}>
-              Test our infrastructure directly. Switch between models with near-zero latency and feel the power of our optimized gateway.
+              Test our infrastructure directly. Switch between the world's most advanced AI models with near-zero latency and feel the power of our highly optimized gateway.
             </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '4rem' }}>
               {[
-                'Unified API for all major LLMs',
-                'Intelligent SHA-256 caching layer',
-                'Real-time token usage analytics',
-                '1.4x optimized profit-markup model'
+                'Unified access to 300+ LLMs via All-in-One API',
+                'Intelligent Edge caching for instant responses',
+                'Real-time token usage and cost analytics',
+                'Guaranteed lowest market prices for developers'
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary)', flexShrink: 0 }}>
@@ -256,17 +256,17 @@ export default function Landing() {
                  </div>
                  <div>
                     <p style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', marginBottom: '0.25rem' }}>Neural Gateway <span style={{ color: '#22c55e', fontSize: '0.8rem', marginLeft: '1rem', fontWeight: 900, textTransform: 'uppercase' }}>● ONLINE</span></p>
-                    <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-4o_MAX</p>
+                    <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-5.5_ULTRA</p>
                  </div>
               </div>
 
               {/* Chat Body */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', marginBottom: '4rem' }}>
                  <div className="glass-card" style={{ padding: '1.5rem 2rem', borderRadius: '30px 4px 30px 30px', alignSelf: 'flex-end', maxWidth: '80%', fontSize: '1.1rem', fontWeight: 600, border: '1px solid var(--primary)' }}>
-                    Analyze high-frequency token streams.
+                    Deploy autonomous multi-agent reasoning for system diagnostics.
                  </div>
                  <div className="glass-card" style={{ padding: '1.5rem 2rem', borderRadius: '4px 30px 30px 30px', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '1.1rem', fontWeight: 600, background: 'rgba(255,255,255,0.02)' }}>
-                    Processing... Latency: <span style={{ color: '#22c55e' }}>8ms</span>. Stream optimized via Node_Alpha.
+                    Processing... Latency: <span style={{ color: '#22c55e' }}>4ms</span>. Multi-agent cluster initialized via Node_Prime.
                  </div>
               </div>
 
@@ -393,8 +393,8 @@ export default function Landing() {
                 color: '#ec4899',
                 bg: 'rgba(236,72,153,0.08)',
                 title: 'Transparent Pricing',
-                desc: 'Usage-based pricing with rates consistently below CrazyRouter. No monthly commitments, no hidden fees, no surprises on your invoice.',
-                highlight: `Up to ${savPct}% cheaper than CrazyRouter`
+                desc: 'Usage-based pricing with rates consistently below OpenRouter. No monthly commitments, no hidden fees, no surprises on your invoice.',
+                highlight: `Up to ${savPct}% cheaper than OpenRouter`
               },
               {
                 icon: <Globe size={24} />,
@@ -455,7 +455,7 @@ export default function Landing() {
         <div className="container">
           <div className="section-title">
             <h2>Transparent pricing — always fair</h2>
-            <p>Competitive rates, consistently below CrazyRouter. No hidden fees, ever.</p>
+            <p>Competitive rates, consistently below OpenRouter. No hidden fees, ever.</p>
           </div>
 
           <div className="pricing-table-wrap glass-card">

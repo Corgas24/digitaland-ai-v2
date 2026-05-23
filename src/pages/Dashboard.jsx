@@ -8,22 +8,46 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, Cell 
 } from 'recharts';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePayment } from '../contexts/PaymentContext';
 
 const DEMO_KEYS = [];
 const MODEL_USAGE = [];
 
 export default function Dashboard() {
   const { user, updateBalance, addApiKey, removeApiKey, isProfileLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { openPaymentModal } = usePayment();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    const path = location.pathname.split('/').pop();
+    if (['usage', 'logs', 'settings', 'keys'].includes(path)) return path;
+    return 'overview';
+  });
+
+  useEffect(() => {
+    const path = location.pathname.split('/').pop();
+    if (['usage', 'logs', 'settings', 'keys'].includes(path)) {
+      setActiveTab(path);
+    } else if (path === 'dashboard') {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'overview') navigate('/dashboard');
+    else navigate(`/dashboard/${tab}`);
+  };
   // Use the keys from AuthContext instead of local state to keep it fully synced
   const keys = user?.apiKeys || [];
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [copied, setCopied] = useState(null);
-  const location = useLocation();
+
   
   // Billing States
   const [showTopUp, setShowTopUp] = useState(false);
@@ -226,16 +250,16 @@ export default function Dashboard() {
         
         <div className="sidebar-group">
           <div className="sidebar-group-title">CONSOLE</div>
-          <button className={`sidebar-link ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+          <button className={`sidebar-link ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>
             <Activity size={18} /> Overview
           </button>
           <Link to="/playground" className="sidebar-link" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Sparkles size={18} /> AI Playground
           </Link>
-          <button className={`sidebar-link ${activeTab === 'keys' ? 'active' : ''}`} onClick={() => setActiveTab('keys')}>
+          <button className={`sidebar-link ${activeTab === 'keys' ? 'active' : ''}`} onClick={() => handleTabChange('keys')}>
             <Key size={18} /> API Keys
           </button>
-          <button className={`sidebar-link ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>
+          <button className={`sidebar-link ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => handleTabChange('logs')}>
             <Activity size={18} /> Activity Logs
           </button>
           {user?.isAdmin && (
@@ -247,10 +271,10 @@ export default function Dashboard() {
 
         <div className="sidebar-group" style={{ marginTop: '1.5rem' }}>
           <div className="sidebar-group-title">ACCOUNT</div>
-          <button className={`sidebar-link ${activeTab === 'billing' ? 'active' : ''}`} onClick={() => setActiveTab('billing')}>
+          <button className={`sidebar-link ${window.location.pathname.includes('billing') ? 'active' : ''}`} onClick={() => navigate('/dashboard/billing')}>
             <CreditCard size={18} /> Billing & Usage
           </button>
-          <button className={`sidebar-link ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+          <button className={`sidebar-link ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => handleTabChange('settings')}>
             <Settings size={18} /> Settings
           </button>
         </div>
@@ -273,7 +297,7 @@ export default function Dashboard() {
               `$${user?.balance?.toFixed(5) || '0.00000'}`
             )}
           </p>
-          <button onClick={() => setShowTopUp(true)} className="btn-solid" style={{ width: '100%', marginTop: '1.25rem', padding: '0.6rem', fontSize: '0.85rem', justifyContent: 'center' }}>
+          <button onClick={() => openPaymentModal()} className="btn-solid" style={{ width: '100%', marginTop: '1.25rem', padding: '0.6rem', fontSize: '0.85rem', justifyContent: 'center' }}>
             <Plus size={14} /> Add Credits
           </button>
         </div>
@@ -704,7 +728,7 @@ export default function Dashboard() {
                       )}
                     </div>
                   </div>
-                  <button className="btn-solid" onClick={() => setShowTopUp(true)} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
+                  <button className="btn-solid" onClick={() => openPaymentModal()} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
                     <Plus size={16} /> Add Credits
                   </button>
                 </div>
@@ -712,7 +736,7 @@ export default function Dashboard() {
                 <div className="card span-2">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Payment Methods</h3>
-                    <button className="btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Add Method</button>
+                    <button className="btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => openPaymentModal()}>Add Method</button>
                   </div>
                   <div style={{ padding: '2rem', border: '1px dashed var(--border)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>
                     <CreditCard size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />

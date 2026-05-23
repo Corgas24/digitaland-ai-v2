@@ -1948,3 +1948,195 @@ body {
   0%, 100% { opacity: 0.4; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.2); }
 }
+
+
+/* GLOBAL BUTTON FIXES */
+button, a, .btn-solid, .btn-outline, .btn-nav-primary, .magic-btn { position: relative; z-index: 10; }
+
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .nav-links, .auth-group-nav { display: none; }
+  .hero-headline-lg { font-size: 2.5rem; }
+  .features-grid, .steps-grid, .stats-row, .models-elite-grid, .cards-row { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .pricing-card-elite { padding: 1.5rem; }
+  .models-header-inner { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .hero-headline-lg { font-size: 2rem; }
+  .pt-row { flex-direction: column; }
+}
+
+
+/* MOBILE MENU STYLES */
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: block !important; }
+  .nav-links { display: none; flex-direction: column; position: absolute; top: 68px; left: 0; width: 100%; background: var(--bg-alt); padding: 1.5rem; box-shadow: var(--shadow-md); border-bottom: 1px solid var(--border-light); z-index: 999; align-items: flex-start; }
+  .nav-links.mobile-open { display: flex !important; }
+}
+
+@media (max-width: 768px) { .auth-split-layout { flex-direction: column; height: auto; min-height: 100vh; } .auth-split-left { display: none; } .auth-split-right { width: 100%; padding: 2rem; } }
+
+
+/* ------------------------------------
+   BILLING REDESIGN UI
+   ------------------------------------ */
+.billing-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .billing-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.balance-glow-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 3rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.3);
+}
+
+.balance-glow-card::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.balance-glow-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.add-credits-sticky {
+  position: sticky;
+  top: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.3);
+}
+
+.pill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.credit-pill {
+  flex: 1;
+  min-width: calc(33.333% - 0.5rem);
+  padding: 0.8rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  color: var(--text-muted);
+  position: relative;
+  overflow: hidden;
+}
+
+.credit-pill:hover {
+  border-color: var(--border-light);
+  color: var(--text);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.credit-pill.selected {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.credit-pill.popular::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 10px; height: 10px;
+  background: var(--primary);
+  border-bottom-left-radius: 6px;
+}
+
+.checkout-panel {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.smooth-slide-down {
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+/* ------------------------------------
+   3D PERSUASIVE EFFECTS
+   ------------------------------------ */
+.card-3d {
+  transform: perspective(1000px) rotateX(2deg) rotateY(0deg);
+  transform-style: preserve-3d;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: 
+    0 20px 40px -10px rgba(0,0,0,0.5),
+    0 0 40px -10px var(--primary-glow) inset,
+    0 -2px 0 0 rgba(255,255,255,0.05) inset;
+}
+
+.card-3d:hover {
+  transform: perspective(1000px) rotateX(0deg) translateY(-5px);
+  box-shadow: 
+    0 30px 60px -15px rgba(0,0,0,0.6),
+    0 0 60px 0 var(--primary-glow) inset,
+    0 -2px 0 0 rgba(255,255,255,0.1) inset;
+}
+
+.btn-3d {
+  position: relative;
+  transform: translateY(0);
+  transition: all 0.1s ease;
+  border-bottom: 4px solid rgba(0,0,0,0.6) !important;
+}
+
+.btn-3d:active {
+  transform: translateY(4px);
+  border-bottom-width: 0px !important;
+  margin-bottom: 4px;
+}
+
+.glow-orb {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  background: var(--primary);
+  filter: blur(80px);
+  opacity: 0.5;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+

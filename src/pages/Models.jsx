@@ -134,7 +134,7 @@ export default function Models() {
   }, [models]);
 
   const filtered = useMemo(() => {
-    return models.filter(m => {
+    const list = models.filter(m => {
       if (!m) return false;
       const q = search ? search.toLowerCase() : '';
       const nameLower = (m.name || '').toLowerCase();
@@ -159,6 +159,27 @@ export default function Models() {
         }
       }
       return matchSearch && matchProvider && matchType;
+    });
+
+    // Custom Sorting: Flagship first, Popular second, then sorted by Intelligence rating (descending), then provider name
+    return list.sort((a, b) => {
+      const aFlag = a.badge === 'Flagship' ? 1 : 0;
+      const bFlag = b.badge === 'Flagship' ? 1 : 0;
+      if (aFlag !== bFlag) return bFlag - aFlag;
+
+      const aPop = a.badge === 'Popular' ? 1 : 0;
+      const bPop = b.badge === 'Popular' ? 1 : 0;
+      if (aPop !== bPop) return bPop - aPop;
+
+      const aIntel = a.intel || 0;
+      const bIntel = b.intel || 0;
+      if (aIntel !== bIntel) return bIntel - aIntel;
+
+      const aProv = a.provider || '';
+      const bProv = b.provider || '';
+      if (aProv !== bProv) return aProv.localeCompare(bProv);
+
+      return (a.name || '').localeCompare(b.name || '');
     });
   }, [models, search, selProvider, selType]);
 

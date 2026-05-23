@@ -340,8 +340,20 @@ export default function Models() {
                     <div className="pm-card-header">
                       {m.provider === 'DeepSeek' ? (
                         <img src="/deepseek-logo.png" alt="DeepSeek" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
-                      ) : m.provider === 'Alibaba' || (m.name || '').toLowerCase().includes('qwen') ? (
+                      ) : m.provider === 'Alibaba' || (m.name || '').toLowerCase().includes('qwen') || m.provider === 'Qwen' ? (
                         <img src="/qwen-logo.png" alt="Qwen" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'OpenAI' ? (
+                        <img src="/openai-logo.png" alt="OpenAI" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'Cohere' ? (
+                        <img src="/cohere-logo.png" alt="Cohere" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'Google' ? (
+                        <img src="/gemini-logo.png" alt="Google" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'Anthropic' ? (
+                        <img src="/anthropic-logo.png" alt="Anthropic" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'Stability AI' ? (
+                        <img src="/stability-logo.png" alt="Stability AI" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
+                      ) : m.provider === 'Midjourney' ? (
+                        <img src="/midjourney-logo.png" alt="Midjourney" className="pm-provider-avatar" style={{ width: '42px', height: '42px', objectFit: 'contain', background: '#ffffff', padding: '5px' }} />
                       ) : (
                         <div className="pm-provider-avatar" style={{ background: `${brandColor}12`, color: brandColor }}>
                           {prov.short}
@@ -352,7 +364,14 @@ export default function Models() {
                         <h3 className="pm-model-name" title={m.name}>{m.name}</h3>
                       </div>
                       <div className="pm-type-badge">
-                        <span>{TYPE_ICONS[m.type] || '🤖'} {m.type}</span>
+                        {m.type === 'Audio' ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <img src="/voice-logo.png" alt="" style={{ width: '13px', height: '13px', objectFit: 'contain' }} />
+                            <span>{m.type}</span>
+                          </span>
+                        ) : (
+                          <span>{TYPE_ICONS[m.type] || '🤖'} {m.type}</span>
+                        )}
                       </div>
                     </div>
 

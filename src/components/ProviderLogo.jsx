@@ -48,6 +48,126 @@ export default function ProviderLogo({ provider, name = '', size = 32, style = {
     );
   }
 
+  // 2.2 OpenAI Image Logo Integration
+  if (provName === 'OpenAI') {
+    return (
+      <img 
+        src="/openai-logo.png" 
+        alt="OpenAI" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
+  // 2.5 Cohere Image Logo Integration
+  if (provName === 'Cohere') {
+    return (
+      <img 
+        src="/cohere-logo.png" 
+        alt="Cohere" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
+  // 2.6 Google Gemini Image Logo Integration
+  if (provName === 'Google') {
+    return (
+      <img 
+        src="/gemini-logo.png" 
+        alt="Google" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
+  // 2.7 Anthropic Image Logo Integration
+  if (provName === 'Anthropic') {
+    return (
+      <img 
+        src="/anthropic-logo.png" 
+        alt="Anthropic" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
+  // 2.8 Stability AI Image Logo Integration
+  if (provName === 'Stability AI') {
+    return (
+      <img 
+        src="/stability-logo.png" 
+        alt="Stability AI" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
+  // 2.9 Midjourney Image Logo Integration
+  if (provName === 'Midjourney') {
+    return (
+      <img 
+        src="/midjourney-logo.png" 
+        alt="Midjourney" 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
   // 3. Fallbacks to Premium Inline SVGs for all other major AIs
   const svgStyle = {
     width: size,

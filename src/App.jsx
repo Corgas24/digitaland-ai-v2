@@ -31,9 +31,11 @@ function ScrollToTop() {
 }
 
 function App() {
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "test";
+
   return (
     <PayPalScriptProvider options={{
-      'client-id': import.meta.env.VITE_PAYPAL_CLIENT_ID,
+      'client-id': paypalClientId,
       currency: 'USD',
       intent: 'capture',
     }}>

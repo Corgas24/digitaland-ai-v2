@@ -72,10 +72,10 @@ export default function Landing() {
 
   const faqSavings = `up to ${savPct}% below OpenRouter pricing`;
   const faqs = [
-    { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 300+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
+    { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 260+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
     { q: "How does pricing work?", a: `We offer competitive, usage-based pricing with rates ${faqSavings}. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs.` },
     { q: "Is it really OpenAI-compatible?", a: "Yes! Just change your base_url to https://api.digitaland.ai/v1 and use your Digitaland API key. Works with the official OpenAI SDK, LangChain, LlamaIndex, and any other OpenAI-compatible library." },
-    { q: "Which models are supported?", a: "We support 300+ models including GPT-5.5, Claude 4.7, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
+    { q: "Which models are supported?", a: "We support 260+ models including GPT-5.5, Claude 4.7, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
     { q: "How does Digitaland protect my data?", a: "Enterprise-grade encryption for all data in transit and at rest. We operate a strict zero-log policy — your prompts, completions, and API keys are never stored, logged, or used for training." },
     { q: "What happens if a provider goes down?", a: "Our intelligent routing automatically fails over to backup nodes. We maintain 99.9% uptime with redundant infrastructure across multiple regions." }
   ];
@@ -114,8 +114,8 @@ export default function Landing() {
           </h1>
           
           <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
-            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
-            Enterprise-grade speed, zero logging, and pure pay-as-you-go pricing — guaranteed <strong>40% cheaper</strong> than OpenRouter.
+            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 260+ other models instantly. 
+            Enterprise-grade speed, zero logging, and pure pay-as-you-go pricing — guaranteed <strong>30% cheaper</strong> than OpenRouter.
           </p>
 
           <div className="hero-input-group glass-card fade-in-up delay-2" style={{ boxShadow: '0 0 30px rgba(99,102,241,0.2)' }}>
@@ -137,7 +137,7 @@ export default function Landing() {
           <div className="hero-social-proof fade-in-up delay-4">
             <div className="hsp-item">
               <Sparkles size={14} />
-              <span><strong>300+</strong> AI Models</span>
+              <span><strong>260+</strong> AI Models</span>
             </div>
             <div className="hsp-divider" />
             <div className="hsp-item">
@@ -176,7 +176,7 @@ export default function Landing() {
       <div className="container">
         <div className="stats-row">
           {[
-            { num: '300+', label: 'AI Models', icon: <Layers size={20} /> },
+            { num: '260+', label: 'AI Models', icon: <Layers size={20} /> },
             { num: '99.9%', label: 'Uptime SLA', icon: <Server size={20} /> },
             { num: '<200ms', label: 'Avg Latency', icon: <Zap size={20} /> },
             { num: `~${savPct}%`, label: 'Below OpenRouter', icon: <DollarSign size={20} /> },
@@ -212,7 +212,7 @@ export default function Landing() {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '4rem' }}>
               {[
-                'Unified access to 300+ LLMs via All-in-One API',
+                'Unified access to 260+ LLMs via All-in-One API',
                 'Intelligent Edge caching for instant responses',
                 'Real-time token usage and cost analytics',
                 'Guaranteed lowest market prices for developers'
@@ -344,7 +344,7 @@ export default function Landing() {
                 <div className="t-step-num">3</div>
                 <div>
                   <strong>Start calling any model</strong>
-                  <p>Access 300+ models — GPT, Claude, Gemini, Grok & more</p>
+                  <p>Access 260+ models — GPT, Claude, Gemini, Grok & more</p>
                 </div>
               </div>
             </div>
@@ -402,7 +402,7 @@ export default function Landing() {
                 bg: 'rgba(6,182,212,0.08)',
                 title: 'Unified Model Catalog',
                 desc: 'A single API key unlocks every major frontier model — from GPT-5.5 and Claude 4.7 to Gemini 3 Pro, Grok, and DeepSeek V3. New models added within hours.',
-                highlight: '300+ models · 20+ providers'
+                highlight: '260+ models · 20+ providers'
               },
               {
                 icon: <Server size={24} />,
@@ -442,7 +442,7 @@ export default function Landing() {
 
           <div style={{ textAlign: 'center', marginTop: '3rem' }}>
             <Link to="/models" className="btn-solid" style={{ padding: '0.9rem 2.5rem' }}>
-              Browse All 300+ Models <ArrowRight size={18} />
+              Browse All 260+ Models <ArrowRight size={18} />
             </Link>
           </div>
         </div>
@@ -523,7 +523,7 @@ export default function Landing() {
          ════════════════════════════════════ */}
       <section className="cta-section">
         <div className="container">
-          <h2>Ready to build with 300+ AI models?</h2>
+          <h2>Ready to build with 260+ AI models?</h2>
           <p>Join developers worldwide who trust Digitaland.ai for production AI</p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/playground" className="magic-btn btn-lg" style={{ padding: '1rem 2.5rem' }}>

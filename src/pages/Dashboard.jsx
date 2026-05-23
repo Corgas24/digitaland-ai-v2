@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Key, Plus, Copy, Trash2, CreditCard, BarChart3, Settings, 
   Activity, ArrowUpRight, TrendingUp, Cpu, Server, Shield, 
-  Zap, Globe, RefreshCcw, Bell, X, Check, Lock, DollarSign, Sparkles 
+  Zap, Globe, RefreshCcw, Bell, X, Check, Lock, DollarSign, Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -12,6 +13,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../contexts/PaymentContext';
+import Sidebar from '../components/Sidebar';
 
 const DEMO_KEYS = [];
 const MODEL_USAGE = [];
@@ -246,62 +248,7 @@ export default function Dashboard() {
   return (
     <div className="dash-layout">
       {/* Sidebar */}
-      <aside className="dash-sidebar">
-        
-        <div className="sidebar-group">
-          <div className="sidebar-group-title">CONSOLE</div>
-          <button className={`sidebar-link ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>
-            <Activity size={18} /> Overview
-          </button>
-          <Link to="/playground" className="sidebar-link" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Sparkles size={18} /> AI Playground
-          </Link>
-          <button className={`sidebar-link ${activeTab === 'keys' ? 'active' : ''}`} onClick={() => handleTabChange('keys')}>
-            <Key size={18} /> API Keys
-          </button>
-          <button className={`sidebar-link ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => handleTabChange('logs')}>
-            <Activity size={18} /> Activity Logs
-          </button>
-          {user?.isAdmin && (
-            <Link to="/admin" className="sidebar-link" style={{ marginTop: '1rem', color: 'var(--primary)', border: '1px solid var(--primary-soft)', background: 'rgba(99, 102, 241, 0.05)' }}>
-              <Shield size={18} /> Command Center
-            </Link>
-          )}
-        </div>
-
-        <div className="sidebar-group" style={{ marginTop: '1.5rem' }}>
-          <div className="sidebar-group-title">ACCOUNT</div>
-          <button className={`sidebar-link ${window.location.pathname.includes('billing') ? 'active' : ''}`} onClick={() => navigate('/dashboard/billing')}>
-            <CreditCard size={18} /> Billing & Usage
-          </button>
-          <button className={`sidebar-link ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => handleTabChange('settings')}>
-            <Settings size={18} /> Settings
-          </button>
-        </div>
-
-        <div style={{ marginTop: 'auto', padding: '1.25rem', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Balance</p>
-            <span style={{ 
-              background: (user?.balance > 100 ? 'var(--purple-soft)' : (user?.balance > 50 ? 'var(--blue-soft)' : 'var(--green-soft)')), 
-              color: (user?.balance > 100 ? 'var(--purple)' : (user?.balance > 50 ? 'var(--blue)' : 'var(--green)')), 
-              padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800 
-            }}>
-              {user?.balance > 100 ? 'GOLD TIER' : (user?.balance > 50 ? 'SILVER TIER' : 'BRONZE TIER')}
-            </span>
-          </div>
-          <p style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: 'var(--mono)', lineHeight: 1 }} className="gradient-text">
-            {isProfileLoading ? (
-              <span className="balance-skeleton pulse" style={{ display: 'inline-block', width: '100px', height: '28px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }} />
-            ) : (
-              `$${user?.balance?.toFixed(5) || '0.00000'}`
-            )}
-          </p>
-          <button onClick={() => openPaymentModal()} className="btn-solid" style={{ width: '100%', marginTop: '1.25rem', padding: '0.6rem', fontSize: '0.85rem', justifyContent: 'center' }}>
-            <Plus size={14} /> Add Credits
-          </button>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* Main Content */}
       <main className="dash-main">
@@ -318,11 +265,22 @@ export default function Dashboard() {
           </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button className="icon-btn"><Bell size={18} /></button>
-            <Link to="/docs" className="btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
-              Documentation <ArrowUpRight size={14} style={{ marginLeft: '0.2rem' }} />
-            </Link>
+            <div className="avatar-circle">M</div>
           </div>
         </header>
+
+        {user?.balance < 0.50 && (
+          <div style={{ margin: '1.5rem 2rem 0', padding: '1rem 1.5rem', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#b45309' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <AlertCircle size={20} style={{ color: '#d97706' }} />
+              <div>
+                <strong style={{ display: 'block', fontSize: '0.9rem' }}>Low Balance Warning</strong>
+                <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>Your balance is running low (${user?.balance?.toFixed(4)}). To prevent API disruption, please add credits.</span>
+              </div>
+            </div>
+            <button onClick={() => navigate('/dashboard/billing')} style={{ background: '#d97706', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Top Up</button>
+          </div>
+        )}
 
         <div className="dash-content-inner">
           

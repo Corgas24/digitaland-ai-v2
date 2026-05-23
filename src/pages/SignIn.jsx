@@ -64,7 +64,7 @@ export default function SignIn() {
             <div className="auth-feature-item fade-in-up delay-1">
               <div className="icon"><Zap size={18} /></div>
               <div>
-                <strong>300+ Models Available</strong>
+                <strong>260+ Models Available</strong>
                 <span>GPT-5.5, Claude 4.7, Gemini, DeepSeek & more.</span>
               </div>
             </div>

@@ -74,7 +74,7 @@ export default function SignUp() {
         
         <div className="auth-persuasion">
           <h2>Start building today.</h2>
-          <p>Join developers worldwide who use Digitaland.ai to access 300+ frontier models through a single, reliable API.</p>
+          <p>Join developers worldwide who use Digitaland.ai to access 260+ frontier models through a single, reliable API.</p>
           
           <div className="auth-feature-list">
             <div className="auth-feature-item fade-in-up delay-1">
@@ -123,7 +123,7 @@ export default function SignUp() {
             <>
               <div className="auth-form-header">
                 <h1>Create account</h1>
-                <p>Start building with 300+ AI models in minutes</p>
+                <p>Start building with 260+ AI models in minutes</p>
               </div>
 
               {error && (

@@ -12,7 +12,7 @@ export default function Footer({ className = '' }) {
               <span className="logo-ext">.ai</span>
             </Link>
             <p>
-              Intelligent API gateway providing high-performance access to 300+ frontier AI models with enterprise-grade reliability.
+              Intelligent API gateway providing high-performance access to 260+ frontier AI models with enterprise-grade reliability.
             </p>
           </div>
           

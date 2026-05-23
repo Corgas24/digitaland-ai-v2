@@ -348,23 +348,19 @@ export default {
 
         // ── 6. INTELLIGENT ROUTING: CASCADE + FALLBACK ──────────────────────
         //
-        // Strategy A — Primary upstream provider with cascade failover
-        // Strategy B — Fallback provider (OpenRouter) with cascade failover
-        //
-        // Proprietary-model guard: if the primary URL resolves to SiliconFlow
-        // (which doesn't proxy GPT / Claude / Gemini etc.), skip it for those
-        // models and go straight to the fallback provider.
+        // Exclusively routing through primary upstream provider (CrazyRouter) with cascade failover.
+        // SiliconFlow bypass is kept for compatibility if the upstream URL is customized.
 
         const shouldSkipPrimary      = false;
 
         const tryModels      = [originalModelId, ...(CASCADE[originalModelId] ?? [])];
         let   finalModelId   = originalModelId;
-        let   usedFallback   = false;
+        const usedFallback   = false;
         let   response:     Response | null = null;
         let   mediaUrlResult: string | null = null;
         const errorsList: string[] = [];
 
-        // ── Strategy A: primary provider ────────────────────────────────────
+        // ── Primary provider ────────────────────────────────────────────────
         if (!shouldSkipPrimary) {
           for (const model of tryModels) {
             try {

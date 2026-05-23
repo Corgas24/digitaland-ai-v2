@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getDynamicModels, PROVIDERS, ourPrice, openrouterPrice, savingsPercent } from '../data/models';
 import { 
@@ -9,7 +9,7 @@ import {
 const GLOBAL_SAVING = savingsPercent();
 
 export default function Pricing() {
-  const [models, setModels] = useState([]);
+  const [models, setModels]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,8 +69,83 @@ export default function Pricing() {
     });
   }, [models, searchQuery]);
 
-  const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
+  /* ══════════════════════════════════════════════════════════════════════════
+     PRICING ROW — no OpenRouter column, no free-catalog data
+     ══════════════════════════════════════════════════════════════════════════ */
+  const PricingRow = ({ m }) => {
+    const ourIn  = ourPrice(m.offIn);
+    const ourOut = ourPrice(m.offOut);
 
+    return (
+      <div className="pt-row">
+        <div className="pt-col model">
+          <div className="model-info">
+            <span className="m-name">{m.name}</span>
+            <span style={{ fontSize:'0.65rem',opacity:0.5,fontWeight:800,textTransform:'uppercase',marginLeft:'0.5rem' }}>
+              {m.provider}
+            </span>
+          </div>
+        </div>
+
+        <div className="pt-col price">
+          <div className="price-compare">
+            <span className="our-p">${ourIn.toFixed(3)}</span>
+          </div>
+        </div>
+
+        <div className="pt-col price">
+          <div className="price-compare">
+            <span className="our-p">${ourOut.toFixed(3)}</span>
+          </div>
+        </div>
+
+        <div className="pt-col savings">
+          <span className="s-badge badge-min" title={`All requests are billed at least ${MINIMUM_CHARGE}/1M tokens — gateway overhead`}>
+            ≥ ${MINIMUM_CHARGE}/1M &nbsp;<span className="vs-label">min. guaranteed</span>
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     FEATURED CARD — Digitaland price only
+     ══════════════════════════════════════════════════════════════════════════ */
+  const PricingCard = ({ m, i }) => {
+    const ourIn  = ourPrice(m.offIn);
+    const p      = PROVIDERS[m.provider] || { color: 'var(--primary)' };
+
+    return (
+      <div className="pricing-card-elite fade-in-up" key={i} style={{ animationDelay:`${i*0.1}s` }}>
+        <div className="p-card-header">
+          <div className="p-card-icon" style={{ background:`${p.color}15`, color: p.color }}>
+            <Zap size={20} />
+          </div>
+          <div className="p-card-title">
+            <h3 style={{ textTransform:'uppercase' }}>{m.name}</h3>
+            <span>{m.provider}</span>
+          </div>
+        </div>
+
+        <div className="p-card-prices">
+          <div className="p-price-row">
+            <span className="label">Per 1M input tokens</span>
+            <span className="value">${ourIn.toFixed(3)}<small>/1M</small></span>
+          </div>
+        </div>
+
+        <div className="p-card-savings">
+          <span className="save-tag" style={{ background: 'rgba(245,158,11,0.08)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.2)' }}>
+            ≥ ${MINIMUM_CHARGE}/req &nbsp;·&nbsp; min. guaranteed
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     FAQ
+     ══════════════════════════════════════════════════════════════════════════ */
   const FAQ_DATA = [
     { q: 'O que é o Digitaland.ai?', a: 'O Digitaland.ai é um gateway API unificado para inteligência artificial. Oferecemos acesso ultra-rápido a mais de 300 modelos de ponta (OpenAI, Anthropic, Google, xAI, Meta, Mistral) através de uma única integração simples.' },
     { q: 'Como funciona a faturação em tempo real (Pay-As-You-Go)?', a: `Não existem taxas mensais nem subscrições. Adiciona créditos ao teu saldo e os tokens são debitados em tempo real à medida que fazes requisições. As nossas tarifas são garantidamente 30% mais baratas que a OpenRouter.` },
@@ -78,6 +153,9 @@ export default function Pricing() {
     { q: 'Como garantem preços mais baixos que a OpenRouter?', a: 'Graças ao nosso motor de routing inteligente global e parcerias de alto volume de processamento, conseguimos otimizar a latência e repassar as economias diretamente para os programadores.' },
   ];
 
+  /* ══════════════════════════════════════════════════════════════════════════
+     RENDER
+     ══════════════════════════════════════════════════════════════════════════ */
   return (
     <main className="landing-root" style={{ position: 'relative', overflow: 'hidden' }}>
       {/* Background Mesh Orbs */}
@@ -228,7 +306,7 @@ export default function Pricing() {
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+            <div style={{ display:'flex',justifyContent:'center',padding:'4rem' }}>
               <Loader2 className="animate-spin" size={32} color="var(--primary)" />
             </div>
           ) : (
@@ -326,7 +404,7 @@ export default function Pricing() {
               <div className="pt-col price">Output / 1M</div>
               <div className="pt-col savings">Discount</div>
             </div>
-            
+
             <div className="pt-body">
               {loading ? (
                 <div style={{ padding: '4rem', textAlign: 'center' }}>
@@ -471,6 +549,7 @@ export default function Pricing() {
           </div>
         </div>
       </section>
+
     </main>
   );
 }

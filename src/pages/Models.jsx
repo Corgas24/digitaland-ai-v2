@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 import { Search, Copy, Check, X, Loader2, ArrowUpRight } from 'lucide-react';

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  getDynamicModels, ourPrice, MINIMUM_CHARGE
+  getDynamicModels, ourPrice, MINIMUM_CHARGE, PROVIDERS
 } from '../data/models';
 import {
   ArrowRight, ChevronDown, Shield, Zap, Globe, Loader2

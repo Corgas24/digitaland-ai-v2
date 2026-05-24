@@ -170,7 +170,15 @@ export default function Pricing() {
   // Savings Calculator State
   const [tokenVolume, setTokenVolume] = useState(25); // Default: 25M tokens/month
   const [selectedTier, setSelectedTier] = useState('flagship'); // mini | flagship | sonnet
+  const [expandedGroups, setExpandedGroups] = useState({});
   const groupedData = useGroupedData(models, searchQuery);
+
+  const toggleGroupExpand = (groupKey) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }));
+  };
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -480,9 +488,11 @@ export default function Pricing() {
          ════════════════════════════════════ */}
       <section id="rates-table" className="section section-alt" style={{ padding: '6rem 0', position: 'relative', zIndex: 10 }}>
         <div className="container">
-          <div className="section-title">
-            <h2>Detailed Price comparison matrix</h2>
-            <p>Compare real-time rates of all active models inside our ecosystem</p>
+          <div className="section-title" style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem', textTransform: 'none' }}>Serverless Pricing</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
+              Flexible token pricing, high usage limits, and postpaid billing—plus $1 in free credits to get you started!
+            </p>
           </div>
 
           {/* Table Search Input */}
@@ -528,6 +538,8 @@ export default function Pricing() {
                     : (groupKey === 'Zhipu' ? 'Zai' : groupKey === 'Moonshot' ? 'Moonshot AI' : groupKey === 'MiniMax' ? 'MiniMaxAI' : groupKey);
                   
                   const desc = PROVIDER_DESCS[groupKey] || '';
+                  const isExpanded = expandedGroups[groupKey];
+                  const visibleList = isExpanded ? list : list.slice(0, 5);
                   
                   return (
                     <div className="pricing-split-card fade-in-up" key={groupKey}>
@@ -576,7 +588,8 @@ export default function Pricing() {
                               )}
                             </thead>
                             <tbody>
-                              {list.slice(0, 10).map((m) => {
+                              {visibleList.map((m) => {
+                                if (!m) return null;
                                 const ourIn = ourPrice(m.offIn || 0);
                                 const ourOut = ourPrice(m.offOut || 0);
                                 const { context } = getModelSpecs(m);
@@ -623,6 +636,17 @@ export default function Pricing() {
                             </tbody>
                           </table>
                         </div>
+
+                        {list.length > 5 && (
+                          <div style={{ display: 'flex', justifyContent: 'center', padding: '0.25rem 0' }}>
+                            <button 
+                              onClick={() => toggleGroupExpand(groupKey)}
+                              className="btn-load-more"
+                            >
+                              {isExpanded ? 'Show Less' : 'Load More'}
+                            </button>
+                          </div>
+                        )}
                         
                         {/* Footer Info inside Right Card */}
                         <div className="pricing-card-footer-info">
@@ -774,7 +798,25 @@ export default function Pricing() {
                 border-bottom: 1px dashed var(--primary);
               }
 
-              .pricing-action-link:hover {
+               .pricing-action-link:hover {
+                color: var(--text);
+                border-bottom-color: var(--text);
+              }
+
+              .btn-load-more {
+                background: transparent;
+                border: none;
+                color: var(--primary);
+                font-weight: 700;
+                font-size: 0.82rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                border-bottom: 1px dashed var(--primary);
+                padding: 0 2px 2px 2px;
+                outline: none;
+              }
+
+              .btn-load-more:hover {
                 color: var(--text);
                 border-bottom-color: var(--text);
               }

@@ -131,11 +131,17 @@ const getCachedInputPrice = (m, ourIn) => {
   return null;
 };
 
-const useGroupedData = (models, query) => {
+const useGroupedData = (models, query, selectedProvider) => {
   return useMemo(() => {
     const listToUse = (models && models.length > 0) ? models : ALL_FALLBACK_MODELS;
     
     const filtered = listToUse.filter(m => {
+      if (!m) return false;
+      
+      // 1. Provider Filter
+      if (selectedProvider && selectedProvider !== 'all') {
+        if (m.provider !== selectedProvider) return false;
+      }
       if (!m) return false;
       if (!query) return true;
       const q = query.toLowerCase();
@@ -157,7 +163,30 @@ const useGroupedData = (models, query) => {
     });
 
     return groups;
-  }, [models, query]);
+  }, [models, query, selectedProvider]);
+};
+
+const PROVIDER_COOL_NAMES = {
+  'OpenAI': 'OpenAI',
+  'Anthropic': 'Anthropic Claude',
+  'Google': 'Google Gemini',
+  'Meta': 'Meta Llama',
+  'Mistral': 'Mistral AI',
+  'DeepSeek': 'DeepSeek',
+  'xAI': 'xAI Grok',
+  'Alibaba': 'Qwen (Alibaba)',
+  'ByteDance': 'Doubao (ByteDance)',
+  'Moonshot': 'Moonshot AI',
+  'MiniMax': 'MiniMaxAI',
+  'Zhipu': 'Zai (Zhipu)',
+  'Xiaomi': 'Xiaomi AI',
+  'Kuaishou': 'Kuaishou Kling',
+  'Midjourney': 'Midjourney',
+  'Cohere': 'Cohere',
+  'Perplexity': 'Perplexity AI',
+  'Stability AI': 'Stability AI (Flux)',
+  'Microsoft': 'Microsoft',
+  'Amazon': 'Amazon Bedrock'
 };
 
 export default function Pricing() {
@@ -171,7 +200,9 @@ export default function Pricing() {
   const [tokenVolume, setTokenVolume] = useState(25); // Default: 25M tokens/month
   const [selectedTier, setSelectedTier] = useState('flagship'); // mini | flagship | sonnet
   const [expandedGroups, setExpandedGroups] = useState({});
-  const groupedData = useGroupedData(models, searchQuery);
+  const [selectedProvider, setSelectedProvider] = useState('all');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const groupedData = useGroupedData(models, searchQuery, selectedProvider);
 
   const toggleGroupExpand = (groupKey) => {
     setExpandedGroups(prev => ({
@@ -495,16 +526,91 @@ export default function Pricing() {
             </p>
           </div>
 
-          {/* Table Search Input */}
-          <div className="pricing-search-wrapper">
-            <Search size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', opacity: 0.6, zIndex: 12 }} />
-            <input 
-              type="text" 
-              placeholder="Search by model name or provider (e.g. Gemini, Opus)..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pricing-search-input"
-            />
+          {/* Custom Side-by-Side Premium Filter Bar */}
+          <div className="pricing-filters-bar">
+            {/* Search Input Box */}
+            <div className="pricing-search-box">
+              <Search size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', opacity: 0.6, zIndex: 12 }} />
+              <input 
+                type="text" 
+                placeholder="Search by model name..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pricing-search-input"
+                style={{ width: '100%', paddingLeft: '3rem' }}
+              />
+            </div>
+
+            {/* Provider Dropdown Selector */}
+            <div className="provider-dropdown-container">
+              <div 
+                className="provider-dropdown-trigger" 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {selectedProvider === 'all' ? (
+                    <div style={{ 
+                      width: '24px', height: '24px', borderRadius: '50%', 
+                      background: 'rgba(99, 102, 241, 0.15)', color: 'var(--primary)',
+                      display: 'flex', alignItems: 'center', justifycontent: 'center',
+                      fontSize: '0.75rem', fontWeight: 900
+                    }}>🤖</div>
+                  ) : (
+                    <ProviderLogo provider={selectedProvider} size={24} />
+                  )}
+                  <span>
+                    {selectedProvider === 'all' 
+                      ? 'All Providers (20)' 
+                      : (PROVIDER_COOL_NAMES[selectedProvider] || selectedProvider)}
+                  </span>
+                </div>
+                <ChevronDown 
+                  size={18} 
+                  style={{ 
+                    transform: isDropdownOpen ? 'rotate(180deg)' : 'none', 
+                    transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    color: 'var(--text-muted)'
+                  }} 
+                />
+              </div>
+
+              {isDropdownOpen && (
+                <>
+                  <div 
+                    onClick={() => setIsDropdownOpen(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 40, cursor: 'default' }}
+                  />
+                  <div className="provider-dropdown-menu">
+                    <div 
+                      onClick={() => {
+                        setSelectedProvider('all');
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`provider-dropdown-item ${selectedProvider === 'all' ? 'selected' : ''}`}
+                    >
+                      <span style={{ fontSize: '1rem' }}>🤖</span>
+                      <span>All Providers (20)</span>
+                    </div>
+
+                    <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.05)', margin: '6px 0' }} />
+
+                    {Object.entries(PROVIDER_COOL_NAMES).map(([key, value]) => (
+                      <div 
+                        key={key}
+                        onClick={() => {
+                          setSelectedProvider(key);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`provider-dropdown-item ${selectedProvider === key ? 'selected' : ''}`}
+                      >
+                        <ProviderLogo provider={key} size={20} />
+                        <span>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="pricing-grouped-dashboard">
@@ -671,6 +777,97 @@ export default function Pricing() {
 
             {/* Custom Embedded Scoped Styling */}
             <style>{`
+              .pricing-filters-bar {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 1.25rem;
+                max-width: 800px;
+                margin: 0 auto 2.5rem;
+                flex-wrap: wrap;
+                width: 100%;
+              }
+
+              .pricing-search-box {
+                position: relative;
+                flex: 1.3;
+                min-width: 280px;
+              }
+
+              .provider-dropdown-container {
+                position: relative;
+                flex: 0.7;
+                min-width: 260px;
+                z-index: 50;
+              }
+
+              .provider-dropdown-trigger {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: rgba(18, 18, 29, 0.45);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1.5px solid rgba(255, 255, 255, 0.05);
+                border-radius: 16px;
+                padding: 1rem 1.25rem;
+                color: var(--text);
+                font-weight: 700;
+                font-size: 0.95rem;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                user-select: none;
+                height: 52px;
+                box-sizing: border-box;
+              }
+
+              .provider-dropdown-trigger:hover {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 4px var(--primary-soft);
+              }
+
+              .provider-dropdown-menu {
+                position: absolute;
+                top: calc(100% + 8px);
+                left: 0;
+                width: 100%;
+                max-height: 340px;
+                overflow-y: auto;
+                background: rgba(10, 10, 15, 0.96);
+                backdrop-filter: blur(25px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 16px;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+                z-index: 100;
+                padding: 8px;
+                box-sizing: border-box;
+              }
+
+              .provider-dropdown-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 14px;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-weight: 500;
+                font-size: 0.88rem;
+                color: var(--text-dim);
+                user-select: none;
+              }
+
+              .provider-dropdown-item:hover {
+                background: rgba(255, 255, 255, 0.05) !important;
+                color: var(--text) !important;
+              }
+
+              .provider-dropdown-item.selected {
+                background: rgba(99, 102, 241, 0.15) !important;
+                color: var(--primary) !important;
+                font-weight: 700;
+              }
+
               .pricing-grouped-dashboard {
                 margin-top: 2rem;
                 width: 100%;

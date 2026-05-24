@@ -205,21 +205,23 @@ export default function Pricing() {
       { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', offIn: 3.00, offOut: 15.00 }
     ];
     if (selectedTier === 'mini') {
-      return activeModels.find(m => m.id.includes('mini') || m.name.toLowerCase().includes('mini')) || activeModels[0];
+      return activeModels.find(m => m?.id?.includes('mini') || m?.name?.toLowerCase()?.includes('mini')) || activeModels[0];
     }
     if (selectedTier === 'sonnet') {
-      return activeModels.find(m => m.id.includes('sonnet') || m.name.toLowerCase().includes('sonnet') || m.name.toLowerCase().includes('opus')) || activeModels[0];
+      return activeModels.find(m => m?.id?.includes('sonnet') || m?.name?.toLowerCase()?.includes('sonnet') || m?.name?.toLowerCase()?.includes('opus')) || activeModels[0];
     }
-    return activeModels.find(m => m.id === 'gpt-4o' || (m.name.toLowerCase().includes('4o') && !m.name.toLowerCase().includes('mini'))) || activeModels.find(m => m.badge === 'Flagship') || activeModels[0];
+    return activeModels.find(m => m?.id === 'gpt-4o' || (m?.name?.toLowerCase()?.includes('4o') && !m?.name?.toLowerCase()?.includes('mini'))) || activeModels.find(m => m?.badge === 'Flagship') || activeModels[0];
   }, [models, selectedTier]);
 
   // Compute calculated pricing
   const calculatorCosts = useMemo(() => {
     if (!calcModel) return { ours: 0, official: 0, saved: 0, pct: 0 };
-    const oursVal = ourPrice(calcModel.offIn) * tokenVolume;
-    const officialVal = openrouterPrice(calcModel.offIn) * tokenVolume;
+    const offInVal = calcModel.offIn || 0;
+    const oursVal = ourPrice(offInVal) * tokenVolume;
+    const officialVal = openrouterPrice(offInVal) * tokenVolume;
     const savedVal = Math.max(officialVal - oursVal, 0);
-    const pctVal = Math.round((1 - (ourPrice(calcModel.offIn) / openrouterPrice(calcModel.offIn))) * 100);
+    const denominator = openrouterPrice(offInVal);
+    const pctVal = denominator ? Math.round((1 - (ourPrice(offInVal) / denominator)) * 100) : GLOBAL_SAVING;
     return {
       ours: oursVal,
       official: officialVal,
@@ -406,7 +408,9 @@ export default function Pricing() {
               {featuredModels.map((m, i) => {
                 if (!m) return null;
                 const p = PROVIDERS[m.provider || ''] || { color: 'var(--primary)', short: 'AI' };
-                const discount = Math.round((1 - (ourPrice(m.offIn) / openrouterPrice(m.offIn))) * 100);
+                const offInVal = m.offIn || 0;
+                const denominator = openrouterPrice(offInVal);
+                const discount = denominator ? Math.round((1 - (ourPrice(offInVal) / denominator)) * 100) : GLOBAL_SAVING;
                 
                 return (
                   <div className="spotlight-card fade-in-up" key={i} style={{ animationDelay: `${i * 0.15}s` }}>

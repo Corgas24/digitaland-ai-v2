@@ -119,6 +119,7 @@ const getModelSpecs = (m) => {
 };
 
 const getCachedInputPrice = (m, ourIn) => {
+  if (!m) return null;
   const name = (m.name || '').toLowerCase();
   const provider = (m.provider || '').toLowerCase();
   if (name.includes('deepseek') || provider.includes('deepseek')) {
@@ -127,6 +128,7 @@ const getCachedInputPrice = (m, ourIn) => {
   if (name.includes('gpt-4o') || name.includes('gpt-mini') || name.includes('claude') || name.includes('gemini') || name.includes('qwen') || provider.includes('qwen') || name.includes('glm')) {
     return ourIn * 0.50; // standard 50% discount for mainstream models
   }
+  return null;
 };
 
 const useGroupedData = (models, query) => {
@@ -134,6 +136,7 @@ const useGroupedData = (models, query) => {
     const listToUse = (models && models.length > 0) ? models : ALL_FALLBACK_MODELS;
     
     const filtered = listToUse.filter(m => {
+      if (!m) return false;
       if (!query) return true;
       const q = query.toLowerCase();
       const name = (m.name || '').toLowerCase();
@@ -144,6 +147,7 @@ const useGroupedData = (models, query) => {
 
     const groups = {};
     filtered.forEach(m => {
+      if (!m) return;
       const isMedia = ['Image', 'Video', 'Audio'].includes(m.type || '');
       const groupKey = isMedia ? m.type : m.provider;
       if (!groups[groupKey]) {

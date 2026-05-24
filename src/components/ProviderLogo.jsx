@@ -189,6 +189,27 @@ export default function ProviderLogo({ provider, name = '', size = 32, style = {
     );
   }
 
+  // 2.96 Dynamic fallback to PROVIDERS logo URL for newer providers (Moonshot, MiniMax, Zhipu, etc.)
+  const logoUrl = PROVIDERS[provName]?.logo;
+  if (logoUrl) {
+    return (
+      <img 
+        src={logoUrl} 
+        alt={provName} 
+        style={{ 
+          width: size, 
+          height: size, 
+          objectFit: 'contain', 
+          background: provName === 'xAI' ? '#000000' : '#ffffff', 
+          borderRadius: '25%',
+          padding: size > 30 ? '5px' : '2px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          ...style 
+        }} 
+      />
+    );
+  }
+
   // 3. Fallbacks to Premium Inline SVGs for all other major AIs
   const svgStyle = {
     width: size,

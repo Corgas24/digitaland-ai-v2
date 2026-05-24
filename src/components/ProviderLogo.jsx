@@ -1,4 +1,5 @@
 import React from 'react';
+import { PROVIDERS } from '../data/models';
 
 /**
  * PROVIDERLOGO - Masterpiece AI Logo Component

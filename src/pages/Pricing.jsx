@@ -1,12 +1,160 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getDynamicModels, PROVIDERS, ourPrice, openrouterPrice, savingsPercent } from '../data/models';
 import { 
-  ArrowRight, ChevronDown, CheckCircle2, Shield, Zap, Globe, Sparkles, 
-  DollarSign, Clock, HelpCircle, Loader2, Search, Sliders, PlayCircle
+  ArrowRight, ChevronDown, CheckCircle2, Shield, 
+  DollarSign, Clock, Loader2, Search, Info
 } from 'lucide-react';
+import ProviderLogo from '../components/ProviderLogo';
 
 const GLOBAL_SAVING = savingsPercent();
+
+const ALL_FALLBACK_MODELS = [
+    // DeepSeek
+    { id: 'deepseek-v3-pro', name: 'DeepSeek-V3-Pro', provider: 'DeepSeek', type: 'Chat', offIn: 0.814, offOut: 2.486, badge: 'Flagship' },
+    { id: 'deepseek-v3-flash', name: 'DeepSeek-V3-Flash', provider: 'DeepSeek', type: 'Chat', offIn: 0.10, offOut: 0.20, badge: 'Value' },
+    { id: 'deepseek-v3.2', name: 'DeepSeek-V3.2', provider: 'DeepSeek', type: 'Chat', offIn: 0.507, offOut: 0.336, badge: '' },
+    { id: 'deepseek-v3.2-exp', name: 'DeepSeek-V3.2-Exp', provider: 'DeepSeek', type: 'Chat', offIn: 0.507, offOut: 0.293, badge: '' },
+    { id: 'deepseek-v3.2-terminus', name: 'DeepSeek-V3.2-Terminus', provider: 'DeepSeek', type: 'Chat', offIn: 0.507, offOut: 0.714, badge: '' },
+    { id: 'deepseek-r1', name: 'DeepSeek-R1', provider: 'DeepSeek', type: 'Reasoning', offIn: 0.393, offOut: 1.564, badge: 'Flagship' },
+
+    // Qwen
+    { id: 'qwen-2-5-72b', name: 'Qwen-2.5-72B', provider: 'Qwen', type: 'Chat', offIn: 0.214, offOut: 2.643, badge: 'Flagship' },
+    { id: 'qwen-2-5-32b-a23b', name: 'Qwen-2.5-32B-A23B', provider: 'Qwen', type: 'Chat', offIn: 0.50, offOut: 1.143, badge: '' },
+    { id: 'qwen-2-5-14b', name: 'Qwen-2.5-14B', provider: 'Qwen', type: 'Chat', offIn: 0.0714, offOut: 0.529, badge: 'Value' },
+    { id: 'qwen-2-5-72b-a14b', name: 'Qwen-2.5-72B-A14B', provider: 'Qwen', type: 'Chat', offIn: 0.136, offOut: 0.421, badge: 'Popular' },
+    { id: 'qwen-2-5-27b', name: 'Qwen-2.5-27B', provider: 'Qwen', type: 'Chat', offIn: 0.529, offOut: 5.214, badge: '' },
+
+    // Zhipu (Zai)
+    { id: 'glm-4-1', name: 'GLM-4.1', provider: 'Zhipu', type: 'Chat', offIn: 1.00, offOut: 3.143, badge: 'Flagship' },
+    { id: 'glm-4', name: 'GLM-4', provider: 'Zhipu', type: 'Chat', offIn: 0.257, offOut: 1.886, badge: '' },
+    { id: 'glm-4-7', name: 'GLM-4.7', provider: 'Zhipu', type: 'Chat', offIn: 0.30, offOut: 2.643, badge: 'Popular' },
+    { id: 'glm-4-8v', name: 'GLM-4.8V', provider: 'Zhipu', type: 'Chat', offIn: 0.143, offOut: 0.20, badge: 'Value' },
+    { id: 'glm-4-9', name: 'GLM-4.9', provider: 'Zhipu', type: 'Chat', offIn: 0.271, offOut: 0.929, badge: '' },
+
+    // Moonshot AI
+    { id: 'kimi-k1-instruct', name: 'Kimi-k1-instruct', provider: 'Moonshot', type: 'Chat', offIn: 0.343, offOut: 1.986, badge: 'Popular' },
+    { id: 'kimi-k1-instruct-osds', name: 'Kimi-k1-instruct-OSDS', provider: 'Moonshot', type: 'Chat', offIn: 1.714, offOut: 5.00, badge: 'Flagship' },
+    { id: 'kimi-k1-5', name: 'Kimi-k1.5', provider: 'Moonshot', type: 'Chat', offIn: 0.293, offOut: 1.257, badge: '' },
+    { id: 'kimi-k1-6', name: 'Kimi-k1.6', provider: 'Moonshot', type: 'Chat', offIn: 0.214, offOut: 1.143, badge: '' },
+
+    // MiniMax AI
+    { id: 'minimax-v2-5', name: 'MiniMax-V2.5', provider: 'MiniMax', type: 'Chat', offIn: 0.214, offOut: 1.214, badge: 'Flagship' },
+
+    // OpenAI
+    { id: 'gpt-4o-mini', name: 'gpt-4o-mini', provider: 'OpenAI', type: 'Chat', offIn: 0.107, offOut: 0.429, badge: 'Value' },
+    { id: 'gpt-4o', name: 'gpt-4o', provider: 'OpenAI', type: 'Chat', offIn: 1.786, offOut: 7.143, badge: 'Flagship' },
+    { id: 'o1-mini', name: 'o1-mini', provider: 'OpenAI', type: 'Reasoning', offIn: 2.143, offOut: 8.571, badge: 'Popular' },
+    { id: 'o1', name: 'o1', provider: 'OpenAI', type: 'Reasoning', offIn: 10.714, offOut: 42.857, badge: 'Flagship' },
+
+    // Anthropic
+    { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', type: 'Chat', offIn: 2.143, offOut: 10.714, badge: 'Flagship' },
+    { id: 'claude-3-5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic', type: 'Chat', offIn: 0.571, offOut: 2.857, badge: 'Value' },
+
+    // Google
+    { id: 'gemini-1-5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', type: 'Chat', offIn: 0.893, offOut: 3.571, badge: 'Flagship' },
+    { id: 'gemini-1-5-flash', name: 'Gemini 1.5 Flash', provider: 'Google', type: 'Chat', offIn: 0.0536, offOut: 0.214, badge: 'Value' },
+
+    // Others
+    { id: 'deepseek-v2-lite-1b', name: 'DeepSeek-V2-Lite-1B', provider: 'Meta', type: 'Chat', offIn: 0.193, offOut: 0.714, badge: '' },
+    { id: 'gemini-1-5-flash-8b', name: 'gemini-1.5-flash-8b', provider: 'Google', type: 'Chat', offIn: 0.0714, offOut: 0.286, badge: 'Value' },
+    { id: 'gemini-1-5-pro-8b', name: 'gemini-1.5-pro-8b', provider: 'Google', type: 'Chat', offIn: 0.093, offOut: 0.286, badge: '' },
+    { id: 'phi-3-medium-instruct', name: 'Phi-3-medium-instruct', provider: 'Other', type: 'Chat', offIn: 0.10, offOut: 0.479, badge: '' },
+    { id: 'yi-1-5-34b-chat', name: 'Yi-1.5-34b-Chat', provider: 'Other', type: 'Chat', offIn: 0.061, offOut: 0.543, badge: '' },
+
+    // Image Generation
+    { id: 'flux-schnell-gen', name: 'FLUX.1 [schnell]', provider: 'Stability AI', type: 'Image', offIn: 0.0214, offOut: 0, badge: 'Value' },
+    { id: 'flux-dev-gen', name: 'FLUX.1 [dev]', provider: 'Stability AI', type: 'Image', offIn: 0.0536, offOut: 0, badge: 'Popular' },
+    { id: 'flux-schnell-max', name: 'FLUX.1 [schnell] (max)', provider: 'Stability AI', type: 'Image', offIn: 0.0429, offOut: 0, badge: '' },
+    { id: 'flux-dev-ultra', name: 'FLUX.1 [dev] (ultra)', provider: 'Stability AI', type: 'Image', offIn: 0.0571, offOut: 0, badge: '' },
+    { id: 'flux-schnell-ultra', name: 'FLUX.1 [schnell] (ultra)', provider: 'Stability AI', type: 'Image', offIn: 0.0429, offOut: 0, badge: '' },
+
+    // Video Generation
+    { id: 'luma-dream-gen', name: 'Luma Dream Machine', provider: 'Other', type: 'Video', offIn: 0.2143, offOut: 0, badge: 'Popular' },
+    { id: 'sora-video-gen', name: 'Sora Video', provider: 'OpenAI', type: 'Video', offIn: 1.0714, offOut: 0, badge: 'Flagship' },
+
+    // Audio Models
+    { id: 'whisper-large-v3-gen', name: 'Whisper Large V3', provider: 'OpenAI', type: 'Audio', offIn: 0.00428, offOut: 0, badge: 'Flagship' },
+    { id: 'elevenlabs-reader-gen', name: 'ElevenLabs Reader', provider: 'Other', type: 'Audio', offIn: 0.01071, offOut: 0, badge: 'Popular' }
+];
+
+const PROVIDER_DESCS = {
+  DeepSeek: "DeepSeek released the first open weight model and has gained global attention for its highly capable, cost efficient LLMs. Models such as DeepSeek-V3 and DeepSeek-R1 are competitive with top international models, delivering remarkable performance in reasoning, coding, and mathematical problem solving.",
+  Qwen: "Open source & model family built by Alibaba Cloud ranging from 0.5B to 120B+ parameters, designed to scale to any use case, from deep reasoning and math to autonomous coding.",
+  Zhipu: "Zhipu AI builds the ChatGLM family of LLMs, developer APIs and Agents. Their latest model, GLM-4, delivers frontier-level performance in coding, creative writing, and roleplay scenarios.",
+  Moonshot: "Moonshot AI stands out for breakthroughs in long-context language models. Its flagship product, Kimi, is especially well-suited for research, legal work, and complex information synthesis. The latest release, Kimi k1 Thinking, is a state-of-the-art thinking agent with deep reasoning and tool orchestration.",
+  MiniMax: "Specialized in multimodal capabilities, MiniMax develops advanced models that seamlessly integrate text, voice, and vision, with notable achievements in natural-sounding text-to-speech and voice cloning.",
+  OpenAI: "OpenAI is a pioneering AI research organization that helped spark today's generative AI revolution. Its GPT series brought LLMs into the mainstream and is currently led by GPT-4 and o1, which set industry benchmarks for natural language understanding, generation, and reasoning.",
+  Anthropic: "Anthropic is a public benefit corporation focused on building safe and alignment-optimized neural architectures. Its Claude family sets the industry benchmark for precise coding, reasoning, and context window comprehension.",
+  Google: "Google Gemini represents the cutting edge of native multimodal intelligence. Offering extremely large context windows, Gemini excel at processing millions of tokens of code, video, and audio.",
+  Others: "Robust foundation and specialized open-weight models from leading AI houses (Meta, Cohere, Mistral). Perfect for fine-tuned enterprise classification, summarization, and cost-effective operations.",
+  Image: "Generate high-quality images from text prompts with our state-of-the-art image generation models.",
+  Video: "Create dynamic videos from text descriptions with our cutting-edge video generation models.",
+  Audio: "Process and generate audio with our high-quality speech recognition and synthesis models."
+};
+
+const getModelSpecs = (m) => {
+  if (!m) return { context: '—' };
+  const name = (m.name || '').toLowerCase();
+  const isGeneration = ['Image', 'Video', 'Audio'].includes(m.type || '');
+
+  let context = '128K';
+  if (isGeneration) {
+    context = '—';
+  } else if (name.includes('gemini')) {
+    context = '1M';
+  } else if (name.includes('claude')) {
+    context = '200K';
+  } else if (name.includes('gpt-4') || name.includes('gpt-5') || name.includes('o1') || name.includes('o3') || name.includes('deepseek') || name.includes('llama')) {
+    context = '128K';
+  } else if (name.includes('qwen')) {
+    context = '32K';
+  } else if (name.includes('glm')) {
+    context = '128K';
+  } else if (name.includes('kimi')) {
+    context = '200K';
+  }
+
+  return { context };
+};
+
+const getCachedInputPrice = (m, ourIn) => {
+  const name = (m.name || '').toLowerCase();
+  const provider = (m.provider || '').toLowerCase();
+  if (name.includes('deepseek') || provider.includes('deepseek')) {
+    return ourIn * 0.04; // extreme discount mapping for DeepSeek ($0.046 for $1.14 input)
+  }
+  if (name.includes('gpt-4o') || name.includes('gpt-mini') || name.includes('claude') || name.includes('gemini') || name.includes('qwen') || provider.includes('qwen') || name.includes('glm')) {
+    return ourIn * 0.50; // standard 50% discount for mainstream models
+  }
+};
+
+const useGroupedData = (models, query) => {
+  return useMemo(() => {
+    const listToUse = (models && models.length > 0) ? models : ALL_FALLBACK_MODELS;
+    
+    const filtered = listToUse.filter(m => {
+      if (!query) return true;
+      const q = query.toLowerCase();
+      const name = (m.name || '').toLowerCase();
+      const provider = (m.provider || '').toLowerCase();
+      const type = (m.type || '').toLowerCase();
+      return name.includes(q) || provider.includes(q) || type.includes(q);
+    });
+
+    const groups = {};
+    filtered.forEach(m => {
+      const isMedia = ['Image', 'Video', 'Audio'].includes(m.type || '');
+      const groupKey = isMedia ? m.type : m.provider;
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(m);
+    });
+
+    return groups;
+  }, [models, query]);
+};
 
 export default function Pricing() {
   const [models, setModels]   = useState([]);
@@ -18,6 +166,11 @@ export default function Pricing() {
   // Savings Calculator State
   const [tokenVolume, setTokenVolume] = useState(25); // Default: 25M tokens/month
   const [selectedTier, setSelectedTier] = useState('flagship'); // mini | flagship | sonnet
+  const groupedData = useGroupedData(models, searchQuery);
+
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
 
   useEffect(() => {
     getDynamicModels()
@@ -75,101 +228,12 @@ export default function Pricing() {
     };
   }, [calcModel, tokenVolume]);
 
-  const filteredModels = useMemo(() => {
-    if (!models || models.length === 0) {
-      return [
-        { name: 'GPT-4o', provider: 'OpenAI', offIn: 2.50, offOut: 10.00 },
-        { name: 'GPT-4o-mini', provider: 'OpenAI', offIn: 0.15, offOut: 0.60 },
-        { name: 'Claude 3.5 Sonnet', provider: 'Anthropic', offIn: 3.00, offOut: 15.00 },
-        { name: 'Claude 3.5 Haiku', provider: 'Anthropic', offIn: 0.80, offOut: 4.00 },
-        { name: 'Gemini 1.5 Pro', provider: 'Google', offIn: 1.25, offOut: 5.00 },
-        { name: 'Gemini 1.5 Flash', provider: 'Google', offIn: 0.075, offOut: 0.30 },
-        { name: 'DeepSeek-V3', provider: 'DeepSeek', offIn: 0.14, offOut: 0.28 },
-        { name: 'DeepSeek-R1', provider: 'DeepSeek', offIn: 0.55, offOut: 2.19 }
-      ];
-    }
-    return models.filter(m => {
-      if (!m) return false;
-      const query = searchQuery ? searchQuery.toLowerCase() : '';
-      const nameLower = (m.name || '').toLowerCase();
-      const providerLower = (m.provider || '').toLowerCase();
-      return nameLower.includes(query) || providerLower.includes(query);
-    });
-  }, [models, searchQuery]);
+// Nested configurations removed and resolved globally at module scope.
 
   /* ══════════════════════════════════════════════════════════════════════════
      PRICING ROW — no OpenRouter column, no free-catalog data
      ══════════════════════════════════════════════════════════════════════════ */
-  const PricingRow = ({ m }) => {
-    const ourIn  = ourPrice(m.offIn);
-    const ourOut = ourPrice(m.offOut);
-
-    return (
-      <div className="pt-row">
-        <div className="pt-col model">
-          <div className="model-info">
-            <span className="m-name">{m.name}</span>
-            <span style={{ fontSize:'0.65rem',opacity:0.5,fontWeight:800,textTransform:'uppercase',marginLeft:'0.5rem' }}>
-              {m.provider}
-            </span>
-          </div>
-        </div>
-
-        <div className="pt-col price">
-          <div className="price-compare">
-            <span className="our-p">${ourIn.toFixed(3)}</span>
-          </div>
-        </div>
-
-        <div className="pt-col price">
-          <div className="price-compare">
-            <span className="our-p">${ourOut.toFixed(3)}</span>
-          </div>
-        </div>
-
-        <div className="pt-col savings">
-          <span className="s-badge badge-min" title={`All requests are billed at least ${MINIMUM_CHARGE}/1M tokens — gateway overhead`}>
-            ≥ ${MINIMUM_CHARGE}/1M &nbsp;<span className="vs-label">min. guaranteed</span>
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  /* ══════════════════════════════════════════════════════════════════════════
-     FEATURED CARD — Digitaland price only
-     ══════════════════════════════════════════════════════════════════════════ */
-  const PricingCard = ({ m, i }) => {
-    const ourIn  = ourPrice(m.offIn);
-    const p      = PROVIDERS[m.provider] || { color: 'var(--primary)' };
-
-    return (
-      <div className="pricing-card-elite fade-in-up" key={i} style={{ animationDelay:`${i*0.1}s` }}>
-        <div className="p-card-header">
-          <div className="p-card-icon" style={{ background:`${p.color}15`, color: p.color }}>
-            <Zap size={20} />
-          </div>
-          <div className="p-card-title">
-            <h3 style={{ textTransform:'uppercase' }}>{m.name}</h3>
-            <span>{m.provider}</span>
-          </div>
-        </div>
-
-        <div className="p-card-prices">
-          <div className="p-price-row">
-            <span className="label">Per 1M input tokens</span>
-            <span className="value">${ourIn.toFixed(3)}<small>/1M</small></span>
-          </div>
-        </div>
-
-        <div className="p-card-savings">
-          <span className="save-tag" style={{ background: 'rgba(245,158,11,0.08)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.2)' }}>
-            ≥ ${MINIMUM_CHARGE}/req &nbsp;·&nbsp; min. guaranteed
-          </span>
-        </div>
-      </div>
-    );
-  };
+  // Legacy components PricingRow and PricingCard removed to satisfy strict compilation and clean up codebase
 
   /* ══════════════════════════════════════════════════════════════════════════
      FAQ
@@ -425,78 +489,310 @@ export default function Pricing() {
             />
           </div>
 
-          <div className="pricing-table-premium" style={{ backdropFilter: 'blur(20px)', background: 'var(--surface)' }}>
-            <div className="pt-header">
-              <div className="pt-col model">Model Name</div>
-              <div className="pt-col price">Input / 1M</div>
-              <div className="pt-col price">Output / 1M</div>
-              <div className="pt-col savings">Discount</div>
-            </div>
-
-            <div className="pt-body">
-              {loading ? (
-                <div style={{ padding: '4rem', textAlign: 'center' }}>
-                  <Loader2 className="animate-spin" size={32} color="var(--primary)" style={{ margin: '0 auto' }} />
-                </div>
-              ) : filteredModels.length === 0 ? (
-                <div className="models-empty">
-                  <h3>No active neural pathways matched</h3>
-                  <p style={{ color: 'var(--text-muted)' }}>Try refining your query or search term.</p>
-                </div>
-              ) : (
-                filteredModels.slice(0, 15).map((m, i) => {
-                  if (!m) return null;
-                  const p = PROVIDERS[m.provider || ''] || { color: 'var(--primary)', short: 'AI' };
-                  const discount = Math.round((1 - (ourPrice(m.offIn) / openrouterPrice(m.offIn))) * 100);
+          <div className="pricing-grouped-dashboard">
+            {error ? (
+              <div className="models-empty" style={{ padding: '6rem 2rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <Info size={48} style={{ color: '#ef4444', marginBottom: '1.5rem', opacity: 0.8 }} />
+                <h3>Erro ao carregar modelos</h3>
+                <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0.5rem auto' }}>
+                  Não foi possível sincronizar com a Matriz Neural. Por favor, tente novamente mais tarde.
+                </p>
+              </div>
+            ) : loading ? (
+              <div style={{ padding: '6rem', textAlign: 'center' }}>
+                <Loader2 className="animate-spin" size={40} color="var(--primary)" style={{ margin: '0 auto' }} />
+                <h3 style={{ marginTop: '1.5rem', color: 'var(--text-dim)' }}>Sincronizando com a Matriz Neural...</h3>
+              </div>
+            ) : Object.keys(groupedData).length === 0 ? (
+              <div className="models-empty" style={{ padding: '6rem 2rem', textAlign: 'center', background: 'var(--surface)', borderRadius: '24px', border: '1px solid var(--border)' }}>
+                <Info size={48} style={{ color: 'var(--primary)', marginBottom: '1.5rem', opacity: 0.8 }} />
+                <h3>Nenhum modelo neural encontrado</h3>
+                <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0.5rem auto' }}>
+                  Não encontramos modelos que correspondam ao termo pesquisado. Tente refinar a sua pesquisa.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                {Object.entries(groupedData).map(([groupKey, list]) => {
+                  const isMedia = ['Image', 'Video', 'Audio'].includes(groupKey);
+                  const title = isMedia 
+                    ? (groupKey === 'Image' ? 'Image Generation' : groupKey === 'Video' ? 'Video Generation' : 'Audio Models')
+                    : (groupKey === 'Zhipu' ? 'Zai' : groupKey === 'Moonshot' ? 'Moonshot AI' : groupKey === 'MiniMax' ? 'MiniMaxAI' : groupKey);
+                  
+                  const desc = PROVIDER_DESCS[groupKey] || '';
                   
                   return (
-                    <div className="pt-row" key={i} style={{ animationDelay: `${i * 0.05}s` }}>
-                      <div className="pt-col model">
-                        <div className="model-info">
-                          {/* Dynamic Brand Logo inside Table Row */}
-                          <div style={{ 
-                            width: '20px', height: '20px', borderRadius: '4px', 
-                            background: p.logo ? 'transparent' : `${p.color}15`, 
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'hidden', flexShrink: 0
-                          }}>
-                            {p.logo ? (
-                              <img src={p.logo} alt={m.provider} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            ) : (
-                              <span style={{ color: p.color, fontWeight: 900, fontSize: '0.55rem' }}>{p.short}</span>
-                            )}
-                          </div>
-                          <span className="m-name">{m.name}</span>
-                          <span style={{ 
-                            fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', 
-                            padding: '0.15rem 0.4rem', borderRadius: '4px', background: 'var(--bg-alt)', 
-                            color: 'var(--text-dim)', letterSpacing: '0.5px' 
-                          }}>
-                            {m.provider}
+                    <div className="pricing-split-card fade-in-up" key={groupKey}>
+                      {/* Left Column: Brand Info & Pitch */}
+                      <div className="pricing-card-left">
+                        <div className="provider-logo-brand">
+                          {!isMedia ? (
+                            <ProviderLogo provider={groupKey} size={36} />
+                          ) : (
+                            <div className="provider-logo-media" style={{ 
+                              width: '36px', height: '36px', borderRadius: '10px', 
+                              background: 'rgba(99, 102, 241, 0.15)', color: 'var(--primary)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '1.2rem', fontWeight: 900
+                            }}>
+                              {groupKey === 'Image' ? '🎨' : groupKey === 'Video' ? '🎬' : '🎵'}
+                            </div>
+                          )}
+                          <h3 className="provider-card-title">{title}</h3>
+                        </div>
+                        <p className="provider-card-desc">{desc}</p>
+                      </div>
+
+                      {/* Right Column: Dynamic Pricing Grid Table */}
+                      <div className="pricing-card-right">
+                        <div className="pricing-table-wrapper">
+                          <table className="pricing-grid-table">
+                            <thead>
+                              {isMedia ? (
+                                <tr>
+                                  <th align="left" style={{ textAlign: 'left' }}>Model Name</th>
+                                  <th align="right" style={{ textAlign: 'right' }}>
+                                    {groupKey === 'Image' ? 'Price / Image' : groupKey === 'Video' ? 'Price / Video' : 'Output (1000 T + Minute)'}
+                                  </th>
+                                  <th align="center" style={{ textAlign: 'center' }}>Actions</th>
+                                </tr>
+                              ) : (
+                                <tr>
+                                  <th align="left" style={{ textAlign: 'left' }}>Model Name</th>
+                                  <th align="center" style={{ textAlign: 'center' }}>Context Length</th>
+                                  <th align="right" style={{ textAlign: 'right' }}>Input / 1M</th>
+                                  <th align="right" style={{ textAlign: 'right' }}>Cached Input</th>
+                                  <th align="right" style={{ textAlign: 'right' }}>Output / 1M</th>
+                                  <th align="center" style={{ textAlign: 'center' }}>Actions</th>
+                                </tr>
+                              )}
+                            </thead>
+                            <tbody>
+                              {list.slice(0, 10).map((m) => {
+                                const ourIn = ourPrice(m.offIn || 0);
+                                const ourOut = ourPrice(m.offOut || 0);
+                                const { context } = getModelSpecs(m);
+                                const cachedPrice = getCachedInputPrice(m, ourIn);
+
+                                return (
+                                  <tr key={m.id}>
+                                    <td className="cell-model-name">
+                                      <span>{m.name}</span>
+                                    </td>
+                                    {isMedia ? (
+                                      <>
+                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right' }}>
+                                          ${ourIn.toFixed(4)}
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td align="center" className="cell-context" style={{ textAlign: 'center' }}>
+                                          {context}
+                                        </td>
+                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right' }}>
+                                          ${ourIn.toFixed(3)}
+                                        </td>
+                                        <td align="right" className="cell-price font-mono text-muted" style={{ textAlign: 'right' }}>
+                                          {cachedPrice !== null ? `$${cachedPrice.toFixed(3)}` : '—'}
+                                        </td>
+                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right' }}>
+                                          ${ourOut.toFixed(3)}
+                                        </td>
+                                      </>
+                                    )}
+                                    <td align="center" className="cell-actions" style={{ textAlign: 'center' }}>
+                                      <Link 
+                                        to={`/playground?model=${m.id}`}
+                                        className="pricing-action-link"
+                                      >
+                                        Details
+                                      </Link>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                        {/* Footer Info inside Right Card */}
+                        <div className="pricing-card-footer-info">
+                          <CheckCircle2 size={13} className="text-green" />
+                          <span>
+                            {isMedia 
+                              ? (groupKey === 'Image' 
+                                  ? 'Prices shown are per image generated or edited.' 
+                                  : groupKey === 'Video' 
+                                    ? 'Prices shown are per video generated.' 
+                                    : 'Prices for transcription and translations are per minute of audio. Text-to-Speech prices are per 1,000 characters.')
+                              : 'Prices shown are per 1 million tokens.'}
                           </span>
                         </div>
                       </div>
-                      <div className="pt-col price">
-                        <div className="price-compare">
-                          <span className="our-p">${ourPrice(m.offIn).toFixed(3)}</span>
-                          <span className="off-p">${openrouterPrice(m.offIn).toFixed(3)}</span>
-                        </div>
-                      </div>
-                      <div className="pt-col price">
-                        <div className="price-compare">
-                          <span className="our-p">${ourPrice(m.offOut).toFixed(3)}</span>
-                          <span className="off-p">${openrouterPrice(m.offOut).toFixed(3)}</span>
-                        </div>
-                      </div>
-                      <div className="pt-col savings">
-                        <span className="s-badge">-{discount || GLOBAL_SAVING}%</span>
-                      </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
+
+            {/* Custom Embedded Scoped Styling */}
+            <style>{`
+              .pricing-grouped-dashboard {
+                margin-top: 2rem;
+                width: 100%;
+              }
+
+              .pricing-split-card {
+                display: grid;
+                grid-template-columns: 280px 1fr;
+                gap: 2rem;
+                background: rgba(18, 18, 29, 0.45);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 20px;
+                padding: 2.25rem;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
+              }
+
+              .pricing-split-card:hover {
+                transform: translateY(-2px);
+                border-color: rgba(99, 102, 241, 0.2);
+                box-shadow: 0 20px 50px -15px rgba(99, 102, 241, 0.1);
+              }
+
+              .pricing-card-left {
+                display: flex;
+                flex-direction: column;
+                gap: 0.85rem;
+              }
+
+              .provider-logo-brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+              }
+
+              .provider-card-title {
+                font-size: 1.4rem;
+                font-weight: 800;
+                color: var(--text);
+                margin: 0;
+                letter-spacing: -0.5px;
+              }
+
+              .provider-card-desc {
+                font-size: 0.85rem;
+                line-height: 1.6;
+                color: var(--text-dim);
+                margin: 0;
+              }
+
+              .pricing-card-right {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                min-width: 0;
+              }
+
+              .pricing-table-wrapper {
+                overflow-x: auto;
+                border-radius: 12px;
+                background: rgba(0, 0, 0, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.03);
+              }
+
+              .pricing-grid-table {
+                width: 100%;
+                border-collapse: collapse;
+                text-align: left;
+              }
+
+              .pricing-grid-table th {
+                padding: 0.85rem 1.1rem;
+                font-size: 0.68rem;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: var(--text-muted);
+                font-weight: 750;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+              }
+
+              .pricing-grid-table td {
+                padding: 0.9rem 1.1rem;
+                font-size: 0.88rem;
+                color: var(--text);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+                vertical-align: middle;
+              }
+
+              .pricing-grid-table tr:last-child td {
+                border-bottom: none;
+              }
+
+              .cell-model-name {
+                font-weight: 700;
+                color: var(--text);
+              }
+
+              .cell-context {
+                font-weight: 700;
+                color: var(--text-dim);
+                font-size: 0.8rem;
+              }
+
+              .cell-price {
+                font-weight: 700;
+                color: #b085ff;
+              }
+
+              .cell-price.text-muted {
+                color: var(--text-muted);
+                opacity: 0.65;
+              }
+
+              .cell-actions {
+                font-size: 0.85rem;
+              }
+
+              .pricing-action-link {
+                color: var(--primary);
+                font-weight: 700;
+                text-decoration: none;
+                transition: all 0.2s;
+                border-bottom: 1px dashed var(--primary);
+              }
+
+              .pricing-action-link:hover {
+                color: var(--text);
+                border-bottom-color: var(--text);
+              }
+
+              .pricing-card-footer-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.72rem;
+                color: var(--text-muted);
+                font-weight: 600;
+                margin-top: 0.15rem;
+              }
+
+              .pricing-card-footer-info .text-green {
+                color: #10b981;
+              }
+
+              @media (max-width: 968px) {
+                .pricing-split-card {
+                  grid-template-columns: 1fr;
+                  gap: 1.5rem;
+                  padding: 1.5rem;
+                }
+              }
+            `}</style>
           
           <div style={{ textAlign: 'center', marginTop: '3.5rem' }}>
             <Link to="/models" className="btn-outline btn-lg">

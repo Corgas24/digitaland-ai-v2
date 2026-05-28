@@ -1091,70 +1091,194 @@ export default function Playground() {
 .pg-slider-val { color: var(--primary); font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
 .pg-slider-input { width: 100%; height: 3px; accent-color: var(--primary); }
 
-/* ─── ADD MODEL MODAL ──────────────────────────────────────────── */
+/* ─── ADD MODEL MODAL — PREMIUM ────────────────────────────────── */
 .pg-modal-bg {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px); z-index: 99999;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
 .pg-modal {
-  width: 100%; max-width: 560px; max-height: 72vh;
-  background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15); display: flex; flex-direction: column;
-  overflow: hidden; animation: pg-modal-in 0.18s ease;
+  width: 100%; max-width: 680px; max-height: 80vh;
+  background: linear-gradient(145deg, #0f0f14 0%, #111118 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.08);
+  display: flex; flex-direction: column;
+  overflow: hidden; animation: pg-modal-in 0.22s cubic-bezier(0.34,1.56,0.64,1);
 }
 @keyframes pg-modal-in {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { transform: translateY(20px) scale(0.97); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 .pg-modal-top {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-light);
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
 }
-.pg-modal-t { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 800; }
+.pg-modal-top-left { display: flex; flex-direction: column; gap: 2px; }
+.pg-modal-t {
+  font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800;
+  background: linear-gradient(135deg, #fff 40%, rgba(255,255,255,0.55));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.pg-modal-sub { font-size: 0.7rem; color: rgba(255,255,255,0.35); font-weight: 500; }
 .pg-modal-x {
-  width: 26px; height: 26px; border-radius: 6px; border: none;
-  background: var(--surface); color: var(--text-muted); cursor: pointer;
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
 }
-.pg-modal-body { flex: 1; overflow-y: auto; padding: 1rem; }
+.pg-modal-x:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.pg-modal-search-wrap {
+  padding: 0.85rem 1.25rem 0;
+}
 .pg-modal-search {
-  position: relative; margin-bottom: 0.85rem;
+  position: relative;
 }
 .pg-modal-search-i {
-  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
-  color: var(--text-muted); opacity: 0.4;
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: rgba(255,255,255,0.25);
 }
 .pg-modal-search-in {
-  width: 100%; background: var(--surface); border: 1px solid var(--border-light);
-  border-radius: 8px; padding: 0.5rem 0.75rem 0.5rem 2rem;
-  color: var(--text); font-size: 0.82rem; outline: none;
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem 0.6rem 2.2rem;
+  color: #fff; font-size: 0.85rem; outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.pg-modal-search-in::placeholder { color: rgba(255,255,255,0.25); }
+.pg-modal-search-in:focus { border-color: rgba(99,102,241,0.5); box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }
+
+.pg-modal-filters-wrap {
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .pg-modal-filters {
-  display: flex; gap: 0.3rem; overflow-x: auto; scrollbar-width: none; margin-bottom: 1rem;
+  display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none;
 }
 .pg-modal-filters::-webkit-scrollbar { display: none; }
 .pg-filter {
-  padding: 0.25rem 0.6rem; border-radius: 5px;
-  background: var(--surface); border: 1px solid var(--border-light);
+  display: flex; align-items: center; gap: 0.3rem;
+  padding: 0.28rem 0.7rem; border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
   font-size: 0.7rem; font-weight: 600; cursor: pointer;
-  white-space: nowrap; color: var(--text-muted); transition: all 0.1s;
+  white-space: nowrap; color: rgba(255,255,255,0.45);
+  transition: all 0.12s;
 }
-.pg-filter.on { background: var(--text); color: var(--bg); border-color: var(--text); }
-.pg-prov-label {
-  font-size: 0.62rem; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem;
+.pg-filter:hover { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.07); }
+.pg-filter.on {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.4);
+  color: #a5b4fc;
+  box-shadow: 0 0 12px rgba(99,102,241,0.1);
 }
-.pg-m-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.4rem; margin-bottom: 1.25rem; }
+
+.pg-modal-body {
+  flex: 1; overflow-y: auto; padding: 1rem 1.25rem 1.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+.pg-modal-body::-webkit-scrollbar { width: 4px; }
+.pg-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+.pg-prov-section { margin-bottom: 1.5rem; }
+.pg-prov-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+.pg-prov-logo {
+  width: 18px; height: 18px; border-radius: 4px; object-fit: contain;
+  background: rgba(255,255,255,0.06); padding: 2px;
+}
+.pg-prov-name {
+  font-size: 0.65rem; font-weight: 800; color: rgba(255,255,255,0.3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.pg-prov-count {
+  margin-left: auto;
+  font-size: 0.6rem; font-weight: 700;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.3);
+  padding: 1px 6px; border-radius: 10px;
+}
+
+.pg-m-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.5rem; }
 .pg-m-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.5rem 0.65rem; border-radius: 8px;
-  border: 1px solid var(--border-light); background: var(--bg-alt);
-  cursor: pointer; transition: all 0.12s;
+  display: flex; flex-direction: column; gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative; overflow: hidden;
 }
-.pg-m-item:hover { border-color: var(--primary); background: var(--primary-soft); }
-.pg-m-name { font-size: 0.78rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pg-m-badge { font-size: 0.62rem; font-weight: 700; white-space: nowrap; }
+.pg-m-item::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.15s;
+}
+.pg-m-item:hover { border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.06); transform: translateY(-1px); }
+.pg-m-item:hover::before { opacity: 1; }
+.pg-m-item.is-active {
+  border-color: rgba(99,102,241,0.5);
+  background: rgba(99,102,241,0.1);
+  box-shadow: 0 0 20px rgba(99,102,241,0.12);
+}
+.pg-m-item.is-active::before { opacity: 1; }
+
+.pg-m-top { display: flex; align-items: center; gap: 0.4rem; }
+.pg-m-logo {
+  width: 18px; height: 18px; border-radius: 5px; object-fit: contain; flex-shrink: 0;
+  background: rgba(255,255,255,0.06); padding: 2px;
+}
+.pg-m-logo-fallback {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem; font-weight: 800; color: #fff;
+}
+.pg-m-name {
+  font-size: 0.78rem; font-weight: 650; color: rgba(255,255,255,0.9);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+}
+.pg-m-active-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #6366f1;
+  box-shadow: 0 0 8px rgba(99,102,241,0.8); flex-shrink: 0;
+}
+
+.pg-m-meta { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+.pg-m-type {
+  font-size: 0.6rem; font-weight: 700; padding: 1px 5px; border-radius: 4px;
+  white-space: nowrap;
+}
+.pg-m-price {
+  margin-left: auto;
+  font-size: 0.6rem; font-weight: 700;
+  color: rgba(255,255,255,0.25);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.pg-modal-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.01);
+}
+.pg-modal-footer-hint {
+  font-size: 0.68rem; color: rgba(255,255,255,0.25); font-weight: 500;
+}
+.pg-modal-active-count {
+  display: flex; align-items: center; gap: 0.35rem;
+  font-size: 0.68rem; font-weight: 700; color: rgba(99,102,241,0.8);
+}
 
 /* Toast */
 .pg-toast {
@@ -1497,43 +1621,134 @@ export default function Playground() {
         </aside>
       )}
 
-      {/* ═══ D. ADD MODEL MODAL ═══ */}
+      {/* ═══ D. ADD MODEL MODAL — PREMIUM ═══ */}
       {isAddModalOpen && (
         <div className="pg-modal-bg" onClick={() => setIsAddModalOpen(false)}>
           <div className="pg-modal" onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
             <div className="pg-modal-top">
-              <span className="pg-modal-t">Select Model</span>
+              <div className="pg-modal-top-left">
+                <span className="pg-modal-t">Choose a Model</span>
+                <span className="pg-modal-sub">{models.length} models available across {Object.keys(modelsByProvider).length} providers</span>
+              </div>
               <button className="pg-modal-x" onClick={() => setIsAddModalOpen(false)}><X size={13} /></button>
             </div>
-            <div className="pg-modal-body">
+
+            {/* Search */}
+            <div className="pg-modal-search-wrap">
               <div className="pg-modal-search">
-                <Search size={12} className="pg-modal-search-i" />
-                <input type="text" placeholder="Search models..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pg-modal-search-in" autoFocus />
+                <Search size={14} className="pg-modal-search-i" />
+                <input
+                  type="text"
+                  placeholder="Search by name or provider..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pg-modal-search-in"
+                  autoFocus
+                />
               </div>
+            </div>
+
+            {/* Type Filters */}
+            <div className="pg-modal-filters-wrap">
               <div className="pg-modal-filters">
-                {['All','Chat','Image','Video','Code','Voice','Music','Embedding','3D','OCR'].map(c => (
-                  <button key={c} className={`pg-filter ${filterType === c ? 'on' : ''}`} onClick={() => setFilterType(c)}>{c}</button>
+                {[
+                  { label: 'All', icon: '✦' },
+                  { label: 'Chat', icon: '💬' },
+                  { label: 'Image', icon: '🖼' },
+                  { label: 'Video', icon: '🎬' },
+                  { label: 'Code', icon: '⌨' },
+                  { label: 'Voice', icon: '🎙' },
+                  { label: 'Music', icon: '🎵' },
+                  { label: 'Embedding', icon: '⚡' },
+                  { label: '3D', icon: '🔮' },
+                  { label: 'OCR', icon: '📄' },
+                ].map(({ label, icon }) => (
+                  <button key={label} className={`pg-filter ${filterType === label ? 'on' : ''}`} onClick={() => setFilterType(label)}>
+                    <span>{icon}</span> {label}
+                  </button>
                 ))}
               </div>
-              {Object.entries(modelsByProvider).map(([prov, ms]) => (
-                <div key={prov}>
-                  <div className="pg-prov-label">{prov}</div>
-                  <div className="pg-m-grid">
-                    {ms.map(model => {
-                      const open = activeTabs.includes(model.id);
-                      return (
-                        <div key={model.id} className="pg-m-item" onClick={() => addModelTab(model.id)}>
-                          <span className="pg-m-name">{model.name}</span>
-                          <span className="pg-m-badge" style={{ color: open ? '#10b981' : 'var(--text-muted)' }}>
-                            {open ? 'Active' : '+ Add'}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
             </div>
+
+            {/* Model List */}
+            <div className="pg-modal-body">
+              {Object.entries(modelsByProvider).map(([prov, ms]) => {
+                const provInfo = PROVIDERS[prov] || {};
+                return (
+                  <div key={prov} className="pg-prov-section">
+                    <div className="pg-prov-header">
+                      {provInfo.logo
+                        ? <img src={provInfo.logo} alt={prov} className="pg-prov-logo" onError={e => e.target.style.display='none'} />
+                        : <div className="pg-m-logo-fallback" style={{ background: provInfo.color || '#444', fontSize: '0.5rem' }}>{provInfo.short || prov[0]}</div>
+                      }
+                      <span className="pg-prov-name">{prov}</span>
+                      <span className="pg-prov-count">{ms.length}</span>
+                    </div>
+                    <div className="pg-m-grid">
+                      {ms.map(model => {
+                        const isActive = activeTabs.includes(model.id);
+                        const typeColors = {
+                          Chat: { bg: 'rgba(99,102,241,0.15)', color: '#a5b4fc' },
+                          Image: { bg: 'rgba(236,72,153,0.15)', color: '#f9a8d4' },
+                          Video: { bg: 'rgba(234,179,8,0.15)', color: '#fde047' },
+                          Code: { bg: 'rgba(16,185,129,0.15)', color: '#6ee7b7' },
+                          Voice: { bg: 'rgba(251,146,60,0.15)', color: '#fdba74' },
+                          Audio: { bg: 'rgba(251,146,60,0.15)', color: '#fdba74' },
+                          Music: { bg: 'rgba(168,85,247,0.15)', color: '#d8b4fe' },
+                          Embedding: { bg: 'rgba(59,130,246,0.15)', color: '#93c5fd' },
+                          Reasoning: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c' },
+                          Vision: { bg: 'rgba(20,184,166,0.15)', color: '#5eead4' },
+                        };
+                        const tc = typeColors[model.type] || { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' };
+                        const priceStr = model.offIn > 0 ? `$${(model.offIn * 1.8).toFixed(2)}/M` : null;
+                        return (
+                          <div
+                            key={model.id}
+                            className={`pg-m-item ${isActive ? 'is-active' : ''}`}
+                            onClick={() => addModelTab(model.id)}
+                          >
+                            <div className="pg-m-top">
+                              {provInfo.logo
+                                ? <img src={provInfo.logo} alt={prov} className="pg-m-logo" onError={e => e.target.style.display='none'} />
+                                : <div className="pg-m-logo-fallback" style={{ background: provInfo.color || '#444' }}>{provInfo.short || prov[0]}</div>
+                              }
+                              <span className="pg-m-name">{model.name}</span>
+                              {isActive && <div className="pg-m-active-dot" />}
+                            </div>
+                            <div className="pg-m-meta">
+                              <span className="pg-m-type" style={{ background: tc.bg, color: tc.color }}>
+                                {model.type || 'Chat'}
+                              </span>
+                              {model.badge && (
+                                <span className="pg-m-type" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>
+                                  {model.badge}
+                                </span>
+                              )}
+                              {priceStr && <span className="pg-m-price">{priceStr}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              {Object.keys(modelsByProvider).length === 0 && (
+                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'rgba(255,255,255,0.25)' }}>
+                  <Search size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3 }} />
+                  <p style={{ fontSize: '0.85rem' }}>No models match your search</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pg-modal-footer">
+              <span className="pg-modal-footer-hint">Click a model to add it as a tab • Click again to switch</span>
+              <span className="pg-modal-active-count">✦ {activeTabs.length} active</span>
+            </div>
+
           </div>
         </div>
       )}

@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../contexts/PaymentContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 import { safeFetch } from '../lib/safeFetch';
+import ProviderLogo from '../components/ProviderLogo';
 
 /* ═══════════════════════════════════════════════════════════════════
    SANITIZE PROVIDER ERRORS
@@ -1674,70 +1675,61 @@ export default function Playground() {
 
             {/* Model List */}
             <div className="pg-modal-body">
-              {Object.entries(modelsByProvider).map(([prov, ms]) => {
-                const provInfo = PROVIDERS[prov] || {};
-                return (
-                  <div key={prov} className="pg-prov-section">
-                    <div className="pg-prov-header">
-                      {provInfo.logo
-                        ? <img src={provInfo.logo} alt={prov} className="pg-prov-logo" onError={e => e.target.style.display='none'} />
-                        : <div className="pg-m-logo-fallback" style={{ background: provInfo.color || '#444', fontSize: '0.5rem' }}>{provInfo.short || prov[0]}</div>
-                      }
-                      <span className="pg-prov-name">{prov}</span>
-                      <span className="pg-prov-count">{ms.length}</span>
-                    </div>
-                    <div className="pg-m-grid">
-                      {ms.map(model => {
-                        const isActive = activeTabs.includes(model.id);
-                        const typeColors = {
-                          Chat: { bg: 'rgba(99,102,241,0.15)', color: '#a5b4fc' },
-                          Image: { bg: 'rgba(236,72,153,0.15)', color: '#f9a8d4' },
-                          Video: { bg: 'rgba(234,179,8,0.15)', color: '#fde047' },
-                          Code: { bg: 'rgba(16,185,129,0.15)', color: '#6ee7b7' },
-                          Voice: { bg: 'rgba(251,146,60,0.15)', color: '#fdba74' },
-                          Audio: { bg: 'rgba(251,146,60,0.15)', color: '#fdba74' },
-                          Music: { bg: 'rgba(168,85,247,0.15)', color: '#d8b4fe' },
-                          Embedding: { bg: 'rgba(59,130,246,0.15)', color: '#93c5fd' },
-                          Reasoning: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c' },
-                          Vision: { bg: 'rgba(20,184,166,0.15)', color: '#5eead4' },
-                        };
-                        const tc = typeColors[model.type] || { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' };
-                        const priceStr = model.offIn > 0 ? `$${(model.offIn * 1.8).toFixed(2)}/M` : null;
-                        return (
-                          <div
-                            key={model.id}
-                            className={`pg-m-item ${isActive ? 'is-active' : ''}`}
-                            onClick={() => addModelTab(model.id)}
-                          >
-                            <div className="pg-m-top">
-                              {provInfo.logo
-                                ? <img src={provInfo.logo} alt={prov} className="pg-m-logo" onError={e => e.target.style.display='none'} />
-                                : <div className="pg-m-logo-fallback" style={{ background: provInfo.color || '#444' }}>{provInfo.short || prov[0]}</div>
-                              }
-                              <span className="pg-m-name">{model.name}</span>
-                              {isActive && <div className="pg-m-active-dot" />}
-                            </div>
-                            <div className="pg-m-meta">
-                              <span className="pg-m-type" style={{ background: tc.bg, color: tc.color }}>
-                                {model.type || 'Chat'}
-                              </span>
-                              {model.badge && (
-                                <span className="pg-m-type" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>
-                                  {model.badge}
-                                </span>
-                              )}
-                              {priceStr && <span className="pg-m-price">{priceStr}</span>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {Object.entries(modelsByProvider).map(([prov, ms]) => (
+                <div key={prov} className="pg-prov-section">
+                  <div className="pg-prov-header">
+                    <ProviderLogo provider={prov} size={18} style={{ borderRadius: '5px' }} />
+                    <span className="pg-prov-name">{prov}</span>
+                    <span className="pg-prov-count">{ms.length}</span>
                   </div>
-                );
-              })}
+                  <div className="pg-m-grid">
+                    {ms.map(model => {
+                      const isActive = activeTabs.includes(model.id);
+                      const typeColors = {
+                        Chat:      { bg: 'rgba(99,102,241,0.15)',  color: '#a5b4fc' },
+                        Image:     { bg: 'rgba(236,72,153,0.15)',  color: '#f9a8d4' },
+                        Video:     { bg: 'rgba(234,179,8,0.15)',   color: '#fde047' },
+                        Code:      { bg: 'rgba(16,185,129,0.15)',  color: '#6ee7b7' },
+                        Voice:     { bg: 'rgba(251,146,60,0.15)',  color: '#fdba74' },
+                        Audio:     { bg: 'rgba(251,146,60,0.15)',  color: '#fdba74' },
+                        Music:     { bg: 'rgba(168,85,247,0.15)',  color: '#d8b4fe' },
+                        Embedding: { bg: 'rgba(59,130,246,0.15)',  color: '#93c5fd' },
+                        Reasoning: { bg: 'rgba(249,115,22,0.15)',  color: '#fb923c' },
+                        Vision:    { bg: 'rgba(20,184,166,0.15)',  color: '#5eead4' },
+                      };
+                      const tc = typeColors[model.type] || { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' };
+                      const priceStr = model.offIn > 0 ? `$${(model.offIn * 1.8).toFixed(2)}/M` : null;
+                      return (
+                        <div
+                          key={model.id}
+                          className={`pg-m-item ${isActive ? 'is-active' : ''}`}
+                          onClick={() => addModelTab(model.id)}
+                        >
+                          <div className="pg-m-top">
+                            <ProviderLogo provider={prov} name={model.name} size={18} style={{ borderRadius: '5px', flexShrink: 0 }} />
+                            <span className="pg-m-name">{model.name}</span>
+                            {isActive && <div className="pg-m-active-dot" />}
+                          </div>
+                          <div className="pg-m-meta">
+                            <span className="pg-m-type" style={{ background: tc.bg, color: tc.color }}>
+                              {model.type || 'Chat'}
+                            </span>
+                            {model.badge && (
+                              <span className="pg-m-type" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>
+                                ⭐ {model.badge}
+                              </span>
+                            )}
+                            {priceStr && <span className="pg-m-price">{priceStr}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
               {Object.keys(modelsByProvider).length === 0 && (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'rgba(255,255,255,0.25)' }}>
-                  <Search size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3 }} />
+                  <Search size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3, display: 'block' }} />
                   <p style={{ fontSize: '0.85rem' }}>No models match your search</p>
                 </div>
               )}

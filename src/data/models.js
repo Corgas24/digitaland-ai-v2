@@ -29,28 +29,29 @@ export const MINIMUM_CHARGE = 0.001;
 // ─── PROVIDERS ────────────────────────────────────────────────────────────────
 
 export const PROVIDERS = {
-  OpenAI:    { color: '#10a37f', short: 'O',  logo: 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg' },
-  Anthropic: { color: '#f5efe6', short: 'A',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/anthropic.svg' },
-  Google:    { color: '#1a73e8', short: 'G',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/gemini.svg' },
+  OpenAI:    { color: '#10a37f', short: 'O',  logo: '/openai-logo.png' },
+  Anthropic: { color: '#cc9b7c', short: 'A',  logo: '/anthropic-logo.png' },
+  Google:    { color: '#1a73e8', short: 'G',  logo: '/gemini-logo.png' },
   Meta:      { color: '#0668E1', short: 'M',  logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg' },
-  Mistral:   { color: '#f5d142', short: 'Mi', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Mistral_AI_logo.svg' },
-  DeepSeek:  { color: '#4d6eff', short: 'D',  logo: 'https://avatars.githubusercontent.com/u/148330874?s=200&v=4' },
-  xAI:       { color: '#000000', short: 'X',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/xai.svg' },
-  Alibaba:   { color: '#ff6600', short: 'Al', logo: 'https://www.vectorlogo.zone/logos/alibaba/alibaba-icon.svg' },
-  ByteDance: { color: '#3370ff', short: 'BD', logo: 'https://avatars.githubusercontent.com/u/16743285?s=200&v=4' },
+  Mistral:   { color: '#fd7e14', short: 'Mi', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Mistral_AI_logo.svg' },
+  DeepSeek:  { color: '#4d6eff', short: 'D',  logo: '/deepseek-logo.png' },
+  xAI:       { color: '#ffffff', short: 'X',  logo: 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/xai.svg' },
+  Alibaba:   { color: '#ff6600', short: 'Al', logo: '/qwen-logo.png' },
+  ByteDance: { color: '#3370ff', short: 'BD', logo: '/bytedance-logo.png' },
   Moonshot:  { color: '#4058f2', short: 'Mo', logo: 'https://avatars.githubusercontent.com/u/132961858?s=200&v=4' },
   MiniMax:   { color: '#1dcd8d', short: 'MM', logo: 'https://avatars.githubusercontent.com/u/105740440?s=200&v=4' },
   Zhipu:     { color: '#3c3ffb', short: 'ZP', logo: 'https://avatars.githubusercontent.com/u/106727244?s=200&v=4' },
   Xiaomi:    { color: '#ff6900', short: 'Xi', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ae/Xiaomi_logo_%282021-%29.svg' },
   Kuaishou:  { color: '#ff4d00', short: 'Ks', logo: 'https://avatars.githubusercontent.com/u/14605963?s=200&v=4' },
-  Midjourney:{ color: '#ffffff', short: 'MJ', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/Midjourney_Emblem.png' },
-  Cohere:    { color: '#3cffc8', short: 'Co', logo: 'https://avatars.githubusercontent.com/u/95642823?s=200&v=4' },
+  Midjourney:{ color: '#6366f1', short: 'MJ', logo: '/midjourney-logo.png' },
+  Cohere:    { color: '#3cffc8', short: 'Co', logo: '/cohere-logo.png' },
   Perplexity:{ color: '#00a3ff', short: 'Px', logo: 'https://avatars.githubusercontent.com/u/118367098?s=200&v=4' },
-  'Stability AI': { color: '#7e22ce', short: 'SD', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Stability_AI_logo.svg' },
+  'Stability AI': { color: '#ec4899', short: 'SD', logo: '/stability-logo.png' },
   Microsoft: { color: '#00a4ef', short: 'MS', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg' },
   Amazon:    { color: '#ff9900', short: 'Am', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg' },
   OpenRouter:{ color: '#6d28d9', short: 'OR', logo: 'https://avatars.githubusercontent.com/u/134468641?s=200&v=4' },
 };
+
 
 // ─── DYNAMIC MODEL LOADING ────────────────────────────────────────────────────
 

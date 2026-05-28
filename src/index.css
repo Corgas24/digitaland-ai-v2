@@ -1937,6 +1937,197 @@ body {
 
 
 /* ════════════════════════════════════
+   DASHBOARD — MOBILE RESPONSIVE
+   ════════════════════════════════════ */
+
+/* ── Tablet (≤1024px): narrow sidebar ── */
+@media (max-width: 1024px) {
+  .dash-sidebar {
+    width: 220px;
+    padding: 1.25rem 1rem;
+  }
+  .dash-content-inner {
+    padding: 2rem 1.75rem;
+  }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .overview-grid > .span-2 {
+    grid-column: span 2;
+  }
+}
+
+/* ── Mobile (≤768px): sidebar hidden → bottom nav ── */
+@media (max-width: 768px) {
+  /* Layout */
+  .dash-layout {
+    flex-direction: column;
+    padding-bottom: 64px; /* space for bottom nav */
+  }
+
+  /* Sidebar → hidden on mobile (replaced by bottom nav) */
+  .dash-sidebar {
+    display: none;
+  }
+
+  /* Mobile bottom nav bar */
+  .dash-mobile-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--surface);
+    border-top: 1px solid var(--border-light);
+    z-index: 9999;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 0.5rem;
+  }
+  .dash-mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 0.4rem 0.6rem;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+    min-width: 52px;
+  }
+  .dash-mobile-nav-item.active {
+    color: var(--primary);
+    background: var(--primary-soft);
+  }
+  .dash-mobile-nav-item svg {
+    width: 20px; height: 20px;
+  }
+
+  /* Top header adjustments */
+  .dash-top-header {
+    padding: 0 1rem;
+    height: 56px;
+  }
+  .breadcrumbs {
+    font-size: 0.78rem;
+  }
+  .breadcrumbs > span:nth-child(3) {
+    font-size: 0.78rem;
+  }
+
+  /* Content padding */
+  .dash-content-inner {
+    padding: 1.25rem 1rem;
+  }
+
+  /* Page title row */
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .dash-header > * { width: 100%; }
+
+  /* Stats grid → 2 cols */
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  .premium-stat {
+    padding: 1rem;
+  }
+  .premium-stat .value {
+    font-size: 1.2rem;
+  }
+
+  /* Overview grid → single col */
+  .overview-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .overview-grid > .span-2 {
+    grid-column: span 1;
+  }
+
+  /* API Key table → scrollable */
+  .card.overflow-auto,
+  .card { overflow-x: auto; }
+  .key-table {
+    min-width: 560px;
+  }
+  .key-table th,
+  .key-table td {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.78rem;
+  }
+  .blur-key {
+    font-size: 0.72rem;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  /* Activity & info lists */
+  .activity-action { font-size: 0.82rem; }
+  .activity-detail { font-size: 0.72rem; }
+
+  /* Card padding */
+  .card > div[style*="padding"] {
+    padding: 1rem !important;
+  }
+
+  /* Low balance banner */
+  div[style*="margin: 1.5rem 2rem"] {
+    margin: 1rem 1rem 0 !important;
+    padding: 0.75rem 1rem !important;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  /* Model usage bar labels */
+  .usage-info { width: 110px; }
+
+  /* Top-up modal */
+  .modal-overlay > div {
+    margin: 1rem;
+    padding: 1.5rem !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* ── Small phones (≤480px): single col stats ── */
+@media (max-width: 480px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-content-inner {
+    padding: 1rem 0.75rem;
+  }
+  .dash-top-header {
+    padding: 0 0.75rem;
+  }
+}
+
+/* Hide mobile nav on desktop by default */
+.dash-mobile-nav {
+  display: none;
+}
+
+/* ════════════════════════════════════
    EXTRA ANIMATIONS (Loading states)
    ════════════════════════════════════ */
 @keyframes pulse {

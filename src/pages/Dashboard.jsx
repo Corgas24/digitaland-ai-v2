@@ -3,7 +3,7 @@ import {
   Key, Plus, Copy, Trash2, CreditCard, BarChart3, Settings, 
   Activity, ArrowUpRight, TrendingUp, Cpu, Server, Shield, 
   Zap, Globe, RefreshCcw, Bell, X, Check, Lock, DollarSign, Sparkles,
-  AlertCircle
+  AlertCircle, LayoutDashboard, FileText
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -1002,6 +1002,26 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* ══ Mobile Bottom Navigation (visible only on ≤768px) ══ */}
+      <nav className="dash-mobile-nav">
+        {[
+          { tab: 'overview',  icon: <LayoutDashboard size={20} />, label: 'Overview' },
+          { tab: 'keys',      icon: <Key size={20} />,             label: 'API Keys' },
+          { tab: 'billing',   icon: <CreditCard size={20} />,      label: 'Billing' },
+          { tab: 'usage',     icon: <BarChart3 size={20} />,       label: 'Usage' },
+          { tab: 'logs',      icon: <FileText size={20} />,        label: 'Logs' },
+        ].map(({ tab, icon, label }) => (
+          <button
+            key={tab}
+            className={`dash-mobile-nav-item ${activeTab === tab ? 'active' : ''}`}
+            onClick={() => window.location.href = `/dashboard?tab=${tab}`}
+          >
+            {icon}
+            {label}
+          </button>
+        ))}
+      </nav>
 
     </div>
   );

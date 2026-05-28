@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FEATURED_MODELS, PROVIDERS, MARKUP, ourPrice, savingsPercent } from '../data/models';
 import { Copy, ArrowRight, Zap, Shield, Code, ChevronDown, CheckCircle2, Globe, Clock, Lock, Terminal, Check, DollarSign, Layers, Search, Server, Sparkles, Cpu, Send } from 'lucide-react';
+import ProviderLogo from '../components/ProviderLogo';
 
 /* ═══════════════════════════════════════════════
    Typing animation for the terminal
@@ -28,13 +29,10 @@ function TypeWriter({ text, delay = 40, onDone }) {
    Featured Model Card
    ═══════════════════════════════════════════════ */
 function ModelCard({ model, provider }) {
-  const prov = PROVIDERS[provider];
   return (
     <div className="model-card-elite glass-card">
       <div className="mce-header">
-        <div className="mce-icon" style={{ background: prov?.color + '18', color: prov?.color }}>
-          {prov?.short}
-        </div>
+        <ProviderLogo provider={provider} size={36} style={{ borderRadius: '10px' }} />
         <div className="mce-info">
           <h4>{model.name}</h4>
           <span className="mce-provider">{provider}</span>
@@ -70,10 +68,9 @@ export default function Landing() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const faqSavings = `up to ${savPct}% below OpenRouter pricing`;
   const faqs = [
     { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 260+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
-    { q: "How does pricing work?", a: `We offer competitive, usage-based pricing with rates ${faqSavings}. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs.` },
+    { q: "How does pricing work?", a: "We offer competitive, usage-based pricing optimized for volume. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs." },
     { q: "Is it really OpenAI-compatible?", a: "Yes! Just change your base_url to https://api.digitaland.ai/v1 and use your Digitaland API key. Works with the official OpenAI SDK, LangChain, LlamaIndex, and any other OpenAI-compatible library." },
     { q: "Which models are supported?", a: "We support 260+ models including GPT-5.5, Claude 4.7, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
     { q: "How does Digitaland protect my data?", a: "Enterprise-grade encryption for all data in transit and at rest. We operate a strict zero-log policy — your prompts, completions, and API keys are never stored, logged, or used for training." },
@@ -179,7 +176,7 @@ export default function Landing() {
             { num: '260+', label: 'AI Models', icon: <Layers size={20} /> },
             { num: '99.9%', label: 'Uptime SLA', icon: <Server size={20} /> },
             { num: '<200ms', label: 'Avg Latency', icon: <Zap size={20} /> },
-            { num: `~${savPct}%`, label: 'Below OpenRouter', icon: <DollarSign size={20} /> },
+            { num: '$0', label: 'Monthly Fees', icon: <DollarSign size={20} /> },
           ].map((s, i) => (
             <div className="stat-item" key={i}>
               <div className="stat-icon">{s.icon}</div>
@@ -393,8 +390,8 @@ export default function Landing() {
                 color: '#ec4899',
                 bg: 'rgba(236,72,153,0.08)',
                 title: 'Transparent Pricing',
-                desc: 'Usage-based pricing with rates consistently below OpenRouter. No monthly commitments, no hidden fees, no surprises on your invoice.',
-                highlight: `Up to ${savPct}% cheaper than OpenRouter`
+                desc: 'Usage-based pricing optimized for developers. No monthly commitments, no hidden fees, no surprises on your invoice. Pay only for the tokens you consume.',
+                highlight: 'Pure pay-as-you-go'
               },
               {
                 icon: <Globe size={24} />,
@@ -473,12 +470,15 @@ export default function Landing() {
                 {topModels.slice(0, 8).map((m, i) => (
                   <tr key={i}>
                     <td className="pt-model">
-                      <div className="pt-icon" style={{ background: PROVIDERS[m.provider]?.color + '18', color: PROVIDERS[m.provider]?.color }}>
-                        {PROVIDERS[m.provider]?.short}
-                      </div>
+                      <ProviderLogo provider={m.provider} size={28} style={{ borderRadius: '8px' }} />
                       {m.name}
                     </td>
-                    <td className="pt-provider">{m.provider}</td>
+                    <td className="pt-provider">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <ProviderLogo provider={m.provider} size={16} style={{ borderRadius: '4px' }} />
+                        {m.provider}
+                      </span>
+                    </td>
                     <td className="pt-price">${ourPrice(m.offIn).toFixed(3)}</td>
                     <td className="pt-price">${ourPrice(m.offOut).toFixed(3)}</td>
                     <td><span className={`mce-badge mce-badge-${(m.badge || '').toLowerCase()}`}>{m.badge}</span></td>

@@ -20,15 +20,24 @@ const sanitizeProviderError = (msg) => {
   if (msg instanceof Error) return sanitizeProviderError(msg.message);
 
   const msgStr = typeof msg === 'object' ? JSON.stringify(msg) : String(msg);
-  const hasChinese = /[\u4e00-\u9fa5]/.test(msgStr);
-  const isInvalidToken = msgStr.includes('无效的令牌') || /invalid\s+token|unauthorized|invalid\s+api\s+key|invalid_token/i.test(msgStr);
-  const isOutOfBalance = /quota|insufficient_funds|out of balance/i.test(msgStr);
+
+  // Detect Chinese characters or SiliconFlow / DeepSeek garbage output
+  const hasChinese       = /[\u4e00-\u9fa5]/.test(msgStr);
+  const isInvalidToken   = msgStr.includes('无效的令牌')
+    || /invalid\s+token|unauthorized|invalid\s+api\s+key|invalid_token/i.test(msgStr);
+  const isUserOutOfBalance = /insufficient balance|payment required/i.test(msgStr);
+  const isChannelOutOfBalance = /quota|insufficient_funds|out of balance/i.test(msgStr);
 
   if (hasChinese || isInvalidToken) {
     return 'Erro de Sincronização Neural: O provedor upstream está com credenciais inválidas ou temporariamente indisponível.';
   }
-  if (isOutOfBalance) {
-    return 'Erro de Créditos do Canal: O canal de processamento upstream esgotou a sua cota.';
+
+  if (isUserOutOfBalance) {
+    return 'Saldo Insuficiente: A sua conta não dispõe de créditos suficientes para esta operação. Por favor, adicione fundos no Dashboard.';
+  }
+
+  if (isChannelOutOfBalance) {
+    return 'Erro de Créditos do Canal: O canal de processamento upstream esgotou a sua cota. Por favor, tente um modelo alternativo.';
   }
   if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError') || msgStr.includes('Network request failed')) {
     return 'Falha na Ligação: Não foi possível conectar ao núcleo neural. Verifique a sua internet.';
@@ -217,7 +226,7 @@ export default function Playground() {
       return;
     }
 
-    const hasNoCredits = user.balance <= 0 && !user.isAdmin;
+    const hasNoCredits = !user.isAdmin && (!user.balance || user.balance <= 0.001);
 
     // A. Add User Message
     const userMessage = { role: 'user', content: input, timestamp: Date.now() };
@@ -244,6 +253,7 @@ export default function Playground() {
 
     // If balance is depleted, trigger top up modal and don't query API
     if (hasNoCredits) {
+      setError('Saldo Insuficiente: A sua conta não dispõe de créditos suficientes para esta operação. Por favor, adicione fundos.');
       openPaymentModal();
       return;
     }

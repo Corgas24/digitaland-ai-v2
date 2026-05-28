@@ -114,8 +114,8 @@ export default function Landing() {
           </h1>
           
           <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
-            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 260+ other models instantly. 
-            Enterprise-grade speed, zero logging, and pure pay-as-you-go pricing — guaranteed <strong>30% cheaper</strong> than OpenRouter.
+            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
+            Enterprise-grade speed, strict zero-logging privacy, and pure pay-as-you-go billing — the most powerful AI engines in the world, unified.
           </p>
 
           <div className="hero-input-group glass-card fade-in-up delay-2" style={{ boxShadow: '0 0 30px rgba(99,102,241,0.2)' }}>

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 // DIGITALAND — PRICING ENGINE
 // ══════════════════════════════════════════════════════════════════════════════
 //
-//  MARKUP = 1.4  → Digitaland cobra 1.4x o custo (40% de margem de lucro sobre o custo CrazyRouter)
+//  MARKUP = 1.8  → Digitaland cobra 1.8x o custo (80% de margem de lucro sobre o custo CrazyRouter)
 //  OFFICIAL_MULT = 2.0 → O preço "oficial" do mercado (OpenRouter/etc) é assumido como 2x o custo CrazyRouter
 //
 //  Estrutura dos preços no Supabase (tabela `models`):
@@ -12,17 +12,17 @@ import { supabase } from '../lib/supabase';
 //
 //  Para o GATEWAY (custo real cobrado do usuário por requisição):
 //    cost = (pToks/1e6 × offIn + cToks/1e6 × offOut) × MARKUP
-//         = (pToks × offIn + cToks × offOut) / 1e6 × 1.4
+//         = (pToks × offIn + cToks × offOut) / 1e6 × 1.8
 //    garante piso MINIMUM_CHARGE com Math.max(cost, MINIMUM_CHARGE)
 //
 //  Para a LANDING / UI (preço exibido ao usuário, por 1M tokens):
-//    ourPrice(off)         = off × MARKUP        (= Custo × 1.4)
+//    ourPrice(off)         = off × MARKUP        (= Custo × 1.8)
 //    openrouterPrice(off)  = off × OFFICIAL_MULT (= Custo × 2.0)
-//    savingsPercent()      = (1 − MARKUP/OFFICIAL_MULT) × 100  = 30% de poupança vs Oficial
+//    savingsPercent()      = (1 − MARKUP/OFFICIAL_MULT) × 100  = 10% de poupança vs Oficial
 //
 // ══════════════════════════════════════════════════════════════════════════════
 
-export const MARKUP         = 1.4;
+export const MARKUP         = 1.8;
 export const OFFICIAL_MULT  = 2.0;
 export const MINIMUM_CHARGE = 0.001;
 
@@ -63,7 +63,7 @@ export const getDynamicModels = async () => {
     .from('models')
     .select('*')
     .eq('is_active', true)
-    .order('provider', { ascending: true });
+    .order('off_in', { ascending: false });
 
   if (error) {
     console.error('Error fetching models:', error);
@@ -111,16 +111,16 @@ export const MODELS = [];   // placeholder — dados reais vêm do Supabase
 
 // ─── PRICING HELPERS ─────────────────────────────────────────────────────────
 //
-//  ourPrice(off)           preço Digitaland ao usuário  = off × 1.4
+//  ourPrice(off)           preço Digitaland ao usuário  = off × 1.8
 //  OpenRouterPrice(off)   preço OpenRouter de referência = off × 1.0
-//  savingsPercent()        (1−MARKUP) × 100 = 40%  → Digitaland 40% mais barato
+//  savingsPercent()        (1−MARKUP/OFFICIAL_MULT) × 100 = 10%  → Digitaland 10% mais barato
 //
 //  Exemplo: off = $1.45 (preço Crazy para aquele modelo)
 //    OpenRouterPrice(1.45) = 1.45          (preço Crazy web)
-//    ourPrice(1.45)         = 2.03          (preço Digitaland — 40% acima)
-//    Usuário paga em tempo real: cost = (tokens/1M × off) × 1.4  (= ourPrice)
+//    ourPrice(1.45)         = 2.61          (preço Digitaland — 80% acima)
+//    Usuário paga em tempo real: cost = (tokens/1M × off) × 1.8  (= ourPrice)
 
-// Preço Digitaland — aplica MARKUP=1.4 sobre o preço OpenRouter.
+// Preço Digitaland — aplica MARKUP=1.8 sobre o preço OpenRouter.
 // Usado em toda a UI (Pricing, Models, Landing, Dashboard).
 export const ourPrice = (offPrice) => Math.max(offPrice * MARKUP, MINIMUM_CHARGE);
 
@@ -134,11 +134,11 @@ export const savingsPercent = () => Math.round((1 - (MARKUP / OFFICIAL_MULT)) * 
 //
 //  openRouterPrice(off)     preço OpenRouter referência (sem markup) = off × 1
 //  savingsVsOpenRouter()    economia % do Digitaland vs OpenRouter
-//                           = (1 − MARKUP) × 100 = 40%
+//                           = (1 − MARKUP) × 100 = -80%
 //  Exemplo: off = $1.375
 //    openRouterPrice(1.375) = 1.375          (preço OpenRouter por 1M tokens)
-//    ourPrice(1.375)         = 1.925          (Digitaland — ~40% a mais)
-//    savingsVsOpenRouter()   = −40%           (usuário paga 40% acima vs OpenRouter ref)
+//    ourPrice(1.375)         = 2.475          (Digitaland — ~80% a mais)
+//    savingsVsOpenRouter()   = −80%           (usuário paga 80% acima vs OpenRouter ref)
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const openRouterPrice = (offPrice) => offPrice * 1;  // preço OpenRouter é referência direta

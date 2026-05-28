@@ -3,7 +3,16 @@ import { withSupabase } from "jsr:@supabase/server@^1";
 import { Redis } from "npm:@upstash/redis";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
+<<<<<<< Updated upstream
 const MARKUP = 1.4;
+=======
+// These must be kept in sync with src/data/models.js:
+//   MARKUP  — Digitaland markup over the CrazyRouter base price.
+//              off_in / off_out in the DB are CrazyRouter prices (not scaled).
+//              cost = (pToks/1e6 × off_in + cToks/1e6 × off_out) × MARKUP
+//              → Digitaland charges 80% above CrazyRouter per-request cost.
+const MARKUP = 1.8;
+>>>>>>> Stashed changes
 
 const MINIMUM_CHARGE: number = (() => {
   const val = Deno.env.get("MINIMUM_CHARGE");
@@ -19,6 +28,7 @@ const CASCADE: Record<string, string[]> = {
   'gpt-4o':             ['gpt-4o-mini', 'claude-sonnet-4-6', 'llama-3.3-70b'],
   'claude-opus-4-7':    ['claude-sonnet-4-6', 'gpt-4o', 'claude-haiku-4-5'],
   'claude-sonnet-4-6':  ['gpt-4o-mini', 'claude-haiku-4-5', 'llama-3.3-70b'],
+  'claude-3-5-sonnet':  ['claude-sonnet-4-6', 'gpt-4o-mini', 'claude-haiku-4-5'],
   'gemini-3.1-pro':     ['gemini-3-flash', 'gpt-4o-mini'],
   'o1':          ['o1-mini', 'deepseek-r1', 'gpt-4o'],
   'o1-mini':     ['deepseek-r1', 'gpt-4o-mini'],
@@ -217,6 +227,13 @@ export default {
         if (!userProfile) {
           const xApiKey = req.headers.get("x-api-key") || req.headers.get("authorization")?.replace("Bearer ", "");
           if (xApiKey) {
+            // Validate the key format using a robust regex to prevent any SQL or JSON syntax injections
+            if (!/^sk-dg-[a-zA-Z0-9]{20,64}$/.test(xApiKey)) {
+              return Response.json(
+                { error: { message: "Unauthorized: Invalid API key format." } },
+                { status: 401 },
+              );
+            }
             const { data } = await ctx.supabaseAdmin
               .from("profiles")
               .select("*")
@@ -238,14 +255,34 @@ export default {
         const isAdmin         = userProfile.is_admin === true;
         const isBillingExempt = (billingExemptId ? userProfile.id === billingExemptId : false) || isAdmin;
 
-        if (!isBillingExempt && userProfile.balance <= 0) {
+        // ── 2b. LIGHTWEIGHT DATABASE-BACKED RATE LIMITING ───────────────────
+        if (!isBillingExempt) {
+          if (userProfile.last_request_at) {
+            const lastReqTime = new Date(userProfile.last_request_at as string).getTime();
+            const now = Date.now();
+            if (now - lastReqTime < 300) { // Reject if under 300ms (3.33 requests/sec threshold per user)
+              return Response.json(
+                { error: { message: "Too many concurrent requests. Rate limit exceeded." } },
+                { status: 429 },
+              );
+            }
+          }
+          // Update last_request_at pre-flight to prevent race-condition balance-drain exploits
+          await ctx.supabaseAdmin
+            .from("profiles")
+            .update({ last_request_at: new Date().toISOString() })
+            .eq("id", userProfile.id);
+        }
+
+        // ── 2c. PRE-FLIGHT BALANCE ENFORCEMENT ──────────────────────────────
+        if (!isBillingExempt && (!userProfile.balance || Number(userProfile.balance) <= 0.001)) {
           return Response.json(
             { error: { message: "insufficient_funds: O teu saldo acabou. Por favor carrega a conta no Dashboard para continuar a usar a API." } },
-            { status: 402 },
+            { status: 402 }, // 402 Payment Required
           );
         }
 
-        // Clone the request body to read the model without consuming standard stream
+        // ── 3. PARSE & SANITIZE REQUEST ──────────────────────────────────────
         const cloneReq = req.clone();
         let incomingBody: any = {};
         const urlObj = new URL(req.url);
@@ -258,6 +295,8 @@ export default {
           isMultipart = true;
         }
 
+        const bodyBuffer = isMultipart ? await req.clone().arrayBuffer() : null;
+
         if (isMultipart) {
           try {
             const formData = await cloneReq.formData();
@@ -266,14 +305,67 @@ export default {
             };
           } catch (_) {}
         } else {
+          let rawBody;
           try {
-            incomingBody = await cloneReq.json();
-          } catch (_) {}
-        }
-        
-        const originalModelId = incomingBody.model || "gpt-4o-mini";
-        const bodyBuffer = isMultipart ? await req.clone().arrayBuffer() : null;
+            rawBody = await cloneReq.json();
+          } catch {
+            return Response.json(
+              { error: { message: "Invalid JSON body in request." } },
+              { status: 400 },
+            );
+          }
 
+          const originalModelId = rawBody.model || "gpt-4o-mini";
+
+          // Sanitize body to copy only safe parameters, blocking arbitrary parameter injections
+          const sanitizedBody: Record<string, unknown> = {
+            model: originalModelId,
+          };
+
+          if (Array.isArray(rawBody.messages)) {
+            sanitizedBody.messages = rawBody.messages;
+          }
+          if (typeof rawBody.stream === "boolean") {
+            sanitizedBody.stream = rawBody.stream;
+          }
+          if (typeof rawBody.temperature === "number") {
+            sanitizedBody.temperature = Math.max(0, Math.min(2, rawBody.temperature));
+          }
+          if (typeof rawBody.max_tokens === "number") {
+            sanitizedBody.max_tokens = rawBody.max_tokens;
+          }
+          if (typeof rawBody.top_p === "number") {
+            sanitizedBody.top_p = rawBody.top_p;
+          }
+          if (typeof rawBody.frequency_penalty === "number") {
+            sanitizedBody.frequency_penalty = rawBody.frequency_penalty;
+          }
+          if (typeof rawBody.presence_penalty === "number") {
+            sanitizedBody.presence_penalty = rawBody.presence_penalty;
+          }
+          if (typeof rawBody.response_format === "object" && rawBody.response_format !== null) {
+            sanitizedBody.response_format = rawBody.response_format;
+          }
+          if (typeof rawBody.prompt === "string") {
+            sanitizedBody.prompt = rawBody.prompt;
+          }
+          if (typeof rawBody.n === "number") {
+            sanitizedBody.n = rawBody.n;
+          }
+          if (typeof rawBody.size === "string") {
+            sanitizedBody.size = rawBody.size;
+          }
+
+          if (sanitizedBody.stream) {
+            sanitizedBody.stream_options = { include_usage: true };
+          }
+          
+          incomingBody = sanitizedBody;
+        }
+
+        const originalModelId = incomingBody.model || "gpt-4o-mini";
+
+        // ── 4. RESOLVE UPSTREAM CREDENTIALS ─────────────────────────────────
         const primaryUrl = Deno.env.get("UPSTREAM_API_URL") ?? "https://crazyrouter.com/v1/chat/completions";
         const primaryKey = Deno.env.get("UPSTREAM_API_KEY") ?? Deno.env.get("UPSTREAM_MASTER_KEY");
 
@@ -364,6 +456,16 @@ export default {
         if (!shouldSkipPrimary) {
           for (const model of tryModels) {
             try {
+<<<<<<< Updated upstream
+=======
+              const controller     = new AbortController();
+              const isGeneration = ["dall-e", "mj_imagine", "flux", "sora", "runway", "kling", "cogview", "cogvideo", "stable-image"].some(k =>
+                originalModelId.toLowerCase().includes(k),
+              );
+              const timeoutLimit = isGeneration ? 20_000 : (incomingBody.stream ? 4_000 : 6_000);
+              const timeoutId     = setTimeout(() => controller.abort(), timeoutLimit);
+
+>>>>>>> Stashed changes
               finalModelId = model;
               let attempt: Response;
 
@@ -548,6 +650,7 @@ export default {
         } else {
           console.log(`[gateway] Skipping SiliconFlow for proprietary model ${originalModelId}.`);
         }
+<<<<<<< Updated upstream
 
         // ── Strategy B: fallback provider ───────────────────────────────────
         if (!response && fallbackKey) {
@@ -803,7 +906,6 @@ export default {
             return Response.json(directResponse);
           }
         }
-
         // ── 9. STREAMING RESPONSE ───────────────────────────────────────────
         const contentType = response.headers.get("content-type") ?? "";
         const isStream    = incomingBody.stream

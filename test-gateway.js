@@ -46,7 +46,7 @@ async function testGateway() {
       console.log(`⏱️ Latency: ${duration}ms`);
       console.log(`🤖 Response: "${data.choices[0].message.content}"`);
       console.log(`📊 Usage: ${data.usage.total_tokens} tokens`);
-      console.log("\n💰 Check your dashboard: your balance should have been deducted (1.4x markup).");
+      console.log("\n💰 Check your dashboard: your balance should have been deducted (1.8x markup).");
     } else {
       console.error("\n❌ GATEWAY ERROR:");
       console.error(`Status: ${response.status}`);

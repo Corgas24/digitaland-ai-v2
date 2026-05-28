@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://fycqiwfbhqbltsthrpxk.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Y3Fpd2ZiaHFibHRzdGhycHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MTUwMDcsImV4cCI6MjA4NTQ5MTAwN30.HecOV_tntiiL3n8I4x66nhyfjRC0iFW5qxpSU1U9BHM';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Y3Fpd2ZiaHFibHRzdGhycHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTkxNTAwNywiZXhwIjoyMDg1NDkxMDA3fQ.hpHBnGSRmuvuIEBoB9qRd4R7ZabgSqxtmfossrpAYH0';
+const supabase = createClient(supabaseUrl, SERVICE_KEY);
 
 async function checkLogs() {
   const { data: profile } = await supabase

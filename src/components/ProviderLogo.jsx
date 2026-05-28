@@ -405,7 +405,7 @@ export default function ProviderLogo({ provider, name = '', size = 32, style = {
         </svg>
       );
 
-    default:
+    default: {
       // Generic high-fidelity fallback displaying the brand color and first letter beautifully
       const color = PROVIDERS[provName]?.color || 'var(--primary)';
       return (
@@ -430,5 +430,6 @@ export default function ProviderLogo({ provider, name = '', size = 32, style = {
           {provName?.[0] || '?'}
         </div>
       );
+    }
   }
 }

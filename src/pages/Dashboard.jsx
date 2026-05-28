@@ -19,7 +19,7 @@ const DEMO_KEYS = [];
 const MODEL_USAGE = [];
 
 export default function Dashboard() {
-  const { user, updateBalance, addApiKey, removeApiKey, isProfileLoading } = useAuth();
+  const { user, addApiKey, removeApiKey, isProfileLoading } = useAuth();
   const { openPaymentModal } = usePayment();
   const location = useLocation();
   const navigate = useNavigate();

@@ -181,34 +181,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const updateBalance = async (amount) => {
-    if (!user) return;
-    const newBalance = user.balance + amount;
-    const prevBalance = user.balance;
-    setUser(prev => ({ ...prev, balance: newBalance }));
-
-    if (user.id === 'mock-rooter-id') {
-      try {
-        localStorage.setItem('mock_rooter_data', JSON.stringify({ ...user, balance: newBalance }));
-      } catch (e) { /* localStorage unavailable — dev-only fallback */ }
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
-      if (error) {
-        // Roll back optimistic UI update
-        console.error('[AuthContext] Failed to persist balance update — rolling back UI:', error.message);
-        setUser(prev => ({ ...prev, balance: prevBalance }));
-      }
-    } catch (e) {
-      console.error('[AuthContext] Balance persistence error:', e);
-      setUser(prev => ({ ...prev, balance: prevBalance }));
-    }
-  };
 
   const addApiKey = async (apiKeyData) => {
     if (!user) return;
@@ -281,7 +253,6 @@ export const AuthProvider = ({ children }) => {
       loginWithEmail,
       signUp,
       logout, 
-      updateBalance,
       addApiKey,
       removeApiKey,
       loading,

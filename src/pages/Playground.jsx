@@ -208,53 +208,78 @@ export default function Playground() {
       });
     };
 
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
     const runInference = async (mId) => {
+      const MAX_RETRIES = 2;
       const startTime = Date.now();
       const controller = new AbortController();
       abortControllersRef.current[mId] = controller;
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const apiKey = user.apiKeys?.[0]?.key;
-        const mObj = models.find(m => m.id === mId);
-        const headers = { 'Content-Type': 'application/json' };
-        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-        else if (apiKey) headers['x-api-key'] = apiKey;
-        const isMedia = ['Image', 'Video', 'Audio'].includes(mObj?.type);
-        const sysCtx = systemPrompt || "You are Digitaland AI, a secure multi-model gateway. Be precise and helpful.";
-        const payload = [
-          { role: 'system', content: sysCtx },
-          ...messages.filter(m => m.role === 'user' || (m.role === 'assistant' && !m.compare)).map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content: userMessage.content }
-        ];
-        const response = await safeFetch('/v1/chat/completions', {
-          method: 'POST', headers, signal: controller.signal,
-          body: JSON.stringify({ model: mId, messages: payload, temperature, max_tokens: maxTokens, top_p: topP, stream: !isMedia })
-        });
-        if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e.error?.message || `Error ${response.status}`); }
-        let text = '';
-        if (isMedia) {
-          const d = await response.json();
-          text = d.data?.[0]?.url || d.choices?.[0]?.message?.content || '';
-          if (text.startsWith('http')) text = `${mObj?.type === 'Image' ? '!' : ''}[Output](${text})`;
-          updateResponse(mId, p => ({ ...p, content: text, loading: false, latency: Date.now() - startTime }));
-        } else {
-          const reader = response.body.getReader(); const decoder = new TextDecoder(); let buf = '';
-          while (true) {
-            const { done, value } = await reader.read(); if (done) break;
-            buf += decoder.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop() || '';
-            for (const line of lines) {
-              const t = line.trim(); if (!t || t === 'data: [DONE]') continue;
-              if (t.startsWith('data: ')) {
-                try { const d = JSON.parse(t.slice(6)); const c = d.choices?.[0]?.delta?.content || '';
-                  if (c) { text += c; updateResponse(mId, p => ({ ...p, content: text })); }
-                } catch {}
+
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          // Show retrying state on 2nd+ attempt
+          if (attempt > 0) {
+            updateResponse(mId, p => ({ ...p, content: '', loading: true, retrying: attempt }));
+            await sleep(800 * attempt); // 800ms, 1600ms
+          }
+
+          const { data: { session } } = await supabase.auth.getSession();
+          const apiKey = user.apiKeys?.[0]?.key;
+          const mObj = models.find(m => m.id === mId);
+          const headers = { 'Content-Type': 'application/json' };
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+          else if (apiKey) headers['x-api-key'] = apiKey;
+          const isMedia = ['Image', 'Video', 'Audio'].includes(mObj?.type);
+          const sysCtx = systemPrompt || "You are Digitaland AI, a secure multi-model gateway. Be precise and helpful.";
+          const payload = [
+            { role: 'system', content: sysCtx },
+            ...messages.filter(m => m.role === 'user' || (m.role === 'assistant' && !m.compare)).map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content: userMessage.content }
+          ];
+          const response = await safeFetch('/v1/chat/completions', {
+            method: 'POST', headers, signal: controller.signal,
+            body: JSON.stringify({ model: mId, messages: payload, temperature, max_tokens: maxTokens, top_p: topP, stream: !isMedia })
+          });
+          if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e.error?.message || `Error ${response.status}`); }
+
+          let text = '';
+          if (isMedia) {
+            const d = await response.json();
+            text = d.data?.[0]?.url || d.choices?.[0]?.message?.content || '';
+            if (text.startsWith('http')) text = `${mObj?.type === 'Image' ? '!' : ''}[Output](${text})`;
+            updateResponse(mId, p => ({ ...p, content: text, loading: false, latency: Date.now() - startTime, retrying: 0 }));
+          } else {
+            const reader = response.body.getReader(); const decoder = new TextDecoder(); let buf = '';
+            while (true) {
+              const { done, value } = await reader.read(); if (done) break;
+              buf += decoder.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop() || '';
+              for (const line of lines) {
+                const t = line.trim(); if (!t || t === 'data: [DONE]') continue;
+                if (t.startsWith('data: ')) {
+                  try { const d = JSON.parse(t.slice(6)); const c = d.choices?.[0]?.delta?.content || '';
+                    if (c) { text += c; updateResponse(mId, p => ({ ...p, content: text, retrying: 0 })); }
+                  } catch {}
+                }
               }
             }
+            updateResponse(mId, p => ({ ...p, loading: false, latency: Date.now() - startTime, retrying: 0 }));
           }
-          updateResponse(mId, p => ({ ...p, loading: false, latency: Date.now() - startTime }));
+          return; // success — exit retry loop
+
+        } catch (err) {
+          if (err.name === 'AbortError') return; // user stopped — no error
+          const errCode = sanitizeProviderError(err.message);
+          if (!errCode) return;
+
+          // Only retry on transient errors
+          const canRetry = ['service_unavailable', 'rate_limit', 'network_error'].includes(errCode);
+          if (canRetry && attempt < MAX_RETRIES) continue; // retry
+
+          // Final failure — show friendly error
+          updateResponse(mId, p => ({ ...p, loading: false, error: errCode, retrying: 0 }));
+          return;
         }
-      } catch (err) {
-        if (err.name !== 'AbortError') updateResponse(mId, p => ({ ...p, loading: false, error: sanitizeProviderError(err.message) }));
       }
     };
 
@@ -1484,16 +1509,60 @@ export default function Playground() {
                             </div>
                             {r.latency > 0 && <span className="pg-msg-latency">{(r.latency / 1000).toFixed(1)}s</span>}
                           </div>
-                          {r.error === 'balance' ? (
-                            <div className="pg-no-bal">
-                              <div className="pg-no-bal-head"><AlertCircle size={13} /> Insufficient balance</div>
-                              <p className="pg-no-bal-text">Add credits to continue using this model.</p>
-                              <button className="pg-no-bal-btn" onClick={() => openPaymentModal()}>Add credits</button>
-                            </div>
-                          ) : r.error ? (
-                            <div style={{ color: '#ef4444', fontSize: '0.78rem', padding: '0.4rem 0', display: 'flex', alignItems: 'flex-start', gap: '0.35rem' }}>
-                              <AlertCircle size={13} style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{r.error}</span>
-                            </div>
+                          {r.error ? (() => {
+                            const errInfo = ERROR_MESSAGES[r.error] || ERROR_MESSAGES['service_unavailable'];
+                            return (
+                              <div style={{
+                                margin: '0.25rem 0',
+                                padding: '0.85rem 1rem',
+                                borderRadius: '12px',
+                                background: 'rgba(239,68,68,0.06)',
+                                border: '1px solid rgba(239,68,68,0.15)',
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                                  <span style={{ fontSize: '1rem' }}>{errInfo.icon}</span>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f87171' }}>{errInfo.title}</span>
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', margin: '0 0 0.6rem 0', lineHeight: 1.5 }}>
+                                  {errInfo.desc}
+                                </p>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                  {errInfo.canRetry && (
+                                    <button
+                                      onClick={() => handleSubmit(null, true)}
+                                      style={{
+                                        padding: '0.35rem 0.85rem', borderRadius: '7px', fontSize: '0.72rem',
+                                        fontWeight: 700, cursor: 'pointer', border: '1px solid rgba(99,102,241,0.3)',
+                                        background: 'rgba(99,102,241,0.12)', color: '#a5b4fc',
+                                      }}
+                                    >
+                                      ↻ Try again
+                                    </button>
+                                  )}
+                                  {errInfo.action && (
+                                    <a
+                                      href={errInfo.action.href}
+                                      style={{
+                                        padding: '0.35rem 0.85rem', borderRadius: '7px', fontSize: '0.72rem',
+                                        fontWeight: 700, textDecoration: 'none', border: '1px solid rgba(99,102,241,0.4)',
+                                        background: 'rgba(99,102,241,0.2)', color: '#a5b4fc',
+                                      }}
+                                    >
+                                      {errInfo.action.label}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()
+                          ) : r.retrying > 0 ? (
+                            <>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0', color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem' }}>
+                                <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span>
+                                Retrying... (attempt {r.retrying + 1})
+                              </div>
+                              <div className="pg-dots"><span /><span /><span /></div>
+                            </>
                           ) : r.loading && !r.content ? (
                             <div className="pg-dots"><span /><span /><span /></div>
                           ) : (
@@ -1509,6 +1578,7 @@ export default function Playground() {
                               )}
                             </>
                           )}
+
                         </div>
                       );
                     })}

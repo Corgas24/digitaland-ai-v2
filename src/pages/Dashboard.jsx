@@ -9,7 +9,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, Cell 
 } from 'recharts';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../contexts/PaymentContext';
@@ -23,26 +23,28 @@ export default function Dashboard() {
   const { openPaymentModal } = usePayment();
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const [activeTab, setActiveTab] = useState(() => {
+  const [searchParams] = useSearchParams();
+
+  const VALID_TABS = ['overview', 'keys', 'billing', 'usage', 'logs', 'settings'];
+
+  const getTab = () => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && VALID_TABS.includes(tabParam)) return tabParam;
     const path = location.pathname.split('/').pop();
-    if (['usage', 'logs', 'settings', 'keys'].includes(path)) return path;
+    if (VALID_TABS.includes(path)) return path;
     return 'overview';
-  });
+  };
+
+  const [activeTab, setActiveTab] = useState(getTab);
 
   useEffect(() => {
-    const path = location.pathname.split('/').pop();
-    if (['usage', 'logs', 'settings', 'keys'].includes(path)) {
-      setActiveTab(path);
-    } else if (path === 'dashboard') {
-      setActiveTab('overview');
-    }
-  }, [location.pathname]);
+    setActiveTab(getTab());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, location.pathname]);
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
     if (tab === 'overview') navigate('/dashboard');
-    else navigate(`/dashboard/${tab}`);
+    else navigate(`/dashboard?tab=${tab}`);
   };
   // Use the keys from AuthContext instead of local state to keep it fully synced
   const keys = user?.apiKeys || [];
@@ -744,6 +746,86 @@ export default function Dashboard() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* ════ USAGE TAB ════ */}
+          {activeTab === 'usage' && (
+            <div className="fade-in">
+              <div className="dash-header">
+                <div>
+                  <h2 style={{ fontSize: '1.8rem', marginBottom: '0.25rem', fontWeight: 800 }}>Usage</h2>
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Overview of your API consumption and spending.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn-outline" onClick={() => window.location.reload()}><RefreshCcw size={16} /> Refresh</button>
+                </div>
+              </div>
+
+              <div className="stat-grid" style={{ marginBottom: '2rem' }}>
+                <div className="stat-card premium-stat">
+                  <div className="stat-icon-wrap" style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary)' }}><Zap size={20} /></div>
+                  <div className="label">Total Requests</div>
+                  <div className="value">{usageLogs.length}</div>
+                </div>
+                <div className="stat-card premium-stat">
+                  <div className="stat-icon-wrap" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--green)' }}><DollarSign size={20} /></div>
+                  <div className="label">Total Spend</div>
+                  <div className="value">${usageLogs.reduce((acc, l) => acc + (Number.isFinite(l.cost) ? l.cost : 0), 0).toFixed(4)}</div>
+                </div>
+                <div className="stat-card premium-stat">
+                  <div className="stat-icon-wrap" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--blue)' }}><Activity size={20} /></div>
+                  <div className="label">Total Tokens</div>
+                  <div className="value">{usageLogs.reduce((acc, l) => acc + (l.total_tokens || 0), 0).toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div className="card" style={{ marginBottom: '2rem' }}>
+                <div className="sidebar-group-title" style={{ paddingLeft: 0, marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                  DAILY SPEND
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 400 }}>Last 7 days</span>
+                </div>
+                <div style={{ width: '100%', height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="colorSpend2" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={(v) => `$${v.toFixed(4)}`} />
+                      <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '0.8rem' }} formatter={(v) => `$${Number(v).toFixed(4)}`} />
+                      <Area type="monotone" dataKey="spend" stroke="var(--primary)" strokeWidth={3} fill="url(#colorSpend2)" dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2, stroke: 'var(--bg)' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="sidebar-group-title" style={{ paddingLeft: 0, marginBottom: '1.5rem' }}>MODEL BREAKDOWN</div>
+                <div className="model-usage-list">
+                  {modelStats.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>
+                      <BarChart3 size={32} style={{ opacity: 0.2, margin: '0 auto 0.5rem' }} />
+                      <p style={{ fontSize: '0.85rem' }}>No API requests made yet.</p>
+                    </div>
+                  ) : modelStats.map((m, i) => (
+                    <div className="model-usage-item" key={i}>
+                      <div className="usage-info">
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.model}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.count} requests</span>
+                      </div>
+                      <div className="usage-bar-bg">
+                        <div className="usage-bar-fill" style={{ width: `${m.percentage}%`, background: `hsl(${220 + i * 30}, 70%, 60%)` }}></div>
+                      </div>
+                      <div className="usage-cost">{m.percentage.toFixed(1)}%</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

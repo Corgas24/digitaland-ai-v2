@@ -1,5 +1,5 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, Sparkles, Key, Shield, CreditCard, Settings, Plus } from 'lucide-react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Activity, Sparkles, Key, Shield, CreditCard, Plus, BookOpen, Layers, MessageSquare, BarChart2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../contexts/PaymentContext';
 
@@ -7,37 +7,46 @@ export default function Sidebar() {
   const { user, isProfileLoading } = useAuth();
   const { openPaymentModal } = usePayment();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
   const path = location.pathname;
-  const isDashboard = path === '/dashboard';
-  const isPlayground = path.startsWith('/playground');
-  const isKeys = path.includes('/dashboard/keys');
-  const isLogs = path.includes('/dashboard/logs');
-  const isSettings = path.includes('/dashboard/settings');
-  const isBilling = path.includes('/billing');
+  const tab = searchParams.get('tab');
 
-  const handleTabChange = (tab) => {
-    if (tab === 'overview') navigate('/dashboard');
-    else navigate(`/dashboard/${tab}`);
-  };
+  const isPlayground = path.startsWith('/playground');
+  const isKeys = path.startsWith('/dashboard') && tab === 'keys';
+  const isLogs = path.startsWith('/dashboard') && tab === 'logs';
+  const isUsage = path.startsWith('/dashboard') && tab === 'usage';
+  const isSettings = path.startsWith('/dashboard') && tab === 'settings';
+  const isBilling = path.startsWith('/dashboard') && tab === 'billing';
+  const isDocs = path.startsWith('/docs');
+  const isModels = path.startsWith('/models');
 
   return (
     <aside className="dash-sidebar">
       <div className="sidebar-group">
         <div className="sidebar-group-title">PLATFORM</div>
+
         <Link to="/playground" className={`sidebar-link ${isPlayground ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
           <Sparkles size={18} /> Playground
         </Link>
-        <button className={`sidebar-link ${isBilling ? 'active' : ''}`} onClick={() => navigate('/dashboard/billing')}>
+
+        <button className={`sidebar-link ${isBilling ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=billing'; }}>
           <CreditCard size={18} /> Billing
         </button>
-        <button className={`sidebar-link ${isKeys ? 'active' : ''}`} onClick={() => handleTabChange('keys')}>
+
+        <button className={`sidebar-link ${isKeys ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=keys'; }}>
           <Key size={18} /> API Keys
         </button>
-        <button className={`sidebar-link ${isLogs ? 'active' : ''}`} onClick={() => handleTabChange('logs')}>
-          <Activity size={18} /> Usage & Logs
+
+        <button className={`sidebar-link ${isUsage ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=usage'; }}>
+          <BarChart2 size={18} /> Usage
         </button>
+
+        <button className={`sidebar-link ${isLogs ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=logs'; }}>
+          <Activity size={18} /> Logs
+        </button>
+
         {user?.isAdmin && (
           <Link to="/admin" className="sidebar-link" style={{ textDecoration: 'none', color: 'var(--secondary)', fontWeight: 800 }}>
             <Shield size={18} /> Command Center
@@ -47,14 +56,14 @@ export default function Sidebar() {
 
       <div className="sidebar-group" style={{ marginTop: '1.5rem' }}>
         <div className="sidebar-group-title">QUICK LINKS</div>
-        <Link to="/docs" className="sidebar-link" style={{ textDecoration: 'none' }}>
-          <Settings size={18} /> Documentation
+        <Link to="/models" className={`sidebar-link ${isModels ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
+          <Layers size={18} /> Models Gallery
         </Link>
-        <Link to="/models" className="sidebar-link" style={{ textDecoration: 'none' }}>
-          <Activity size={18} /> Models Gallery
+        <Link to="/docs" className={`sidebar-link ${isDocs ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
+          <BookOpen size={18} /> Documentation
         </Link>
         <a href="https://discord.gg/digitaland" target="_blank" rel="noreferrer" className="sidebar-link" style={{ textDecoration: 'none' }}>
-          <Shield size={18} /> Join Discord
+          <MessageSquare size={18} /> Join Discord
         </a>
       </div>
 

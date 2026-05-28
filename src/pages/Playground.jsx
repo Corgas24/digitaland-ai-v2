@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { 
-  Send, Trash2, Cpu, Sparkles, AlertCircle, Copy, RefreshCw, X, 
-  ChevronRight, ChevronDown, Star, Sliders, ArrowUpRight, Check,
-  MessageSquare, Plus, Settings2, Code, Video, Image as ImageIcon,
-  Mic, Paperclip, HelpCircle, Layers, Activity, Search
+  Send, Trash2, Sparkles, AlertCircle, Copy, RefreshCw, X, 
+  ChevronDown, Plus, Settings2, ArrowUp, Check,
+  Paperclip, Layers, Search, Sun, Moon,
+  CreditCard, Key, Activity, Shield, BookOpen, LayoutGrid, 
+  MessageCircle, HelpCircle, ChevronRight, User, LogOut
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
@@ -12,53 +13,58 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../contexts/PaymentContext';
 import { getDynamicModels, PROVIDERS } from '../data/models';
 import { safeFetch } from '../lib/safeFetch';
-import Sidebar from '../components/Sidebar';
 
-// Sanitize provider errors into clear neural status messages
+/* ═══════════════════════════════════════════════════════════════════
+   SANITIZE PROVIDER ERRORS
+   ═══════════════════════════════════════════════════════════════════ */
 const sanitizeProviderError = (msg) => {
-  if (!msg) return 'Erro desconhecido na rede neural.';
+  if (!msg) return 'Unknown network error.';
   if (msg instanceof Error) return sanitizeProviderError(msg.message);
-
   const msgStr = typeof msg === 'object' ? JSON.stringify(msg) : String(msg);
-
-  // Detect Chinese characters or SiliconFlow / DeepSeek garbage output
-  const hasChinese       = /[\u4e00-\u9fa5]/.test(msgStr);
-  const isInvalidToken   = msgStr.includes('无效的令牌')
-    || /invalid\s+token|unauthorized|invalid\s+api\s+key|invalid_token/i.test(msgStr);
+  const hasChinese = /[\u4e00-\u9fa5]/.test(msgStr);
+  const isInvalidToken = msgStr.includes('无效的令牌') || /invalid\s+token|unauthorized|invalid\s+api\s+key/i.test(msgStr);
   const isUserOutOfBalance = /insufficient balance|payment required/i.test(msgStr);
   const isChannelOutOfBalance = /quota|insufficient_funds|out of balance/i.test(msgStr);
 
-  if (hasChinese || isInvalidToken) {
-    return 'Erro de Sincronização Neural: O provedor upstream está com credenciais inválidas ou temporariamente indisponível.';
-  }
-
-  if (isUserOutOfBalance) {
-    return 'Saldo Insuficiente: A sua conta não dispõe de créditos suficientes para esta operação. Por favor, adicione fundos no Dashboard.';
-  }
-
-  if (isChannelOutOfBalance) {
-    return 'Erro de Créditos do Canal: O canal de processamento upstream esgotou a sua cota. Por favor, tente um modelo alternativo.';
-  }
-  if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError') || msgStr.includes('Network request failed')) {
-    return 'Falha na Ligação: Não foi possível conectar ao núcleo neural. Verifique a sua internet.';
-  }
+  if (hasChinese || isInvalidToken) return 'Provider credentials invalid or temporarily unavailable.';
+  if (isUserOutOfBalance) return 'Insufficient balance. Please add credits to continue.';
+  if (isChannelOutOfBalance) return 'Upstream channel quota exhausted. Try an alternative model.';
+  if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError')) return 'Connection failed. Check your internet.';
   return msgStr;
 };
 
+/* ═══════════════════════════════════════════════════════════════════
+   SUGGESTION CHIPS
+   ═══════════════════════════════════════════════════════════════════ */
+const SUGGESTIONS = [
+  { title: 'Email to client', sub: 'Draft a professional update' },
+  { title: 'Code review', sub: 'Find bugs & optimize' },
+  { title: 'Market analysis', sub: 'Business intelligence' },
+  { title: 'Meeting notes', sub: 'Decisions & actions' },
+  { title: 'Debug code', sub: 'Fix errors fast' },
+  { title: 'Content strategy', sub: 'SEO & marketing' },
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPONENT
+   ═══════════════════════════════════════════════════════════════════ */
 export default function Playground() {
-  const { user, refreshUser, isProfileLoading } = useAuth();
+  const { user, refreshUser, isProfileLoading, logout } = useAuth();
   const { openPaymentModal } = usePayment();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlModel = searchParams.get('model');
 
-  // Multi-Model Workspace State
+  // Theme
+  const [isDark, setIsDark] = useState(true);
+
+  // Multi-Model Workspace
   const [activeTabs, setActiveTabs] = useState(['gpt-4o-mini']);
   const [activeTabIdx, setActiveTabIdx] = useState(0);
-  const [compareMode, setCompareMode] = useState(true);
+  const [compareMode, setCompareMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Chat and inference state
+  // Chat state
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,1476 +74,1458 @@ export default function Playground() {
   const [topP, setTopP] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Search & Filter state for the Add Model Modal
+  // Modal search
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('All');
 
-  // System states
+  // System
   const [error, setError] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [currentConvId, setCurrentConvId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [models, setModels] = useState([]);
   const [isModelsLoading, setIsModelsLoading] = useState(true);
-
-  // Copy alerts
-  const [copiedId, setCopiedId] = useState(null);
   const [copiedText, setCopiedText] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const abortControllersRef = useRef({});
   const scrollRef = useRef(null);
-  const inputRef = useRef(null);
+  const textareaRef = useRef(null);
 
-  // 1. Fetch Dynamic Models & Set Initial Tab
+  // Theme sync
+  useEffect(() => {
+    const t = document.documentElement.getAttribute('data-theme');
+    setIsDark(t === 'dark');
+  }, []);
+
+  const toggleTheme = () => {
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    setIsDark(!isDark);
+  };
+
+  // 1. Fetch Dynamic Models
   useEffect(() => {
     getDynamicModels().then(data => {
       setModels(data ?? []);
       setIsModelsLoading(false);
-      
-      // If a model is passed in the URL, make it the active workspace tab
       if (urlModel && data?.some(m => m.id === urlModel)) {
         setActiveTabs([urlModel]);
         setActiveTabIdx(0);
       } else if (data?.length > 0) {
-        // Default selection matching screenshot
-        const defaultModels = ['gpt-4o', 'claude-3-5-sonnet', 'grok-beta', 'qwen-2.5-72b-instruct'].filter(id => data.some(m => m.id === id));
-        if (defaultModels.length > 0) {
-          setActiveTabs(defaultModels);
-        } else {
-          setActiveTabs([data[0].id]);
-        }
+        const defaults = ['gpt-4o', 'claude-sonnet-4-20250514', 'gemini-2.5-pro', 'deepseek-chat']
+          .filter(id => data.some(m => m.id === id));
+        setActiveTabs(defaults.length > 0 ? defaults : [data[0].id]);
         setActiveTabIdx(0);
       }
-    }).catch(err => {
-      console.error('Failed to load models:', err);
-      setIsModelsLoading(false);
-    });
+    }).catch(() => setIsModelsLoading(false));
   }, [urlModel]);
 
-  // Expand tabs automatically if CompareMode changes
   const activeModelsForQuery = useMemo(() => {
     return compareMode ? activeTabs : [activeTabs[activeTabIdx]];
   }, [compareMode, activeTabs, activeTabIdx]);
 
-  // Scroll chat bottom
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Fetch past conversations
-  useEffect(() => {
-    if (user) {
-      fetchConversations();
-    }
-  }, [user]);
+  useEffect(() => { if (user) fetchConversations(); }, [user]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 180) + 'px'; }
+  }, [input]);
+
+  /* ── Data operations ─────────────────────────────────────────── */
   const fetchConversations = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-      
-      if (error) throw error;
+      const { data } = await supabase.from('conversations').select('*')
+        .eq('user_id', user.id).order('updated_at', { ascending: false });
       setConversations(data || []);
-    } catch (err) {
-      console.error('Error fetching conversations:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  const startNewConversation = () => {
-    setMessages([]);
-    setCurrentConvId(null);
-    setError(null);
-  };
+  const startNewConversation = () => { setMessages([]); setCurrentConvId(null); setError(null); };
 
   const loadConversation = (conv) => {
     setMessages(conv.messages || []);
     setCurrentConvId(conv.id);
     if (conv.model_id) {
-      // Split list if it was a saved array, or load single
       try {
-        const loadedIds = JSON.parse(conv.model_id);
-        if (Array.isArray(loadedIds) && loadedIds.length > 0) {
-          setActiveTabs(loadedIds);
-          setActiveTabIdx(0);
-        } else {
-          setActiveTabs([conv.model_id]);
-          setActiveTabIdx(0);
-        }
-      } catch (e) {
-        setActiveTabs([conv.model_id]);
-        setActiveTabIdx(0);
-      }
+        const ids = JSON.parse(conv.model_id);
+        if (Array.isArray(ids) && ids.length > 0) { setActiveTabs(ids); setActiveTabIdx(0); }
+        else { setActiveTabs([conv.model_id]); setActiveTabIdx(0); }
+      } catch { setActiveTabs([conv.model_id]); setActiveTabIdx(0); }
     }
     setError(null);
   };
 
-  const saveConversation = async (updatedMessages, openModelIds) => {
-    if (!user || updatedMessages.length === 0) return;
+  const saveConversation = async (msgs, openIds) => {
+    if (!user || msgs.length === 0) return;
     setIsSaving(true);
     try {
-      const title = updatedMessages[0].content.substring(0, 45) + (updatedMessages[0].content.length > 45 ? '...' : '');
-      const modelIdString = JSON.stringify(openModelIds);
-
+      const title = msgs[0].content.substring(0, 45) + (msgs[0].content.length > 45 ? '...' : '');
+      const mid = JSON.stringify(openIds);
       if (currentConvId) {
-        const { error } = await supabase
-          .from('conversations')
-          .update({ 
-            messages: updatedMessages, 
-            model_id: modelIdString,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentConvId);
-        if (error) throw error;
+        await supabase.from('conversations').update({ messages: msgs, model_id: mid, updated_at: new Date().toISOString() }).eq('id', currentConvId);
       } else {
-        const { data, error } = await supabase
-          .from('conversations')
-          .insert([{
-            user_id: user.id,
-            title,
-            messages: updatedMessages,
-            model_id: modelIdString,
-            updated_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
-        
-        if (error) throw error;
+        const { data } = await supabase.from('conversations').insert([{ user_id: user.id, title, messages: msgs, model_id: mid, updated_at: new Date().toISOString() }]).select().single();
         if (data) setCurrentConvId(data.id);
       }
       fetchConversations();
-    } catch (err) {
-      console.error('Error saving conversation:', err);
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setIsSaving(false); }
   };
 
-  // 2. Parallel Streaming Message Dispatcher
+  /* ── Inference engine ────────────────────────────────────────── */
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-    if (!user) {
-      setError('Sessão expirada. Inicie sessão para continuar.');
-      return;
-    }
-
+    if (!user) { setError('Session expired. Please sign in.'); return; }
     const hasNoCredits = !user.isAdmin && (!user.balance || user.balance <= 0.001);
-
-    // A. Add User Message
     const userMessage = { role: 'user', content: input, timestamp: Date.now() };
-    
-    // B. Build Assistant Placeholder structured for parallel model responses
     const assistantPlaceholder = {
-      role: 'assistant',
-      compare: true,
+      role: 'assistant', compare: true,
       responses: activeModelsForQuery.reduce((acc, mId) => {
-        acc[mId] = {
-          content: '',
-          latency: 0,
-          loading: !hasNoCredits, // If zero balance, loading is false instantly
-          error: hasNoCredits ? 'balance' : null
-        };
+        acc[mId] = { content: '', latency: 0, loading: !hasNoCredits, error: hasNoCredits ? 'balance' : null };
         return acc;
       }, {})
     };
-
     const nextMessages = [...messages, userMessage, assistantPlaceholder];
-    setMessages(nextMessages);
-    setInput('');
-    setError(null);
-
-    // If balance is depleted, trigger top up modal and don't query API
-    if (hasNoCredits) {
-      setError('Saldo Insuficiente: A sua conta não dispõe de créditos suficientes para esta operação. Por favor, adicione fundos.');
-      openPaymentModal();
-      return;
-    }
-
+    setMessages(nextMessages); setInput(''); setError(null);
+    if (hasNoCredits) { setError('Insufficient balance. Please add credits.'); openPaymentModal(); return; }
     setLoading(true);
 
-    // Helper state updates
-    const updateResponse = (modelId, updateFn) => {
+    const updateResponse = (modelId, fn) => {
       setMessages(prev => {
-        const next = [...prev];
-        const last = next[next.length - 1];
-        if (last && last.role === 'assistant' && last.responses && last.responses[modelId]) {
-          last.responses = {
-            ...last.responses,
-            [modelId]: updateFn(last.responses[modelId])
-          };
+        const next = [...prev]; const last = next[next.length - 1];
+        if (last?.role === 'assistant' && last.responses?.[modelId]) {
+          last.responses = { ...last.responses, [modelId]: fn(last.responses[modelId]) };
         }
         return next;
       });
     };
 
-    // Parallel execution pool
     const runInference = async (mId) => {
       const startTime = Date.now();
       const controller = new AbortController();
       abortControllersRef.current[mId] = controller;
-
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const apiKey = user.apiKeys?.[0]?.key;
         const mObj = models.find(m => m.id === mId);
-        
-        const requestHeaders = { 'Content-Type': 'application/json' };
-        if (session?.access_token) {
-          requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
-        } else if (apiKey) {
-          requestHeaders['x-api-key'] = apiKey;
-        }
-
+        const headers = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        else if (apiKey) headers['x-api-key'] = apiKey;
         const isMedia = ['Image', 'Video', 'Audio'].includes(mObj?.type);
-        const sysContext = systemPrompt || "You are Digitaland AI, a secure frontier multi-model gateway API. Be precise.";
-
-        // Prepares chat payload cleanly
-        const payloadMessages = [
-          { role: 'system', content: sysContext },
+        const sysCtx = systemPrompt || "You are Digitaland AI, a secure multi-model gateway. Be precise and helpful.";
+        const payload = [
+          { role: 'system', content: sysCtx },
           ...messages.filter(m => m.role === 'user' || (m.role === 'assistant' && !m.compare)).map(m => ({ role: m.role, content: m.content })),
-          // Add the current user prompt
           { role: 'user', content: userMessage.content }
         ];
-
         const response = await safeFetch('/v1/chat/completions', {
-          method: 'POST',
-          headers: requestHeaders,
-          signal: controller.signal,
-          body: JSON.stringify({
-            model: mId,
-            messages: payloadMessages,
-            temperature,
-            max_tokens: maxTokens,
-            top_p: topP,
-            stream: !isMedia
-          })
+          method: 'POST', headers, signal: controller.signal,
+          body: JSON.stringify({ model: mId, messages: payload, temperature, max_tokens: maxTokens, top_p: topP, stream: !isMedia })
         });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error?.message || `Gateway returned error code ${response.status}`);
-        }
-
-        let accumulatedText = '';
-
+        if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e.error?.message || `Error ${response.status}`); }
+        let text = '';
         if (isMedia) {
-          const mediaData = await response.json();
-          accumulatedText = mediaData.data?.[0]?.url || mediaData.choices?.[0]?.message?.content || '';
-          if (accumulatedText.startsWith('http')) {
-            const wrap = mObj?.type === 'Image' ? '!' : '';
-            accumulatedText = `${wrap}[Neural Output](${accumulatedText})`;
-          }
-          updateResponse(mId, prev => ({
-            ...prev,
-            content: accumulatedText,
-            loading: false,
-            latency: Date.now() - startTime
-          }));
+          const d = await response.json();
+          text = d.data?.[0]?.url || d.choices?.[0]?.message?.content || '';
+          if (text.startsWith('http')) text = `${mObj?.type === 'Image' ? '!' : ''}[Output](${text})`;
+          updateResponse(mId, p => ({ ...p, content: text, loading: false, latency: Date.now() - startTime }));
         } else {
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let lineBuffer = '';
-
+          const reader = response.body.getReader(); const decoder = new TextDecoder(); let buf = '';
           while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            lineBuffer += decoder.decode(value, { stream: true });
-            const lines = lineBuffer.split('\n');
-            lineBuffer = lines.pop() || '';
-
+            const { done, value } = await reader.read(); if (done) break;
+            buf += decoder.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop() || '';
             for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed || trimmed === 'data: [DONE]') continue;
-
-              if (trimmed.startsWith('data: ')) {
-                try {
-                  const dataObj = JSON.parse(trimmed.slice(6));
-                  const textDelta = dataObj.choices?.[0]?.delta?.content || '';
-                  if (textDelta) {
-                    accumulatedText += textDelta;
-                    updateResponse(mId, prev => ({
-                      ...prev,
-                      content: accumulatedText
-                    }));
-                  }
-                } catch (e) {
-                  // Buffer fragments safely
-                }
+              const t = line.trim(); if (!t || t === 'data: [DONE]') continue;
+              if (t.startsWith('data: ')) {
+                try { const d = JSON.parse(t.slice(6)); const c = d.choices?.[0]?.delta?.content || '';
+                  if (c) { text += c; updateResponse(mId, p => ({ ...p, content: text })); }
+                } catch {}
               }
             }
           }
-
-          updateResponse(mId, prev => ({
-            ...prev,
-            loading: false,
-            latency: Date.now() - startTime
-          }));
+          updateResponse(mId, p => ({ ...p, loading: false, latency: Date.now() - startTime }));
         }
-
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          updateResponse(mId, prev => ({
-            ...prev,
-            loading: false,
-            error: sanitizeProviderError(err.message)
-          }));
-        }
+        if (err.name !== 'AbortError') updateResponse(mId, p => ({ ...p, loading: false, error: sanitizeProviderError(err.message) }));
       }
     };
 
-    // Trigger all queries simultaneously!
     await Promise.all(activeModelsForQuery.map(mId => runInference(mId)));
-    
     setLoading(false);
     await saveConversation(nextMessages, activeModelsForQuery);
     if (refreshUser) await refreshUser();
   };
 
-  const stopAllGenerations = () => {
-    Object.keys(abortControllersRef.current).forEach(mId => {
-      if (abortControllersRef.current[mId]) {
-        abortControllersRef.current[mId].abort();
-      }
-    });
+  const stopAll = () => {
+    Object.values(abortControllersRef.current).forEach(c => c?.abort());
     setLoading(false);
   };
 
-  const handleCopyText = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(true);
-    setTimeout(() => setCopiedText(false), 1500);
-  };
+  const handleCopy = (text) => { navigator.clipboard.writeText(text); setCopiedText(true); setTimeout(() => setCopiedText(false), 1500); };
 
-  // Filtered model results for adding tabs
+  /* ── Model filtering ─────────────────────────────────────────── */
   const filteredModels = useMemo(() => {
     return models.filter(m => {
       if (!m) return false;
-      const q = searchQuery ? searchQuery.toLowerCase() : '';
-      const nameLower = (m.name || '').toLowerCase();
-      const providerLower = (m.provider || '').toLowerCase();
-      const matchSearch = !q || nameLower.includes(q) || providerLower.includes(q);
-      
-      if (filterType === 'All') return matchSearch;
-      return m.type === filterType && matchSearch;
+      const q = searchQuery.toLowerCase();
+      const match = !q || (m.name || '').toLowerCase().includes(q) || (m.provider || '').toLowerCase().includes(q);
+      return (filterType === 'All' ? match : m.type === filterType && match);
     });
   }, [models, searchQuery, filterType]);
 
-  // Group models by provider for add modal
   const modelsByProvider = useMemo(() => {
-    const grouped = {};
-    filteredModels.forEach(m => {
-      if (!m) return;
-      const provider = m.provider || 'Other';
-      if (!grouped[provider]) grouped[provider] = [];
-      grouped[provider].push(m);
-    });
-    return grouped;
+    const g = {};
+    filteredModels.forEach(m => { const p = m.provider || 'Other'; if (!g[p]) g[p] = []; g[p].push(m); });
+    return g;
   }, [filteredModels]);
 
-  const addModelTab = (modelId) => {
-    if (!activeTabs.includes(modelId)) {
-      setActiveTabs([...activeTabs, modelId]);
-      setActiveTabIdx(activeTabs.length);
-    } else {
-      const idx = activeTabs.indexOf(modelId);
-      setActiveTabIdx(idx);
-    }
+  const addModelTab = (id) => {
+    if (!activeTabs.includes(id)) { setActiveTabs([...activeTabs, id]); setActiveTabIdx(activeTabs.length); }
+    else setActiveTabIdx(activeTabs.indexOf(id));
     setIsAddModalOpen(false);
   };
 
-  const closeModelTab = (e, index) => {
-    e.stopPropagation();
-    if (activeTabs.length <= 1) return; // Keep at least one
-
-    const newTabs = activeTabs.filter((_, i) => i !== index);
-    setActiveTabs(newTabs);
-
-    if (activeTabIdx >= newTabs.length) {
-      setActiveTabIdx(newTabs.length - 1);
-    }
+  const closeTab = (e, i) => {
+    e.stopPropagation(); if (activeTabs.length <= 1) return;
+    const t = activeTabs.filter((_, j) => j !== i); setActiveTabs(t);
+    if (activeTabIdx >= t.length) setActiveTabIdx(t.length - 1);
   };
 
-  // Dynamic values based on active tab selection
   const currentModel = models.find(m => m.id === activeTabs[activeTabIdx]) || models[0];
 
+  /* ═══════════════════════════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════════════════════════ */
   return (
-    <div className="playground-studio-root">
+    <div className="pg-root">
       <style>{`
-        .playground-studio-root {
-          display: flex;
-          width: 100vw;
-          height: calc(100vh - 68px);
-          background: var(--bg);
-          position: absolute;
-          left: 0;
-          top: 68px;
-          overflow: hidden;
-          z-index: 100;
-          font-family: 'Inter', sans-serif;
-          color: var(--text);
-        }
+/* ══════════════════════════════════════════════════════════════════
+   DIGITALAND PLAYGROUND — Production Chat Interface
+   ══════════════════════════════════════════════════════════════════ */
 
-        .playground-studio-main {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          background: var(--bg-alt);
-          position: relative;
-          overflow: hidden;
-        }
+.pg-root {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+}
 
-        /* Top tabs bar */
-        .playground-tabs-bar {
-          display: flex;
-          align-items: center;
-          background: var(--bg);
-          border-bottom: 1px solid var(--border-light);
-          padding: 0.5rem 1rem 0;
-          gap: 0.35rem;
-          overflow-x: auto;
-          scrollbar-width: none;
-          min-height: 48px;
-          z-index: 90;
-        }
-        .playground-tabs-bar::-webkit-scrollbar {
-          display: none;
-        }
+/* ─── LEFT SIDEBAR ─────────────────────────────────────────────── */
+.pg-side {
+  width: 200px;
+  min-width: 200px;
+  background: var(--bg);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+.pg-side-nav {
+  flex: 1;
+  padding: 0.75rem 0.65rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.pg-side-nav::-webkit-scrollbar { display: none; }
 
-        .playground-tab {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.45rem 1rem;
-          background: transparent;
-          border: 1px solid transparent;
-          border-bottom: none;
-          border-radius: 10px 10px 0 0;
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--text-muted);
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all 0.2s ease;
-          position: relative;
-          top: 1px;
-        }
-        .playground-tab:hover {
-          color: var(--text);
-          background: rgba(0,0,0,0.02);
-        }
-        .playground-tab.active {
-          background: var(--bg-alt);
-          border-color: var(--border-light);
-          color: var(--text);
-          font-weight: 700;
-          box-shadow: 0 -4px 12px rgba(0,0,0,0.01);
-        }
-        [data-theme="dark"] .playground-tab.active {
-          background: var(--bg-alt);
-          border-color: var(--border);
-        }
+.pg-side-group {
+  margin-bottom: 1.25rem;
+}
+.pg-side-group-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 0 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.pg-side-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+}
+.pg-side-link:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+.pg-side-link.active {
+  color: var(--text);
+  background: var(--surface);
+  font-weight: 600;
+  border: 1px solid var(--border-light);
+}
 
-        .playground-tab-logo {
-          width: 15px;
-          height: 15px;
-          object-fit: contain;
-          border-radius: 3px;
-        }
+/* Help + theme toggle */
+.pg-side-bottom {
+  padding: 0.65rem;
+  border-top: 1px solid var(--border-light);
+}
+.pg-help-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.12s;
+  text-decoration: none;
+}
+.pg-help-link:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+.pg-theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: all 0.12s;
+}
+.pg-theme-toggle:hover {
+  color: var(--text);
+  background: var(--surface);
+}
 
-        .playground-tab-close {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          color: var(--text-muted);
-          opacity: 0.5;
-          transition: all 0.2s;
-        }
-        .playground-tab-close:hover {
-          background: var(--border-light);
-          opacity: 1;
-          color: var(--text);
-        }
+/* User card at bottom */
+.pg-user-card {
+  padding: 0.65rem;
+  border-top: 1px solid var(--border-light);
+}
+.pg-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+}
+.pg-user-row:hover {
+  background: var(--surface);
+}
+.pg-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.pg-user-info {
+  flex: 1;
+  min-width: 0;
+}
+.pg-user-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pg-user-balance {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.pg-user-chevron {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
 
-        .playground-tab-add {
-          display: flex;
-          align-items: center;
-          gap: 0.35rem;
-          padding: 0.4rem 0.8rem;
-          border-radius: 8px;
-          border: 1px dashed var(--border);
-          background: transparent;
-          color: var(--text-muted);
-          font-size: 0.78rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          margin-left: 0.5rem;
-          position: relative;
-          bottom: 2px;
-        }
-        .playground-tab-add:hover {
-          border-color: var(--primary);
-          color: var(--primary);
-          background: var(--primary-soft);
-        }
+/* User dropdown menu */
+.pg-user-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  padding: 0.35rem;
+  z-index: 500;
+  animation: pg-menu-up 0.15s ease;
+}
+@keyframes pg-menu-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pg-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  transition: all 0.1s;
+}
+.pg-user-menu-item:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.pg-user-menu-item.danger:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.06);
+}
+.pg-user-menu-sep {
+  height: 1px;
+  background: var(--border-light);
+  margin: 0.25rem 0;
+}
 
-        /* Top controls status bar */
-        .studio-status-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.75rem 2rem;
-          border-bottom: 1px solid var(--border-light);
-          z-index: 80;
-          background: var(--bg-alt);
-        }
+/* ─── MAIN WORKSPACE ───────────────────────────────────────────── */
+.pg-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--bg-alt);
+}
 
-        .compare-toggle-container {
-          display: flex;
-          background: var(--bg);
-          border: 1px solid var(--border-light);
-          padding: 2px;
-          border-radius: 100px;
-        }
-        .compare-toggle-btn {
-          font-size: 0.72rem;
-          font-weight: 750;
-          padding: 0.35rem 0.85rem;
-          border-radius: 100px;
-          border: none;
-          background: transparent;
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .compare-toggle-btn.active {
-          background: var(--bg-alt);
-          color: var(--text);
-          box-shadow: var(--shadow-xs);
-        }
+/* Top bar with brand + tabs */
+.pg-topbar {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 0.75rem;
+  background: var(--bg-alt);
+  gap: 0;
+  overflow: hidden;
+}
 
-        /* Chat stream viewport */
-        .studio-viewport {
-          flex: 1;
-          width: 100%;
-          overflow-y: auto;
-          padding: 2rem;
-          scrollbar-width: none;
-          scroll-behavior: smooth;
-        }
-        .studio-viewport::-webkit-scrollbar {
-          display: none;
-        }
+.pg-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-right: 0.85rem;
+  margin-right: 0.35rem;
+  border-right: 1px solid var(--border-light);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pg-topbar-brand-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--primary), #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pg-topbar-brand-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.pg-topbar-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.pg-topbar-copy-btn:hover {
+  opacity: 1;
+  background: var(--surface);
+}
 
-        .studio-welcome-wrap {
-          max-width: 680px;
-          margin: 4rem auto;
-          text-align: center;
-        }
-        .studio-welcome-logo {
-          width: 72px;
-          height: 72px;
-          border-radius: 20px;
-          background: var(--bg);
-          border: 1px solid var(--border-light);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 1.5rem;
-          box-shadow: var(--shadow-md);
-        }
+/* Tab strip */
+.pg-tabs {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  height: 100%;
+}
+.pg-tabs::-webkit-scrollbar { display: none; }
 
-        /* Message bubbles */
-        .chat-row-user {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          margin-bottom: 2rem;
-          width: 100%;
-        }
-        .chat-bubble-user {
-          max-width: 70%;
-          background: #0f172a;
-          color: #ffffff;
-          padding: 0.9rem 1.4rem;
-          border-radius: 18px 18px 4px 18px;
-          font-size: 0.95rem;
-          line-height: 1.55;
-          box-shadow: var(--shadow-sm);
-        }
-        [data-theme="dark"] .chat-bubble-user {
-          background: #f8fafc;
-          color: #0f172a;
-        }
+.pg-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.75rem;
+  height: 100%;
+  font-size: 0.78rem;
+  font-weight: 550;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
+.pg-tab:hover { color: var(--text); }
+.pg-tab.active {
+  color: var(--text);
+  font-weight: 650;
+}
+.pg-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+.pg-tab-logo {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: contain;
+}
+.pg-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.pg-tab:hover .pg-tab-close { opacity: 0.5; }
+.pg-tab-close:hover {
+  opacity: 1 !important;
+  background: var(--border-light);
+}
 
-        /* Parallel comparison response box */
-        .chat-row-assistant-compare {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-          width: 100%;
-          align-items: start;
-        }
-        .chat-row-assistant-compare.single-active {
-          grid-template-columns: 1fr;
-        }
+.pg-tab-add {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.65rem;
+  height: 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+.pg-tab-add:hover { color: var(--primary); }
 
-        .comparison-response-card {
-          background: var(--bg-alt);
-          border: 1.5px solid var(--border-light);
-          border-radius: 16px;
-          padding: 1.25rem 1.5rem;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.01);
-          min-height: 140px;
-          display: flex;
-          flex-direction: column;
-          position: relative;
-          transition: all 0.25s ease;
-        }
-        .comparison-response-card.loading {
-          border-color: var(--primary-soft);
-          background: rgba(var(--primary), 0.01);
-        }
-        .comparison-response-card.active-tab {
-          border-color: var(--text);
-          box-shadow: var(--shadow-md);
-        }
+/* Compare mode pill — right side of topbar */
+.pg-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  padding-left: 0.5rem;
+  flex-shrink: 0;
+}
+.pg-mode-pill {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  padding: 2px;
+  border-radius: 6px;
+}
+.pg-mode-btn {
+  font-size: 0.68rem;
+  font-weight: 650;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pg-mode-btn.active {
+  background: var(--bg-alt);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
 
-        .card-model-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid var(--border-light);
-          padding-bottom: 0.75rem;
-          margin-bottom: 1rem;
-        }
-        .card-model-info {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-        }
-        .card-model-logo {
-          width: 20px;
-          height: 20px;
-          object-fit: contain;
-          border-radius: 4px;
-        }
-        .card-model-name {
-          font-family: 'Outfit', sans-serif;
-          font-size: 0.9rem;
-          font-weight: 750;
-        }
-        .card-model-latency {
-          font-size: 0.65rem;
-          font-weight: 800;
-          color: var(--text-muted);
-          background: var(--bg);
-          padding: 2px 6px;
-          border-radius: 4px;
-        }
+/* ─── CHAT VIEWPORT ────────────────────────────────────────────── */
+.pg-viewport {
+  flex: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  position: relative;
+}
+.pg-viewport::-webkit-scrollbar { width: 5px; }
+.pg-viewport::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.pg-viewport::-webkit-scrollbar-track { background: transparent; }
 
-        /* Insufficient balance styling */
-        .insufficient-balance-card {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          padding: 1rem 0;
-          border-radius: 10px;
-          width: 100%;
-        }
-        .ib-card-header {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          color: #ef4444;
-          font-weight: 700;
-          font-size: 0.9rem;
-          margin-bottom: 0.4rem;
-        }
-        .ib-card-text {
-          font-size: 0.82rem;
-          color: var(--text-muted);
-          line-height: 1.5;
-          margin-bottom: 1rem;
-        }
-        .ib-card-btn {
-          padding: 0.45rem 1rem;
-          background: #0f172a;
-          color: #ffffff;
-          border-radius: 999px;
-          font-size: 0.78rem;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-        .ib-card-btn:hover {
-          opacity: 0.9;
-        }
-        [data-theme="dark"] .ib-card-btn {
-          background: #f8fafc;
-          color: #0f172a;
-        }
+.pg-chat-wrap {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 8rem;
+}
 
-        /* Bottom chat input bar */
-        .studio-dock-container {
-          width: 100%;
-          padding: 0 2rem 2rem;
-          background: transparent;
-          position: relative;
-          z-index: 80;
-        }
-        .studio-dock-box {
-          position: relative;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          box-shadow: var(--shadow-md);
-          padding: 0.6rem 0.8rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        .studio-dock-textarea {
-          width: 100%;
-          background: transparent;
-          border: none;
-          resize: none;
-          min-height: 48px;
-          max-height: 200px;
-          color: var(--text);
-          font-size: 0.95rem;
-          line-height: 1.5;
-          outline: none;
-          font-family: inherit;
-        }
-        .studio-dock-actions {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-top: 1px solid var(--border-light);
-          padding-top: 0.5rem;
-        }
-        .dock-left-tools {
-          display: flex;
-          align-items: center;
-          gap: 0.35rem;
-        }
-        .dock-tool-btn {
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-muted);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .dock-tool-btn:hover {
-          background: var(--bg);
-          color: var(--text);
-        }
+/* Empty state */
+.pg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 100%;
+  padding: 2rem 1rem;
+}
+.pg-empty-spacer { flex: 1; }
 
-        .dock-active-count {
-          font-size: 0.72rem;
-          font-weight: 750;
-          color: var(--primary);
-          background: var(--primary-soft);
-          border: 1px solid var(--primary-glow);
-          padding: 2px 6px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-        }
+/* User message */
+.pg-msg-user {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+.pg-msg-user-text {
+  max-width: 72%;
+  background: #1e293b;
+  color: #f1f5f9;
+  padding: 0.7rem 1rem;
+  border-radius: 16px 16px 4px 16px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  word-wrap: break-word;
+}
+[data-theme="dark"] .pg-msg-user-text {
+  background: #e2e8f0;
+  color: #1e293b;
+}
 
-        .dock-send-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 10px;
-          background: var(--primary);
-          color: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .dock-send-btn:hover:not(:disabled) {
-          transform: scale(1.05);
-          background: var(--primary-hover);
-        }
-        .dock-send-btn:disabled {
-          background: var(--border);
-          color: var(--text-muted);
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
+/* Assistant message card */
+.pg-msg-ai {
+  margin-bottom: 1.5rem;
+}
+.pg-msg-card {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  transition: border-color 0.2s;
+}
+.pg-msg-card.streaming {
+  border-color: rgba(129,140,248,0.3);
+}
+.pg-msg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-light);
+}
+.pg-msg-model {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.pg-msg-logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  object-fit: contain;
+}
+.pg-msg-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.pg-msg-latency {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.pg-msg-body {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+.pg-msg-body p { margin: 0 0 0.65rem; }
+.pg-msg-body p:last-child { margin: 0; }
+.pg-msg-body pre {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+}
+.pg-msg-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+}
+.pg-msg-body ul, .pg-msg-body ol { padding-left: 1.25rem; margin: 0.4rem 0; }
+.pg-msg-body li { margin-bottom: 0.2rem; }
+.pg-msg-body img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
 
-        /* Slide config panel */
-        .studio-settings-drawer {
-          width: 300px;
-          border-left: 1px solid var(--border-light);
-          background: var(--bg);
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          z-index: 100;
-          animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
+.pg-msg-footer {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-light);
+}
+.pg-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.pg-copy-btn:hover { background: var(--surface); color: var(--text); }
 
-        .drawer-section {
-          padding: 1.5rem;
-          border-bottom: 1px solid var(--border-light);
-        }
-        .drawer-label {
-          font-size: 0.7rem;
-          font-weight: 900;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 0.75rem;
-          display: block;
-        }
+/* Compare grid */
+.pg-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
 
-        .range-slider-wrap {
-          margin-bottom: 1.25rem;
-        }
-        .range-slider-header {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.8rem;
-          font-weight: 650;
-          margin-bottom: 0.4rem;
-        }
+/* Loading dots */
+.pg-dots {
+  display: flex; gap: 4px; padding: 0.75rem 0; align-items: center;
+}
+.pg-dots span {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--text-muted);
+  animation: pg-pulse 1.4s infinite ease-in-out both;
+}
+.pg-dots span:nth-child(1) { animation-delay: -0.32s; }
+.pg-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes pg-pulse {
+  0%,80%,100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
 
-        /* Add model modal */
-        .studio-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(8px);
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .studio-modal-card {
-          width: 90%;
-          max-width: 640px;
-          height: 80vh;
-          background: var(--bg-alt);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          box-shadow: var(--shadow-xl);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes modalScaleUp {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
+/* Cursor blink */
+.pg-cursor {
+  display: inline-block; width: 2px; height: 1em;
+  background: var(--primary); margin-left: 2px;
+  animation: pg-blink 1s step-end infinite; vertical-align: text-bottom;
+}
+@keyframes pg-blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid var(--border-light);
-        }
-        .modal-body {
-          flex: 1;
-          overflow-y: auto;
-          padding: 1.5rem;
-        }
+/* No balance */
+.pg-no-bal { padding: 0.75rem 0; }
+.pg-no-bal-head { display: flex; align-items: center; gap: 0.35rem; color: #ef4444; font-weight: 700; font-size: 0.82rem; margin-bottom: 0.25rem; }
+.pg-no-bal-text { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.65rem; }
+.pg-no-bal-btn { padding: 0.35rem 0.75rem; background: var(--text); color: var(--bg); border: none; border-radius: 7px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
 
-        .modal-search-wrap {
-          position: relative;
-          width: 100%;
-          margin-bottom: 1.25rem;
-        }
-        .modal-search-input {
-          width: 100%;
-          background: var(--bg);
-          border: 1px solid var(--border-light);
-          border-radius: 12px;
-          padding: 0.75rem 1rem 0.75rem 2.5rem;
-          color: var(--text);
-          font-size: 0.9rem;
-          outline: none;
-        }
+/* Error */
+.pg-error {
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.85rem;
+  background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.1);
+  border-radius: 8px; color: #ef4444; font-size: 0.78rem; margin-bottom: 1rem;
+}
 
-        .modal-filters {
-          display: flex;
-          gap: 0.4rem;
-          overflow-x: auto;
-          scrollbar-width: none;
-          margin-bottom: 1.5rem;
-        }
-        .modal-filters::-webkit-scrollbar {
-          display: none;
-        }
-        .modal-filter-btn {
-          padding: 0.35rem 0.85rem;
-          border-radius: 100px;
-          background: var(--bg);
-          border: 1px solid var(--border-light);
-          font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-          white-space: nowrap;
-          color: var(--text-dim);
-        }
-        .modal-filter-btn.active {
-          background: var(--primary);
-          color: #ffffff;
-          border-color: var(--primary);
-        }
+/* ─── SUGGESTION CHIPS ─────────────────────────────────────────── */
+.pg-chips-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 0.25rem 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.pg-chips-row::-webkit-scrollbar { display: none; }
+.pg-chip {
+  flex-shrink: 0;
+  padding: 0.55rem 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 140px;
+  max-width: 180px;
+}
+.pg-chip:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  transform: translateY(-1px);
+}
+.pg-chip-title {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text);
+  margin-bottom: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pg-chip-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
 
-        .provider-section-title {
-          font-size: 0.7rem;
-          font-weight: 800;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 0.75rem;
-        }
-        .modal-model-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 0.75rem;
-          margin-bottom: 2rem;
-        }
-        @media (max-width: 580px) {
-          .modal-model-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-        .modal-model-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.75rem 1rem;
-          border-radius: 12px;
-          border: 1.5px solid var(--border-light);
-          background: var(--bg-alt);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .modal-model-item:hover {
-          border-color: var(--primary);
-          background: var(--primary-soft);
-        }
+/* ─── INPUT DOCK ───────────────────────────────────────────────── */
+.pg-dock {
+  padding: 0 1.5rem 1rem;
+  background: var(--bg-alt);
+  position: relative;
+  z-index: 50;
+}
+.pg-dock-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.pg-dock-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.45rem 0.6rem;
+  transition: border-color 0.15s;
+}
+.pg-dock-box:focus-within {
+  border-color: var(--text-muted);
+}
+.pg-dock-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  resize: none;
+  min-height: 22px;
+  max-height: 180px;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  outline: none;
+  font-family: inherit;
+  padding: 0.3rem 0.35rem;
+}
+.pg-dock-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.pg-dock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.2rem;
+}
+.pg-dock-left {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.pg-dock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.pg-dock-btn:hover { background: var(--surface); color: var(--text); }
+.pg-dock-count {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--border-light);
+  margin-left: 0.15rem;
+}
+.pg-dock-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.pg-send-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pg-send-btn:hover:not(:disabled) { opacity: 0.82; transform: scale(1.03); }
+.pg-send-btn:disabled { opacity: 0.15; cursor: not-allowed; }
 
-        .copy-toast-premium {
-          position: fixed;
-          bottom: 2rem;
-          right: 2rem;
-          background: #0f172a;
-          color: #ffffff;
-          padding: 0.75rem 1.25rem;
-          border-radius: 10px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-          font-size: 0.85rem;
-          font-weight: 550;
-          z-index: 9999;
-          animation: slide-up-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        [data-theme="dark"] .copy-toast-premium {
-          background: #ffffff;
-          color: #0f172a;
-        }
+/* ─── SETTINGS DRAWER ──────────────────────────────────────────── */
+.pg-drawer {
+  width: 280px;
+  min-width: 280px;
+  border-left: 1px solid var(--border-light);
+  background: var(--bg);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: pg-slide 0.2s ease;
+}
+@keyframes pg-slide {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.pg-drawer-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-light);
+}
+.pg-drawer-title {
+  font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.pg-drawer-x {
+  width: 26px; height: 26px; border-radius: 6px; border: none;
+  background: var(--surface); color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pg-drawer-body {
+  flex: 1; overflow-y: auto; padding: 1rem;
+}
+.pg-drawer-label {
+  font-size: 0.65rem; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; display: block;
+}
+.pg-drawer-ta {
+  width: 100%; height: 100px; background: var(--surface);
+  border: 1px solid var(--border-light); border-radius: 8px;
+  padding: 0.55rem; font-size: 0.8rem; outline: none; resize: none;
+  color: var(--text); font-family: inherit; margin-bottom: 1rem;
+}
+.pg-slider-group { margin-bottom: 0.85rem; }
+.pg-slider-row { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 550; margin-bottom: 0.2rem; }
+.pg-slider-val { color: var(--primary); font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+.pg-slider-input { width: 100%; height: 3px; accent-color: var(--primary); }
+
+/* ─── ADD MODEL MODAL ──────────────────────────────────────────── */
+.pg-modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(4px); z-index: 99999;
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.pg-modal {
+  width: 100%; max-width: 560px; max-height: 72vh;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15); display: flex; flex-direction: column;
+  overflow: hidden; animation: pg-modal-in 0.18s ease;
+}
+@keyframes pg-modal-in {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.pg-modal-top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-light);
+}
+.pg-modal-t { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 800; }
+.pg-modal-x {
+  width: 26px; height: 26px; border-radius: 6px; border: none;
+  background: var(--surface); color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pg-modal-body { flex: 1; overflow-y: auto; padding: 1rem; }
+.pg-modal-search {
+  position: relative; margin-bottom: 0.85rem;
+}
+.pg-modal-search-i {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); opacity: 0.4;
+}
+.pg-modal-search-in {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-light);
+  border-radius: 8px; padding: 0.5rem 0.75rem 0.5rem 2rem;
+  color: var(--text); font-size: 0.82rem; outline: none;
+}
+.pg-modal-filters {
+  display: flex; gap: 0.3rem; overflow-x: auto; scrollbar-width: none; margin-bottom: 1rem;
+}
+.pg-modal-filters::-webkit-scrollbar { display: none; }
+.pg-filter {
+  padding: 0.25rem 0.6rem; border-radius: 5px;
+  background: var(--surface); border: 1px solid var(--border-light);
+  font-size: 0.7rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; color: var(--text-muted); transition: all 0.1s;
+}
+.pg-filter.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.pg-prov-label {
+  font-size: 0.62rem; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem;
+}
+.pg-m-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.4rem; margin-bottom: 1.25rem; }
+.pg-m-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 0.65rem; border-radius: 8px;
+  border: 1px solid var(--border-light); background: var(--bg-alt);
+  cursor: pointer; transition: all 0.12s;
+}
+.pg-m-item:hover { border-color: var(--primary); background: var(--primary-soft); }
+.pg-m-name { font-size: 0.78rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pg-m-badge { font-size: 0.62rem; font-weight: 700; white-space: nowrap; }
+
+/* Toast */
+.pg-toast {
+  position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
+  background: var(--text); color: var(--bg);
+  padding: 0.5rem 0.85rem; border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  display: flex; align-items: center; gap: 0.35rem;
+  font-size: 0.78rem; font-weight: 600; z-index: 999999;
+  animation: pg-toast-in 0.2s ease;
+}
+@keyframes pg-toast-in {
+  from { transform: translateX(-50%) translateY(8px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ─── MOBILE ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pg-side { display: none; }
+  .pg-topbar { padding: 0 0.5rem; }
+  .pg-topbar-brand-text { display: none; }
+  .pg-compare-grid { grid-template-columns: 1fr; }
+  .pg-chat-wrap { padding: 1rem 0.75rem 7rem; }
+  .pg-msg-user-text { max-width: 85%; font-size: 0.85rem; }
+  .pg-msg-body { font-size: 0.85rem; }
+  .pg-dock { padding: 0 0.75rem 0.65rem; }
+  .pg-chip { min-width: 120px; }
+  .pg-drawer {
+    position: fixed; right: 0; top: 0; bottom: 0;
+    width: 260px; min-width: 260px; z-index: 9500;
+    box-shadow: -8px 0 28px rgba(0,0,0,0.12);
+  }
+  .pg-modal { max-height: 85vh; }
+  .pg-m-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .pg-topbar-copy-btn { display: none; }
+  .pg-topbar-right { gap: 0.25rem; }
+  .pg-chip { min-width: 110px; padding: 0.45rem 0.65rem; }
+}
       `}</style>
 
-      {/* A. Integrated Left Platform Sidebar */}
-      <Sidebar />
-
-      {/* B. Main Studio Workspace */}
-      <div className="playground-studio-main">
-        {/* Model tab manager */}
-        <div className="playground-tabs-bar">
-          {activeTabs.map((mId, index) => {
-            const mObj = models.find(m => m.id === mId);
-            const prov = PROVIDERS[mObj?.provider];
-            const isActive = activeTabIdx === index;
-            return (
-              <div
-                key={mId + '-' + index}
-                className={`playground-tab ${isActive ? 'active' : ''}`}
-                onClick={() => setActiveTabIdx(index)}
-              >
-                {prov?.logo && (
-                  <img src={prov.logo} alt="" className="playground-tab-logo" />
-                )}
-                <span>{mObj?.name || mId}</span>
-                {activeTabs.length > 1 && (
-                  <button
-                    className="playground-tab-close"
-                    onClick={(e) => closeModelTab(e, index)}
-                  >
-                    <X size={10} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-
-          <button
-            className="playground-tab-add"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <Plus size={12} /> Add Model
-          </button>
-        </div>
-
-        {/* Studio controls status bar */}
-        <div className="studio-status-bar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: showSettings ? 'var(--primary)' : 'var(--text-muted)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-              title="Tuning Settings"
-            >
-              <Settings2 size={18} />
+      {/* ═══ A. LEFT SIDEBAR ═══ */}
+      <aside className="pg-side">
+        <div className="pg-side-nav">
+          <div className="pg-side-group">
+            <div className="pg-side-group-title">Platform</div>
+            <button className="pg-side-link active" onClick={() => navigate('/playground')}>
+              <Sparkles size={16} /> Playground
             </button>
-            <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-              Digitaland Secure Core
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* Compare mode toggler */}
-            <div className="compare-toggle-container">
-              <button
-                className={`compare-toggle-btn ${compareMode ? 'active' : ''}`}
-                onClick={() => setCompareMode(true)}
-              >
-                Compare
-              </button>
-              <button
-                className={`compare-toggle-btn ${!compareMode ? 'active' : ''}`}
-                onClick={() => setCompareMode(false)}
-              >
-                Single
-              </button>
-            </div>
-            
-            {loading && (
-              <button
-                onClick={stopAllGenerations}
-                style={{
-                  background: 'rgba(239,68,68,0.1)',
-                  color: '#ef4444',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  fontSize: '0.72rem',
-                  fontWeight: 750,
-                  padding: '0.3rem 0.75rem',
-                  borderRadius: '100px',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel Inference
+            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=billing'; }}>
+              <CreditCard size={16} /> Billing
+            </button>
+            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=keys'; }}>
+              <Key size={16} /> API Keys
+            </button>
+            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=usage'; }}>
+              <Activity size={16} /> Usage
+            </button>
+            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=logs'; }}>
+              <Activity size={16} /> Logs
+            </button>
+            {user?.isAdmin && (
+              <button className="pg-side-link" onClick={() => navigate('/admin')} style={{ color: 'var(--secondary)' }}>
+                <Shield size={16} /> Admin
               </button>
             )}
           </div>
+
+          <div className="pg-side-group">
+            <div className="pg-side-group-title">Quick Links</div>
+            <button className="pg-side-link" onClick={() => navigate('/models')}>
+              <LayoutGrid size={16} /> Models Gallery
+            </button>
+            <button className="pg-side-link" onClick={() => navigate('/docs')}>
+              <BookOpen size={16} /> Documentation
+            </button>
+            <a href="https://discord.gg/digitaland" target="_blank" rel="noreferrer" className="pg-side-link" style={{ textDecoration: 'none' }}>
+              <MessageCircle size={16} /> Join Discord
+            </a>
+          </div>
         </div>
 
-        {/* Viewport for chat streams */}
-        <div ref={scrollRef} className="studio-viewport">
-          {messages.length === 0 && !error && (
-            <div className="studio-welcome-wrap">
-              <div className="studio-welcome-logo">
-                <Sparkles size={36} style={{ color: 'var(--primary)' }} />
-              </div>
-              <h1 style={{ fontFamily: 'Outfit', fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: '0.75rem' }}>
-                Digitaland Studio
-              </h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.5, marginBottom: '2.5rem' }}>
-                Compare frontier models in parallel. Zero-logging security, guaranteed 30% savings.
-              </p>
+        <div className="pg-side-bottom">
+          <button className="pg-help-link" onClick={() => navigate('/docs')}>
+            <HelpCircle size={15} /> Need help? <span style={{ opacity: 0.5, fontSize: '0.68rem' }}>Answers here</span>
+          </button>
+          <button className="pg-theme-toggle" onClick={toggleTheme}>
+            {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            {isDark ? 'Light mode' : 'Dark mode'}
+          </button>
+        </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
-                {[
-                  'Gere um resumo comparativo de PostgreSQL vs MySQL para alta carga',
-                  'Escreva uma função otimizada em Javascript para busca binária recursiva',
-                  'Explique redes neurais convolucionais em 3 parágrafos simples',
-                  'Esboce um slogan de marketing inovador para a Digitaland.ai'
-                ].map((txt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setInput(txt)}
-                    style={{
-                      background: 'var(--bg-alt)',
-                      border: '1px solid var(--border-light)',
-                      borderRadius: '14px',
-                      padding: '1rem',
-                      textAlign: 'left',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'none'; }}
-                  >
-                    {txt}
-                  </button>
-                ))}
+        <div className="pg-user-card">
+          <div className="pg-user-row" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+            <div className="pg-user-avatar">
+              {user?.name ? user.name[0].toUpperCase() : 'U'}
+            </div>
+            <div className="pg-user-info">
+              <div className="pg-user-name">{user?.name || user?.email?.split('@')[0] || 'User'}</div>
+              <div className="pg-user-balance">
+                {isProfileLoading ? '...' : `$${user?.balance?.toFixed(2) || '0.00'}`}
               </div>
             </div>
-          )}
+            <ChevronDown size={13} className="pg-user-chevron" />
 
-          {error && (
-            <div style={{ padding: '0.85rem 1.25rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', color: '#ef4444', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', maxWidth: '680px', margin: '0 auto 1.5rem' }}>
-              <AlertCircle size={16} /> {error}
+            {userMenuOpen && (
+              <div className="pg-user-menu" onClick={e => e.stopPropagation()}>
+                <button className="pg-user-menu-item" onClick={() => { setUserMenuOpen(false); navigate('/dashboard'); }}>
+                  <User size={14} /> Dashboard
+                </button>
+                <button className="pg-user-menu-item" onClick={() => openPaymentModal()}>
+                  <CreditCard size={14} /> Add Credits
+                </button>
+                <div className="pg-user-menu-sep" />
+                <button className="pg-user-menu-item danger" onClick={() => { logout(); navigate('/'); }}>
+                  <LogOut size={14} /> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* ═══ B. MAIN WORKSPACE ═══ */}
+      <div className="pg-main">
+        {/* Top bar: brand + tabs + controls */}
+        <div className="pg-topbar">
+          <div className="pg-topbar-brand" onClick={() => navigate('/')}>
+            <div className="pg-topbar-brand-icon">
+              <Sparkles size={12} color="#fff" />
             </div>
-          )}
+            <span className="pg-topbar-brand-text">Digitaland</span>
+          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {messages.map((m, i) => {
-              if (m.role === 'user') {
-                return (
-                  <div className="chat-row-user" key={i}>
-                    <div className="chat-bubble-user">{m.content}</div>
-                  </div>
-                );
-              }
-
-              // Assistant multi-response renderer
-              const activeModelsToRender = compareMode ? Object.keys(m.responses || {}) : [activeTabs[activeTabIdx]];
+          <div className="pg-tabs">
+            {activeTabs.map((mId, i) => {
+              const mObj = models.find(m => m.id === mId);
+              const prov = PROVIDERS[mObj?.provider];
               return (
-                <div
-                  className={`chat-row-assistant-compare ${!compareMode ? 'single-active' : ''}`}
-                  key={i}
-                >
-                  {activeModelsToRender.map(mId => {
-                    const mObj = models.find(mod => mod.id === mId);
-                    const prov = PROVIDERS[mObj?.provider] || { color: 'var(--primary)', short: 'AI' };
-                    const isTabActive = activeTabs[activeTabIdx] === mId;
-
-                    // Backwards compatible value check
-                    const resObj = m.responses ? m.responses[mId] : { content: m.content, latency: 0, loading: false, error: null };
-                    if (!resObj) return null;
-
-                    return (
-                      <div
-                        className={`comparison-response-card ${resObj.loading ? 'loading' : ''} ${isTabActive ? 'active-tab' : ''}`}
-                        key={mId}
-                      >
-                        <div className="card-model-header">
-                          <div className="card-model-info">
-                            {prov.logo && (
-                              <img src={prov.logo} alt="" className="card-model-logo" />
-                            )}
-                            <span className="card-model-name">{mObj?.name || mId}</span>
-                          </div>
-                          {resObj.latency > 0 && (
-                            <span className="card-model-latency">{resObj.latency}ms</span>
-                          )}
-                        </div>
-
-                        {resObj.error === 'balance' ? (
-                          <div className="insufficient-balance-card">
-                            <div className="ib-card-header">
-                              <AlertCircle size={15} />
-                              <span>Insufficient balance</span>
-                            </div>
-                            <p className="ib-card-text">
-                              You've run out of funds. Please top up your balance or update your payment method to continue.
-                            </p>
-                            <button className="ib-card-btn" onClick={() => openPaymentModal()}>
-                              Top up
-                            </button>
-                          </div>
-                        ) : resObj.error ? (
-                          <div style={{ color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem 0' }}>
-                            <AlertCircle size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                            {resObj.error}
-                          </div>
-                        ) : resObj.loading && !resObj.content ? (
-                          <div style={{ padding: '1rem 0', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Streaming</span>
-                            <RefreshCw size={12} className="animate-spin" style={{ color: 'var(--primary)' }} />
-                          </div>
-                        ) : (
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <div className="prose" style={{ fontSize: '0.9rem', lineHeight: '1.6', overflow: 'hidden' }}>
-                              <ReactMarkdown>{resObj.content}</ReactMarkdown>
-                              {resObj.loading && <span className="pulse" style={{ color: 'var(--primary)', fontWeight: 800 }}>▋</span>}
-                            </div>
-                            
-                            {!resObj.loading && resObj.content && (
-                              <div style={{ marginTop: '1rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '0.75rem' }}>
-                                <button
-                                  className="dock-tool-btn"
-                                  onClick={() => handleCopyText(resObj.content)}
-                                  title="Copy text"
-                                  style={{ width: 'auto', padding: '0 4px', fontSize: '0.65rem', fontWeight: 800 }}
-                                >
-                                  Copy
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <button key={mId} className={`pg-tab ${activeTabIdx === i ? 'active' : ''}`} onClick={() => setActiveTabIdx(i)}>
+                  {prov?.logo && <img src={prov.logo} alt="" className="pg-tab-logo" />}
+                  <span>{mObj?.name || mId}</span>
+                  {activeTabs.length > 1 && (
+                    <span className="pg-tab-close" onClick={e => closeTab(e, i)}>
+                      <X size={9} />
+                    </span>
+                  )}
+                </button>
               );
             })}
+            <button className="pg-tab-add" onClick={() => setIsAddModalOpen(true)}>
+              <Plus size={11} /> Add Model
+            </button>
+          </div>
+
+          <div className="pg-topbar-right">
+            <div className="pg-mode-pill">
+              <button className={`pg-mode-btn ${!compareMode ? 'active' : ''}`} onClick={() => setCompareMode(false)}>Single</button>
+              <button className={`pg-mode-btn ${compareMode ? 'active' : ''}`} onClick={() => setCompareMode(true)}>Compare</button>
+            </div>
+            {loading && (
+              <button className="pg-dock-btn" onClick={stopAll} title="Stop" style={{ color: '#ef4444' }}>
+                <X size={14} />
+              </button>
+            )}
+            <button className={`pg-dock-btn ${showSettings ? '' : ''}`} onClick={() => setShowSettings(!showSettings)} title="Settings"
+              style={showSettings ? { color: 'var(--primary)' } : {}}>
+              <Settings2 size={15} />
+            </button>
           </div>
         </div>
 
-        {/* Input dock */}
-        <div className="studio-dock-container">
-          <div className="studio-dock-box">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
+        {/* Chat viewport */}
+        <div ref={scrollRef} className="pg-viewport">
+          {messages.length === 0 && !error ? (
+            <div className="pg-empty">
+              <div className="pg-empty-spacer" />
+            </div>
+          ) : (
+            <div className="pg-chat-wrap">
+              {error && <div className="pg-error"><AlertCircle size={13} /> {error}</div>}
+              {messages.map((m, i) => {
+                if (m.role === 'user') {
+                  return <div className="pg-msg-user" key={i}><div className="pg-msg-user-text">{m.content}</div></div>;
                 }
-              }}
-              placeholder={`Send message to ${compareMode ? activeModelsForQuery.length + ' active models' : currentModel?.name}...`}
-              className="studio-dock-textarea"
-            />
+                const toRender = compareMode ? Object.keys(m.responses || {}) : [activeTabs[activeTabIdx]];
+                const isSingle = !compareMode || toRender.length === 1;
+                return (
+                  <div className={isSingle ? 'pg-msg-ai' : 'pg-compare-grid'} key={i}>
+                    {toRender.map(mId => {
+                      const mObj = models.find(x => x.id === mId);
+                      const prov = PROVIDERS[mObj?.provider] || {};
+                      const r = m.responses?.[mId] || { content: m.content, latency: 0, loading: false, error: null };
+                      if (!r) return null;
+                      return (
+                        <div className={`pg-msg-card ${r.loading ? 'streaming' : ''}`} key={mId}>
+                          <div className="pg-msg-head">
+                            <div className="pg-msg-model">
+                              {prov.logo && <img src={prov.logo} alt="" className="pg-msg-logo" />}
+                              <span className="pg-msg-name">{mObj?.name || mId}</span>
+                            </div>
+                            {r.latency > 0 && <span className="pg-msg-latency">{(r.latency / 1000).toFixed(1)}s</span>}
+                          </div>
+                          {r.error === 'balance' ? (
+                            <div className="pg-no-bal">
+                              <div className="pg-no-bal-head"><AlertCircle size={13} /> Insufficient balance</div>
+                              <p className="pg-no-bal-text">Add credits to continue using this model.</p>
+                              <button className="pg-no-bal-btn" onClick={() => openPaymentModal()}>Add credits</button>
+                            </div>
+                          ) : r.error ? (
+                            <div style={{ color: '#ef4444', fontSize: '0.78rem', padding: '0.4rem 0', display: 'flex', alignItems: 'flex-start', gap: '0.35rem' }}>
+                              <AlertCircle size={13} style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{r.error}</span>
+                            </div>
+                          ) : r.loading && !r.content ? (
+                            <div className="pg-dots"><span /><span /><span /></div>
+                          ) : (
+                            <>
+                              <div className="pg-msg-body">
+                                <ReactMarkdown>{r.content}</ReactMarkdown>
+                                {r.loading && <span className="pg-cursor" />}
+                              </div>
+                              {!r.loading && r.content && (
+                                <div className="pg-msg-footer">
+                                  <button className="pg-copy-btn" onClick={() => handleCopy(r.content)}><Copy size={11} /> Copy</button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-            <div className="studio-dock-actions">
-              <div className="dock-left-tools">
-                <button className="dock-tool-btn" title="Upload Attachment">
-                  <Paperclip size={15} />
-                </button>
-                <button className="dock-tool-btn" title="Voice Input">
-                  <Mic size={15} />
-                </button>
-                
-                <div className="dock-active-count">
-                  <Cpu size={12} />
-                  <span>{activeModelsForQuery.length} open</span>
+        {/* Suggestion chips + input dock */}
+        <div className="pg-dock">
+          <div className="pg-dock-inner">
+            {messages.length === 0 && (
+              <div className="pg-chips-row">
+                {SUGGESTIONS.map((s, i) => (
+                  <div key={i} className="pg-chip" onClick={() => setInput(s.title + ': ' + s.sub)}>
+                    <div className="pg-chip-title">{s.title}</div>
+                    <div className="pg-chip-sub">{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="pg-dock-box">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Start a new message..."
+                className="pg-dock-textarea"
+                rows={1}
+              />
+              <div className="pg-dock-bar">
+                <div className="pg-dock-left">
+                  <button className="pg-dock-btn" title="Attach"><Paperclip size={14} /></button>
+                  <div className="pg-dock-count">
+                    <Layers size={10} />
+                    <span>{activeModelsForQuery.length}</span>
+                    <ChevronDown size={9} style={{ opacity: 0.5 }} />
+                  </div>
+                </div>
+                <div className="pg-dock-right">
+                  <button className="pg-send-btn" disabled={loading || !input.trim()} onClick={handleSend}>
+                    {loading ? <RefreshCw size={13} className="animate-spin" /> : <ArrowUp size={14} />}
+                  </button>
                 </div>
               </div>
-
-              <button
-                className="dock-send-btn"
-                disabled={loading || !input.trim()}
-                onClick={handleSend}
-              >
-                {loading ? (
-                  <RefreshCw size={15} className="animate-spin" />
-                ) : (
-                  <Send size={15} />
-                )}
-              </button>
             </div>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px' }}>
-            Digitaland Studio v6.0 • Multi-Model Parallel inference gateway
           </div>
         </div>
       </div>
 
-      {/* C. Collapsible Tuning Drawer */}
+      {/* ═══ C. SETTINGS DRAWER ═══ */}
       {showSettings && (
-        <aside className="studio-settings-drawer">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-light)' }}>
-            <h3 style={{ fontFamily: 'Outfit', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tuning Settings</h3>
-            <button
-              onClick={() => setShowSettings(false)}
-              style={{ background: 'var(--bg)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justify: 'center', color: 'var(--text-muted)' }}
-            >
-              <X size={14} />
-            </button>
+        <aside className="pg-drawer">
+          <div className="pg-drawer-head">
+            <span className="pg-drawer-title">Settings</span>
+            <button className="pg-drawer-x" onClick={() => setShowSettings(false)}><X size={13} /></button>
           </div>
-
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            <div className="drawer-section">
-              <span className="drawer-label">System Context</span>
-              <textarea
-                value={systemPrompt}
-                onChange={e => setSystemPrompt(e.target.value)}
-                placeholder="Give instructions to target core..."
-                style={{ width: '100%', height: '140px', background: 'var(--bg)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '0.75rem', fontSize: '0.82rem', outline: 'none', resize: 'none', color: 'var(--text)' }}
-              />
+          <div className="pg-drawer-body">
+            <div>
+              <span className="pg-drawer-label">System Prompt</span>
+              <textarea value={systemPrompt} onChange={e => setSystemPrompt(e.target.value)} placeholder="Custom instructions..." className="pg-drawer-ta" />
             </div>
-
-            <div className="drawer-section">
-              <span className="drawer-label">Hyperparameters</span>
-              
-              <div className="range-slider-wrap">
-                <div className="range-slider-header">
-                  <span>Creativity (Temp)</span>
-                  <span style={{ color: 'var(--primary)' }}>{temperature}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={temperature}
-                  onChange={e => setTemperature(parseFloat(e.target.value))}
-                  style={{ width: '100%', height: '4px', accentColor: 'var(--primary)' }}
-                />
+            <div>
+              <span className="pg-drawer-label">Parameters</span>
+              <div className="pg-slider-group">
+                <div className="pg-slider-row"><span>Temperature</span><span className="pg-slider-val">{temperature}</span></div>
+                <input type="range" min="0" max="2" step="0.1" value={temperature} onChange={e => setTemperature(parseFloat(e.target.value))} className="pg-slider-input" />
               </div>
-
-              <div className="range-slider-wrap">
-                <div className="range-slider-header">
-                  <span>Response Depth</span>
-                  <span style={{ color: 'var(--primary)' }}>{maxTokens}</span>
-                </div>
-                <input
-                  type="range"
-                  min="256"
-                  max="8192"
-                  step="256"
-                  value={maxTokens}
-                  onChange={e => setMaxTokens(parseInt(e.target.value))}
-                  style={{ width: '100%', height: '4px', accentColor: 'var(--primary)' }}
-                />
+              <div className="pg-slider-group">
+                <div className="pg-slider-row"><span>Max Tokens</span><span className="pg-slider-val">{maxTokens}</span></div>
+                <input type="range" min="256" max="8192" step="256" value={maxTokens} onChange={e => setMaxTokens(parseInt(e.target.value))} className="pg-slider-input" />
               </div>
-
-              <div className="range-slider-wrap">
-                <div className="range-slider-header">
-                  <span>Probability (Top P)</span>
-                  <span style={{ color: 'var(--primary)' }}>{topP}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={topP}
-                  onChange={e => setTopP(parseFloat(e.target.value))}
-                  style={{ width: '100%', height: '4px', accentColor: 'var(--primary)' }}
-                />
+              <div className="pg-slider-group">
+                <div className="pg-slider-row"><span>Top P</span><span className="pg-slider-val">{topP}</span></div>
+                <input type="range" min="0" max="1" step="0.05" value={topP} onChange={e => setTopP(parseFloat(e.target.value))} className="pg-slider-input" />
               </div>
             </div>
-
-            <div className="drawer-section" style={{ borderBottom: 'none' }}>
-              <span className="drawer-label">Active Model Vault</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <button
-                  onClick={startNewConversation}
-                  style={{ width: '100%', padding: '0.65rem', background: 'var(--primary)', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
-                >
-                  New Chat Session
-                </button>
-                {conversations.slice(0, 5).map(conv => (
-                  <button
-                    key={conv.id}
-                    onClick={() => loadConversation(conv)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: '10px', background: currentConvId === conv.id ? 'var(--primary-soft)' : 'transparent', border: '1px solid', borderColor: currentConvId === conv.id ? 'var(--primary-glow)' : 'transparent', textAlign: 'left', transition: '0.2s', cursor: 'pointer' }}
-                  >
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: currentConvId === conv.id ? 'var(--primary)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{conv.title}</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{new Date(conv.updated_at).toLocaleDateString()}</div>
-                  </button>
-                ))}
+            <div style={{ marginTop: '1rem' }}>
+              <span className="pg-drawer-label">Active Models</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {activeTabs.map((mId, idx) => {
+                  const mObj = models.find(m => m.id === mId);
+                  const prov = PROVIDERS[mObj?.provider];
+                  return (
+                    <div key={mId} onClick={() => setActiveTabIdx(idx)} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.4rem',
+                      padding: '0.35rem 0.5rem', borderRadius: '7px', cursor: 'pointer',
+                      background: idx === activeTabIdx ? 'var(--primary-soft)' : 'var(--surface)',
+                      border: `1px solid ${idx === activeTabIdx ? 'var(--primary-glow)' : 'var(--border-light)'}`,
+                      fontSize: '0.75rem', fontWeight: 600
+                    }}>
+                      {prov?.logo && <img src={prov.logo} alt="" style={{ width: '13px', height: '13px', borderRadius: '3px', objectFit: 'contain' }} />}
+                      <span style={{ flex: 1 }}>{mObj?.name || mId}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+            <button onClick={startNewConversation} style={{
+              width: '100%', padding: '0.45rem', marginTop: '1rem',
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: '7px', color: 'var(--text)', fontSize: '0.75rem',
+              fontWeight: 650, cursor: 'pointer'
+            }}>
+              Clear conversation
+            </button>
           </div>
         </aside>
       )}
 
-      {/* D. Add Model Search Modal */}
+      {/* ═══ D. ADD MODEL MODAL ═══ */}
       {isAddModalOpen && (
-        <div className="studio-modal-overlay" onClick={() => setIsAddModalOpen(false)}>
-          <div className="studio-modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontFamily: 'Outfit', fontSize: '1.2rem', fontWeight: 800 }}>Search Models Matrix</h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                style={{ background: 'var(--bg)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justify: 'center', color: 'var(--text-muted)' }}
-              >
-                <X size={15} />
-              </button>
+        <div className="pg-modal-bg" onClick={() => setIsAddModalOpen(false)}>
+          <div className="pg-modal" onClick={e => e.stopPropagation()}>
+            <div className="pg-modal-top">
+              <span className="pg-modal-t">Select Model</span>
+              <button className="pg-modal-x" onClick={() => setIsAddModalOpen(false)}><X size={13} /></button>
             </div>
-
-            <div className="modal-body">
-              {/* Search */}
-              <div className="modal-search-wrap">
-                <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-                <input
-                  type="text"
-                  placeholder="Search model names or brands..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="modal-search-input"
-                />
+            <div className="pg-modal-body">
+              <div className="pg-modal-search">
+                <Search size={12} className="pg-modal-search-i" />
+                <input type="text" placeholder="Search models..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pg-modal-search-in" autoFocus />
               </div>
-
-              {/* Categories */}
-              <div className="modal-filters">
-                {['All', 'Chat', 'Image', 'Video', 'Code', 'Voice', 'Music', 'Embedding', '3D', 'OCR'].map(cat => (
-                  <button
-                    key={cat}
-                    className={`modal-filter-btn ${filterType === cat ? 'active' : ''}`}
-                    onClick={() => setFilterType(cat)}
-                  >
-                    {cat}
-                  </button>
+              <div className="pg-modal-filters">
+                {['All','Chat','Image','Video','Code','Voice','Music','Embedding','3D','OCR'].map(c => (
+                  <button key={c} className={`pg-filter ${filterType === c ? 'on' : ''}`} onClick={() => setFilterType(c)}>{c}</button>
                 ))}
               </div>
-
-              {/* Model Grid grouped by provider */}
-              {Object.entries(modelsByProvider).map(([provider, pModels]) => (
-                <div key={provider} style={{ marginBottom: '1.5rem' }}>
-                  <div className="provider-section-title">{provider}</div>
-                  <div className="modal-model-grid">
-                    {pModels.map(model => {
-                      const isAlreadyOpen = activeTabs.includes(model.id);
+              {Object.entries(modelsByProvider).map(([prov, ms]) => (
+                <div key={prov}>
+                  <div className="pg-prov-label">{prov}</div>
+                  <div className="pg-m-grid">
+                    {ms.map(model => {
+                      const open = activeTabs.includes(model.id);
                       return (
-                        <div
-                          key={model.id}
-                          className="modal-model-item"
-                          onClick={() => addModelTab(model.id)}
-                        >
-                          <span style={{ fontSize: '0.85rem', fontWeight: 650, color: 'var(--text)' }}>
-                            {model.name}
-                          </span>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)' }}>
-                            {isAlreadyOpen ? (
-                              <span style={{ color: '#10b981' }}>Added</span>
-                            ) : (
-                              <span>+ Add</span>
-                            )}
+                        <div key={model.id} className="pg-m-item" onClick={() => addModelTab(model.id)}>
+                          <span className="pg-m-name">{model.name}</span>
+                          <span className="pg-m-badge" style={{ color: open ? '#10b981' : 'var(--text-muted)' }}>
+                            {open ? 'Active' : '+ Add'}
                           </span>
                         </div>
                       );
@@ -1550,13 +1538,8 @@ export default function Playground() {
         </div>
       )}
 
-      {/* E. Copy Alert Notification Toast */}
-      {copiedText && (
-        <div className="copy-toast-premium">
-          <Check size={14} style={{ color: '#10b981' }} />
-          <span>Response copied to clipboard!</span>
-        </div>
-      )}
+      {/* ═══ E. TOAST ═══ */}
+      {copiedText && <div className="pg-toast"><Check size={12} style={{ color: '#10b981' }} /> Copied to clipboard</div>}
     </div>
   );
 }

@@ -79,7 +79,7 @@ export default function Landing() {
 
   const topModels = [
     { name: 'gpt-5.5', provider: 'OpenAI', offIn: 2.75, offOut: 16.50, badge: 'Flagship' },
-    { name: 'claude-opus-4-8', provider: 'Anthropic', offIn: 5.0, offOut: 25.0, badge: 'Flagship' },
+    { name: 'claude-opus-4-8', provider: 'Anthropic', offIn: 2.75, offOut: 13.75, badge: 'Flagship' },
     { name: 'gemini-3.1-pro', provider: 'Google', offIn: 1.10, offOut: 6.60, badge: 'Flagship' },
     { name: 'grok-4', provider: 'xAI', offIn: 1.65, offOut: 8.25, badge: 'Flagship' },
     { name: 'deepseek-r1', provider: 'DeepSeek', offIn: 0.495, offOut: 1.98, badge: 'Reasoning' },

@@ -320,7 +320,7 @@ export default function Pricing() {
               </h1>
               
               <p className="hero-sub" style={{ margin: '0', textAlign: 'left', fontSize: '1.15rem', maxWidth: '580px', color: 'var(--text-dim)' }}>
-                Integra GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro e centenas de outros modelos com uma única linha de código. Sem mensalidades, sem limites de assento. Faturação pura por token de consumo.
+                Integra GPT-5.5, Claude Opus 4.8, Gemini 3.1 Pro e centenas de outros modelos com uma única linha de código. Sem mensalidades, sem limites de assento. Faturação pura por token de consumo.
               </p>
 
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>

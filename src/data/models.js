@@ -224,7 +224,7 @@ export const getFeaturedModels = async () => {
 // off_in deve ser o preço OpenRouter puro (não multiplicado)
 export const PRICING_COMPARE = [
   { model: 'GPT-5.5',            offIn: 2.75,  offOut: 16.50 },
-  { model: 'Claude Opus 4.7',    offIn: 2.75,  offOut: 13.75 },
+  { model: 'Claude Opus 4.8',    offIn: 5.0,   offOut: 25.0  },
   { model: 'Gemini 3.1 Pro',     offIn: 1.10,  offOut: 6.60  }
 ];
 
@@ -232,6 +232,6 @@ export const PRICING_COMPARE = [
 // offIn = preço OpenRouter puro — ourPrice() aplica markup 1.4 automaticamente
 export const FEATURED_MODELS = [
   { name: 'GPT-5.5',             provider: 'OpenAI',    badge: 'Flagship', offIn: 2.75 },
-  { name: 'Claude Opus 4.7',     provider: 'Anthropic', badge: 'Popular',  offIn: 2.75 },
+  { name: 'Claude Opus 4.8',     provider: 'Anthropic', badge: 'Popular',  offIn: 5.0  },
   { name: 'Gemini 3.1 Pro',      provider: 'Google',    badge: 'Flagship', offIn: 1.10 }
 ];

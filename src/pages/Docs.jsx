@@ -128,7 +128,7 @@ export default function Docs() {
                   <div>  -H <span className="cs">"Content-Type: application/json"</span> \</div>
                   <div>  -H <span className="cs">"Authorization: Bearer $DIGITALAND_API_KEY"</span> \</div>
                   <div>  -d <span className="cs">'{'{'}</span></div>
-                  <div>    <span className="cs">"model"</span>: <span className="cs">"claude-opus-4-7"</span>,</div>
+                  <div>    <span className="cs">"model"</span>: <span className="cs">"claude-opus-4-8"</span>,</div>
                   <div>    <span className="cs">"messages"</span>: [</div>
                   <div>      {'{'} <span className="cs">"role"</span>: <span className="cs">"user"</span>, <span className="cs">"content"</span>: <span className="cs">"Explain quantum computing in one sentence."</span> {'}'}</div>
                   <div>    ]</div>
@@ -149,7 +149,7 @@ export default function Docs() {
                   <tr>
                     <td style={{ color: 'var(--primary)', fontWeight: 600 }}>model</td>
                     <td>string</td>
-                    <td>ID of the model to use (e.g. <code>gpt-5.5</code>, <code>claude-opus-4-7</code>). Check the Models page for a full list.</td>
+                    <td>ID of the model to use (e.g. <code>gpt-5.5</code>, <code>claude-opus-4-8</code>). Check the Models page for a full list.</td>
                   </tr>
                   <tr>
                     <td style={{ color: 'var(--primary)', fontWeight: 600 }}>messages</td>

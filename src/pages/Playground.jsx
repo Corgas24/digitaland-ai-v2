@@ -116,7 +116,7 @@ export default function Playground() {
   const [isDark, setIsDark] = useState(true);
 
   // Multi-Model Workspace
-  const [activeTabs, setActiveTabs] = useState(['claude-opus-4-7', 'gpt-5.5', 'gemini-2.5-flash-lite']);
+  const [activeTabs, setActiveTabs] = useState(['claude-opus-4-8', 'gpt-5.5', 'gemini-2.5-flash-lite']);
   const [activeTabIdx, setActiveTabIdx] = useState(0);
   const [compareMode, setCompareMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -170,7 +170,7 @@ export default function Playground() {
         setActiveTabs([urlModel]);
         setActiveTabIdx(0);
       } else if (data?.length > 0) {
-        const defaults = ['claude-opus-4-7', 'gpt-5.5', 'gemini-2.5-flash-lite']
+        const defaults = ['claude-opus-4-8', 'gpt-5.5', 'gemini-2.5-flash-lite']
           .filter(id => data.some(m => m.id === id));
         setActiveTabs(defaults.length > 0 ? defaults : [data[0].id]);
         setActiveTabIdx(0);

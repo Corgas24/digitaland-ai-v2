@@ -72,14 +72,14 @@ export default function Landing() {
     { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 260+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
     { q: "How does pricing work?", a: "We offer competitive, usage-based pricing optimized for volume. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs." },
     { q: "Is it really OpenAI-compatible?", a: "Yes! Just change your base_url to https://api.digitaland.ai/v1 and use your Digitaland API key. Works with the official OpenAI SDK, LangChain, LlamaIndex, and any other OpenAI-compatible library." },
-    { q: "Which models are supported?", a: "We support 260+ models including GPT-5.5, Claude 4.7, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
+    { q: "Which models are supported?", a: "We support 260+ models including GPT-5.5, Claude 4.8, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
     { q: "How does Digitaland protect my data?", a: "Enterprise-grade encryption for all data in transit and at rest. We operate a strict zero-log policy — your prompts, completions, and API keys are never stored, logged, or used for training." },
     { q: "What happens if a provider goes down?", a: "Our intelligent routing automatically fails over to backup nodes. We maintain 99.9% uptime with redundant infrastructure across multiple regions." }
   ];
 
   const topModels = [
     { name: 'gpt-5.5', provider: 'OpenAI', offIn: 2.75, offOut: 16.50, badge: 'Flagship' },
-    { name: 'claude-opus-4-7', provider: 'Anthropic', offIn: 2.75, offOut: 13.75, badge: 'Flagship' },
+    { name: 'claude-opus-4-8', provider: 'Anthropic', offIn: 5.0, offOut: 25.0, badge: 'Flagship' },
     { name: 'gemini-3.1-pro', provider: 'Google', offIn: 1.10, offOut: 6.60, badge: 'Flagship' },
     { name: 'grok-4', provider: 'xAI', offIn: 1.65, offOut: 8.25, badge: 'Flagship' },
     { name: 'deepseek-r1', provider: 'DeepSeek', offIn: 0.495, offOut: 1.98, badge: 'Reasoning' },
@@ -111,7 +111,7 @@ export default function Landing() {
           </h1>
           
           <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
-            Access <strong>GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
+            Access <strong>GPT-5.5, Claude Opus 4.8, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
             Enterprise-grade speed, strict zero-logging privacy, and pure pay-as-you-go billing — the most powerful AI engines in the world, unified.
           </p>
 
@@ -398,7 +398,7 @@ export default function Landing() {
                 color: '#06b6d4',
                 bg: 'rgba(6,182,212,0.08)',
                 title: 'Unified Model Catalog',
-                desc: 'A single API key unlocks every major frontier model — from GPT-5.5 and Claude 4.7 to Gemini 3 Pro, Grok, and DeepSeek V3. New models added within hours.',
+                desc: 'A single API key unlocks every major frontier model — from GPT-5.5 and Claude 4.8 to Gemini 3 Pro, Grok, and DeepSeek V3. New models added within hours.',
                 highlight: '260+ models · 20+ providers'
               },
               {
@@ -553,7 +553,7 @@ const PythonSnippet = () => (
     ){"\n"}
     {"\n"}
     response = client.chat.completions.<span className="t-func">create</span>({"\n"}
-    {"    "}model=<span className="t-string">"gpt-5.5"</span>,  <span className="t-comment"># or claude-opus-4-7, etc.</span>{"\n"}
+    {"    "}model=<span className="t-string">"gpt-5.5"</span>,  <span className="t-comment"># or claude-opus-4-8, etc.</span>{"\n"}
     {"    "}messages=[{"\n"}
     {"        "}{"{"}<span className="t-string">"role"</span>: <span className="t-string">"user"</span>, <span className="t-string">"content"</span>: <span className="t-string">"Hello from Digitaland!"</span>{"}"}{"\n"}
     {"    "}]{"\n"}

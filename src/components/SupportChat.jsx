@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SupportChat() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [agentStatus, setAgentStatus] = useState('offline'); // 'active', 'away', 'offline'
   const [chat, setChat] = useState(null);
@@ -16,18 +18,15 @@ export default function SupportChat() {
   const messagesEndRef = useRef(null);
   const chatChannelRef = useRef(null);
 
-  // Hide on playground pages
-  if (pathname.startsWith('/playground')) return null;
+  // Hide on playground pages or if user is logged out
+  if (pathname.startsWith('/playground') || !user) return null;
 
-  // 1. Initialise Guest Session ID
+  // 1. Initialise Authenticated Session ID from logged-in user
   useEffect(() => {
-    let sId = localStorage.getItem('support_session_id');
-    if (!sId) {
-      sId = 'guest_' + Math.random().toString(36).substring(2, 12);
-      localStorage.setItem('support_session_id', sId);
+    if (user?.id) {
+      setSessionId(user.id);
     }
-    setSessionId(sId);
-  }, []);
+  }, [user]);
 
   // 2. Fetch and Subscribe to Agent Status
   useEffect(() => {
@@ -153,7 +152,7 @@ export default function SupportChat() {
           .from('support_chats')
           .insert([{ 
             guest_session_id: sessionId, 
-            guest_name: 'Visitor ' + sessionId.slice(-4) 
+            guest_name: user?.email || 'User ' + sessionId.slice(-4) 
           }])
           .select()
           .single();

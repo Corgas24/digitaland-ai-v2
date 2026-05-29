@@ -995,24 +995,23 @@ export default function Playground() {
 /* ─── SUGGESTION CHIPS ─────────────────────────────────────────── */
 .pg-chips-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
   padding: 0 0.25rem 0.75rem;
   margin-bottom: 0.25rem;
   width: 100%;
 }
 .pg-chips-row::-webkit-scrollbar { display: none; }
 .pg-chip {
-  flex-shrink: 0;
+  flex: 1 1 140px;
+  min-width: 130px;
+  max-width: 240px;
   padding: 0.55rem 0.85rem;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s;
-  min-width: 140px;
-  max-width: 180px;
 }
 .pg-chip:hover {
   border-color: var(--primary);

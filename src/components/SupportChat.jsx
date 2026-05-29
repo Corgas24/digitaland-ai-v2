@@ -18,13 +18,19 @@ export default function SupportChat() {
   const messagesEndRef = useRef(null);
   const chatChannelRef = useRef(null);
 
-  // Hide on playground pages or if user is logged out
-  if (pathname.startsWith('/playground') || !user) return null;
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
-  // 1. Initialise Authenticated Session ID from logged-in user
+  // 1. Initialise Authenticated Session ID from logged-in user & handle state cleanups on logout
   useEffect(() => {
     if (user?.id) {
       setSessionId(user.id);
+    } else {
+      setSessionId('');
+      setChat(null);
+      setMessages([]);
     }
   }, [user]);
 
@@ -60,39 +66,47 @@ export default function SupportChat() {
     };
   }, []);
 
-  // 3. Load Active Chat Session for Guest
+  // 3. Load Active Chat Session and Complete Conversation History for Guest
   useEffect(() => {
     if (!sessionId) return;
 
-    async function loadChat() {
+    async function loadChatAndHistory() {
       try {
-        const { data, error } = await supabase
+        // Query all chat sessions for this guest_session_id ordered by created_at desc
+        const { data: chats, error: chatsErr } = await supabase
           .from('support_chats')
           .select('*')
           .eq('guest_session_id', sessionId)
-          .eq('status', 'open')
-          .maybeSingle();
+          .order('created_at', { ascending: false });
 
-        if (!error && data) {
-          setChat(data);
-          // Fetch existing messages
-          const { data: msgs } = await supabase
+        if (chatsErr) throw chatsErr;
+
+        // Find the active open chat (if any)
+        const activeOpenChat = chats?.find(c => c.status === 'open');
+        setChat(activeOpenChat || null);
+
+        // Fetch all messages belonging to ANY of the chats for this guest
+        if (chats && chats.length > 0) {
+          const chatIds = chats.map(c => c.id);
+          const { data: msgs, error: msgsErr } = await supabase
             .from('support_messages')
             .select('*')
-            .eq('chat_id', data.id)
+            .in('chat_id', chatIds)
             .order('id', { ascending: true });
+
+          if (msgsErr) throw msgsErr;
           if (msgs) setMessages(msgs);
         } else {
-          // If no active chat, set message state to a friendly welcome message
+          // If no chats exist at all, show the friendly welcome message
           setMessages([
             { id: 'welcome', sender_role: 'system', content: 'Olá! Sou o assistente inteligente da Digitaland. Como posso ajudar-te hoje?', created_at: new Date().toISOString() }
           ]);
         }
       } catch (err) {
-        console.warn('Could not load chat:', err);
+        console.warn('Could not load chat and history:', err);
       }
     }
-    loadChat();
+    loadChatAndHistory();
   }, [sessionId]);
 
   // WhatsApp-style gentle chime synth sound
@@ -119,7 +133,7 @@ export default function SupportChat() {
     }
   };
 
-  // 4. Subscribe to Live Support Messages when Chat ID is set
+  // 4. Subscribe to Live Support Messages when Chat ID is set (Stably tracks chat.id)
   useEffect(() => {
     if (!chat?.id) return;
 
@@ -141,7 +155,7 @@ export default function SupportChat() {
           });
 
           // Trigger unread indicator if closed
-          if (!isOpen) {
+          if (!isOpenRef.current) {
             setUnread(u => u + 1);
           }
         }
@@ -153,7 +167,7 @@ export default function SupportChat() {
     return () => {
       channel.unsubscribe();
     };
-  }, [chat?.id, isOpen]);
+  }, [chat?.id]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -229,6 +243,12 @@ export default function SupportChat() {
       // Replace the optimistic message with the database message
       setMessages(prev => prev.map(m => m.id === tempId ? { ...newMsg, status: 'sent' } : m));
 
+      // Trigger realtime update in support_chats parent row so Admin panel receives this message instantly!
+      await supabase
+        .from('support_chats')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeChat.id);
+
       // 5c. Run AI Support bot if status is Offline or Away
       if (agentStatus === 'offline' || agentStatus === 'away') {
         setIsTyping(true);
@@ -303,6 +323,9 @@ export default function SupportChat() {
   };
 
   const status = getStatusTextAndColor();
+
+  // Hide on playground pages or if user is logged out (safe early-return after all hooks)
+  if (pathname.startsWith('/playground') || !user) return null;
 
   return (
     <div className="sc-widget">

@@ -16,10 +16,17 @@ const Navbar = memo(function Navbar() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const handleLogoClick = (e) => {
+    if (window.location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav className="navbar">
       <div className="container navbar-inner">
-        <Link to="/" className="nav-logo">
+        <Link to="/" className="nav-logo" onClick={handleLogoClick}>
           <span className="logo-dot" />
           <span>digital<strong>and</strong></span>
           <span className="logo-ext">.ai</span>

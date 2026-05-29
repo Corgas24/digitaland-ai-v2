@@ -100,7 +100,34 @@ export const getDynamicModels = async () => {
     return null;
   }
 
-  cachedModels = data.map(m => {
+  const seenNames = new Set();
+  const uniqueData = [];
+
+  data.forEach(m => {
+    const rawName = m.name || '';
+    const name = formatModelName(rawName);
+    const key = `${name}__${m.provider || ''}`.toLowerCase();
+
+    if (seenNames.has(key)) {
+      const existingIndex = uniqueData.findIndex(item => {
+        const existingName = formatModelName(item.name || '');
+        return `${existingName}__${item.provider || ''}`.toLowerCase() === key;
+      });
+      if (existingIndex !== -1) {
+        const existing = uniqueData[existingIndex];
+        // Prefer ID without a slash (e.g. "claude-opus-4.8" over "anthropic/claude-opus-4.8")
+        if ((existing.id || '').includes('/') && !(m.id || '').includes('/')) {
+          uniqueData[existingIndex] = m;
+        }
+      }
+      return;
+    }
+
+    seenNames.add(key);
+    uniqueData.push(m);
+  });
+
+  cachedModels = uniqueData.map(m => {
     const rawName = m.name || '';
     const name = formatModelName(rawName);
     const nameLower = name.toLowerCase();

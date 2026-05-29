@@ -3,6 +3,29 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
+
+const SYSTEM_PROMPT = `Tu és a Inteligência Artificial de Apoio ao Cliente da Digitaland.ai. O teu objetivo é responder de forma extremamente profissional, útil e persuasiva a dúvidas sobre a nossa plataforma.
+
+Responde em Português de forma concisa e amigável.
+
+INFORMAÇÕES SOBRE A DIGITALAND.AI:
+1. O que é: Um gateway API unificado para inteligência artificial. Oferece acesso a mais de 260 modelos de ponta (OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral) através de uma única integração simples.
+2. Endpoint/Base URL: https://api.digitaland.ai/v1 (compatível a 100% com os SDKs da OpenAI, LangChain, etc.).
+3. Vantagens Core:
+   - Latência ultra-baixa (<200ms de resposta média, <5ms de overhead de encaminhamento).
+   - Política de Zero-Logs estrita (privacidade total, nenhum prompt ou resposta é gravado ou usado para treino).
+   - Redundância multi-região com failover automático.
+4. Faturação e Preços (Pay-as-you-go):
+   - Sem mensalidades, sem subscrições. Paga apenas pelos tokens que consumir. Créditos nunca expiram.
+   - Poupança média de até 10% em relação aos preços oficiais da OpenRouter (aplicamos um markup competitivo de 1.8x sobre o custo wholesale CrazyRouter).
+5. Preços de Referência (por 1M tokens):
+   - Claude Opus 4.8: Input $4.95 / Output $24.75
+   - Claude Opus 4.8 (Fast): Input $9.00 / Output $45.00
+   - GPT-5.5: Input $4.95 / Output $29.70
+   - Gemini 3.1 Pro: Input $1.98 / Output $11.88
+   - DeepSeek V3: Input $0.144 / Output $0.360
+   - DeepSeek R1: Input $0.707 / Output $2.815`;
+
 export default function SupportChat() {
   const { pathname } = useLocation();
   const { user } = useAuth();
@@ -23,14 +46,18 @@ export default function SupportChat() {
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
-  // 1. Initialise Authenticated Session ID from logged-in user & handle state cleanups on logout
+  // 1. Initialise Session ID (from logged-in user or persistent localStorage guest token)
   useEffect(() => {
     if (user?.id) {
       setSessionId(user.id);
     } else {
-      setSessionId('');
-      setChat(null);
-      setMessages([]);
+      // Check if there is an existing guest session ID in localStorage
+      let gId = localStorage.getItem('digitaland_guest_session');
+      if (!gId) {
+        gId = 'guest_' + Math.random().toString(36).substring(2, 12);
+        localStorage.setItem('digitaland_guest_session', gId);
+      }
+      setSessionId(gId);
     }
   }, [user]);
 
@@ -279,6 +306,7 @@ export default function SupportChat() {
               body: JSON.stringify({
                 model: 'gpt-4o-mini',
                 messages: [
+                  { role: 'system', content: SYSTEM_PROMPT },
                   ...contextMsgs,
                   { role: 'user', content: guestMessageText }
                 ]
@@ -332,8 +360,8 @@ export default function SupportChat() {
 
   const status = getStatusTextAndColor();
 
-  // Hide on playground pages or if user is logged out (safe early-return after all hooks)
-  if (pathname.startsWith('/playground') || !user) return null;
+  // Hide on playground pages (safe early-return after all hooks)
+  if (pathname.startsWith('/playground')) return null;
 
   return (
     <div className="sc-widget">

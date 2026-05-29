@@ -3,16 +3,12 @@ import { withSupabase } from "jsr:@supabase/server@^1";
 import { Redis } from "npm:@upstash/redis";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-<<<<<<< Updated upstream
-const MARKUP = 1.4;
-=======
 // These must be kept in sync with src/data/models.js:
 //   MARKUP  — Digitaland markup over the CrazyRouter base price.
 //              off_in / off_out in the DB are CrazyRouter prices (not scaled).
 //              cost = (pToks/1e6 × off_in + cToks/1e6 × off_out) × MARKUP
 //              → Digitaland charges 80% above CrazyRouter per-request cost.
 const MARKUP = 1.8;
->>>>>>> Stashed changes
 
 const MINIMUM_CHARGE: number = (() => {
   const val = Deno.env.get("MINIMUM_CHARGE");
@@ -24,12 +20,18 @@ const BILLING_EXEMPT_ENV = "GATEWAY_BILLING_EXEMPT_USER_ID";
 
 // ─── PROFIT-CASCADE MAP ───────────────────────────────────────────────────────
 const CASCADE: Record<string, string[]> = {
+  'gpt-5.5':            ['gpt-5', 'gpt-4.1', 'gpt-4o', 'gpt-5-mini'],
   'gpt-5':              ['gpt-4.1', 'gpt-4o', 'gpt-5-mini'],
   'gpt-4o':             ['gpt-4o-mini', 'claude-sonnet-4-6', 'llama-3.3-70b'],
   'claude-opus-4-7':    ['claude-sonnet-4-6', 'gpt-4o', 'claude-haiku-4-5'],
   'claude-sonnet-4-6':  ['gpt-4o-mini', 'claude-haiku-4-5', 'llama-3.3-70b'],
   'claude-3-5-sonnet':  ['claude-sonnet-4-6', 'gpt-4o-mini', 'claude-haiku-4-5'],
   'gemini-3.1-pro':     ['gemini-3-flash', 'gpt-4o-mini'],
+  'gemini-3-pro':       ['gemini-3-flash', 'gemini-3.1-pro', 'gpt-4o-mini'],
+  'gemini-3-flash':     ['gemini-3.1-flash-lite', 'gpt-4o-mini'],
+  'gemini-2.5-pro':     ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gpt-4o-mini'],
+  'gemini-2.5-flash':   ['gemini-2.5-flash-lite', 'gpt-4o-mini'],
+  'gemini-2.5-flash-lite': ['gemini-2.5-flash', 'gemini-2.5-pro', 'gpt-4o-mini'],
   'o1':          ['o1-mini', 'deepseek-r1', 'gpt-4o'],
   'o1-mini':     ['deepseek-r1', 'gpt-4o-mini'],
   'deepseek-r1': ['o1-mini', 'llama-3.3-70b'],
@@ -103,13 +105,16 @@ function mapModelToOpenRouter(modelId: string): string {
   // Chat Models
   if (m === "gpt-4o-mini") return "openai/gpt-4o-mini";
   if (m === "gpt-4o") return "openai/gpt-4o";
-  if (m === "gpt-5") return "openai/gpt-5.5";
+  if (m === "gpt-5.5" || m === "gpt-5") return "openai/gpt-5.5";
   if (m === "gpt-5-mini") return "openai/gpt-5.4-mini";
   if (m === "claude-opus-4-7") return "anthropic/claude-opus-4.7-fast";
   if (m === "claude-sonnet-4-6") return "anthropic/claude-3.5-sonnet";
   if (m === "claude-haiku-4-5") return "anthropic/claude-3.5-haiku";
   if (m === "gemini-3.1-pro") return "google/gemini-pro-latest";
   if (m === "gemini-3-flash") return "google/gemini-flash-latest";
+  if (m === "gemini-2.5-flash-lite") return "google/gemini-2.5-flash-lite";
+  if (m === "gemini-2.5-flash") return "google/gemini-2.5-flash";
+  if (m === "gemini-2.5-pro") return "google/gemini-2.5-pro";
   if (m === "deepseek-r1") return "deepseek/deepseek-r1";
   if (m === "deepseek-v3") return "deepseek/deepseek-chat";
   if (m === "llama-3.3-70b") return "meta-llama/llama-3.3-70b-instruct";
@@ -456,16 +461,7 @@ export default {
         if (!shouldSkipPrimary) {
           for (const model of tryModels) {
             try {
-<<<<<<< Updated upstream
-=======
-              const controller     = new AbortController();
-              const isGeneration = ["dall-e", "mj_imagine", "flux", "sora", "runway", "kling", "cogview", "cogvideo", "stable-image"].some(k =>
-                originalModelId.toLowerCase().includes(k),
-              );
-              const timeoutLimit = isGeneration ? 20_000 : (incomingBody.stream ? 4_000 : 6_000);
-              const timeoutId     = setTimeout(() => controller.abort(), timeoutLimit);
 
->>>>>>> Stashed changes
               finalModelId = model;
               let attempt: Response;
 
@@ -950,7 +946,7 @@ export default {
                     const totalIn  = promptToks || 1;
                     const totalOut = complToks  || 1;
                     // off_in / off_out = CrazyRouter raw price per 1M tokens.
-                    // MARKUP = 1.4 is applied directly (no OFF_MUL division).
+                    // MARKUP = 1.8 is applied directly (no OFF_MUL division).
                     const cost = Math.max(
                       ((totalIn  / 1_000_000 * rates.off_in)
                     + (totalOut / 1_000_000 * rates.off_out))
@@ -997,7 +993,7 @@ export default {
             const pToks  = (usage?.prompt_tokens      ?? 1) as number;
             const cToks  = (usage?.completion_tokens  ?? 1) as number;
             // off_in / off_out = CrazyRouter base price per 1M tokens.
-            // MARKUP = 1.4 applied directly here (no OFF_MUL divisor).
+            // MARKUP = 1.8 applied directly here (no OFF_MUL divisor).
             const cost   = Math.max(
               ((pToks / 1_000_000 * rates.off_in)
             + (cToks / 1_000_000 * rates.off_out))

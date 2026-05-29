@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digitaland AI — Ultra-Premium Playground & Canvas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Outfit & Inter Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Hide scrollbars but keep functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Pulse glow effect */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
+    }
+    .active-glow {
+      animation: pulse-glow 2s infinite;
+    }
+    /* Glassmorphism styling */
+    .glass {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-[#0b0f19] text-[#e2e8f0] h-screen w-screen overflow-hidden flex flex-col font-outfit select-none">
+
+  <!-- Main Desktop Container -->
+  <div class="flex h-full w-full overflow-hidden">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-64 border-r border-[#1e293b] bg-[#0b0f19] flex flex-col h-full shrink-0">
+      
+      <!-- Brand Header -->
+      <div class="h-16 flex items-center px-6 gap-3 border-b border-[#1e293b] shrink-0 cursor-pointer hover:bg-slate-900/30 transition-colors">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <span class="text-white font-extrabold text-sm">D</span>
+        </div>
+        <span class="font-outfit font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-indigo-400">Digitaland</span>
+      </div>
+
+      <!-- Navigation & Workspace Options -->
+      <nav class="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
+        
+        <!-- Controls Group -->
+        <div class="space-y-1">
+          <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3 mb-2">Workspace Controls</div>
+          
+          <button onclick="toggleCanvas()" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-900 border border-transparent transition-all group">
+            <div class="flex items-center gap-3">
+              <span class="text-lg">🎨</span>
+              <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Canvas Mode</span>
+            </div>
+            <div id="canvas-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 transition-all"></div>
+          </button>
+
+          <button onclick="clearChat()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-900 text-rose-400 hover:text-rose-300 border border-transparent transition-all">
+            <span class="text-lg">🧹</span>
+            <span class="text-sm font-medium">Clear / Reset Chat</span>
+          </button>
+        </div>
+
+        <!-- System Prompt & Parameters -->
+        <div class="space-y-4 pt-4 border-t border-[#1e293b]">
+          <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3">System Context</div>
+          
+          <div class="px-3">
+            <textarea id="system-prompt" class="w-full h-20 text-xs bg-slate-900 border border-[#1e293b] rounded-lg p-2.5 text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors placeholder-slate-600 no-scrollbar" placeholder="You are an expert full-stack developer..."></textarea>
+          </div>
+
+          <!-- Slider Parameter -->
+          <div class="px-3 space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-400">Temperature</span>
+              <span id="temp-value" class="text-indigo-400 font-mono">0.7</span>
+            </div>
+            <input type="range" min="0" max="1" step="0.1" value="0.7" oninput="updateTemp(this.value)" class="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+          </div>
+        </div>
+
+        <!-- Model Quick Info -->
+        <div class="pt-4 border-t border-[#1e293b] px-3 space-y-3">
+          <div class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Neural Gateway</div>
+          <div class="p-3 bg-indigo-950/20 border border-indigo-500/10 rounded-xl space-y-2">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+              <span class="text-xs font-bold text-indigo-300">Live Active Node</span>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-relaxed">
+              Equipped with silent profit-cascade auto-failover matching 1.8x gateway architecture.
+            </p>
+          </div>
+        </div>
+
+      </nav>
+
+      <!-- Sidebar User Footer -->
+      <div class="p-4 border-t border-[#1e293b] bg-slate-950/20 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
+            US
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">Guest Developer</div>
+            <div class="text-[10px] font-mono text-slate-400">Balance: $24.80</div>
+          </div>
+        </div>
+        <span class="text-xs opacity-50">👤</span>
+      </div>
+
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 flex flex-col h-full bg-[#0b101c] overflow-hidden min-w-0">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <header class="h-16 border-b border-[#1e293b] px-6 flex items-center justify-between shrink-0 bg-[#0b0f19]/80 backdrop-blur-md">
+        
+        <!-- Multi-Model Active Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2 max-w-lg">
+          
+          <div id="tabs-container" class="flex items-center gap-1.5">
+            <!-- Active Model Tabs are dynamically generated here -->
+          </div>
+
+          <button onclick="openAddModelModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-indigo-400 hover:bg-slate-900 transition-all shrink-0">
+            <span>+</span> Add Model
+          </button>
+        </div>
+
+        <!-- Mode Buttons / Actions -->
+        <div class="flex items-center gap-4 shrink-0">
+          
+          <!-- Single vs Compare Pill -->
+          <div class="flex bg-slate-950/60 p-1 rounded-xl border border-[#1e293b]">
+            <button onclick="setCompareMode(false)" id="btn-mode-single" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/10">Single</button>
+            <button onclick="setCompareMode(true)" id="btn-mode-compare" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">Compare</button>
+          </div>
+
+          <!-- Canvas Active Button Toggle -->
+          <button onclick="toggleCanvas()" id="btn-canvas-toggle" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#141b2e] border border-indigo-500/20 text-indigo-300 hover:bg-[#1a233b] transition-all">
+            <span>🎨</span>
+            <span>Canvas View</span>
+          </button>
+        </div>
+
+      </header>
+
+      <!-- VIEWPORT (GRID / CHAT LIST) -->
+      <div class="flex-1 overflow-hidden flex min-w-0">
+        
+        <!-- Chat Interface Section -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
+          
+          <!-- Scrollable Chat List / Column Grid -->
+          <div id="chat-viewport" class="flex-1 overflow-y-auto no-scrollbar p-6 min-w-0 flex gap-6">
+            
+            <!-- Standard Single Chat View -->
+            <div id="single-chat-column" class="flex-1 max-w-3xl mx-auto flex flex-col h-full space-y-6">
+              
+              <!-- Empty State Welcome -->
+              <div id="welcome-state" class="flex-1 flex flex-col items-center justify-center text-center space-y-6 py-12">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-2xl shadow-xl shadow-indigo-500/5">
+                  🔮
+                </div>
+                <div class="space-y-2">
+                  <h2 class="font-outfit font-extrabold text-2xl text-white">Digitaland Neural Playground</h2>
+                  <p class="text-sm text-slate-400 max-w-md leading-relaxed">
+                    Test the world's most powerful AI models side-by-side. Write prompts to generate artifacts, charts, custom HTML, and watch them render instantly on the right.
+                  </p>
+                </div>
+                <div class="grid grid-cols-2 gap-3 max-w-xl w-full pt-4">
+                  <button onclick="useChip('Create a beautiful glassmorphism landing page')" class="p-3 bg-slate-900/60 border border-[#1e293b] rounded-xl text-left hover:border-indigo-500/30 hover:bg-slate-900 group transition-all text-xs">
+                    <div class="font-bold text-slate-300 group-hover:text-white transition-colors">✨ Clean Landing Page</div>
+                    <div class="text-slate-500 mt-1">Design an ultra-modern landing page</div>
+                  </button>
+                  <button onclick="useChip('Create an interactive SVG charting dashboard')" class="p-3 bg-slate-900/60 border border-[#1e293b] rounded-xl text-left hover:border-indigo-500/30 hover:bg-slate-900 group transition-all text-xs">
+                    <div class="font-bold text-slate-300 group-hover:text-white transition-colors">📊 Interactive Charts</div>
+                    <div class="text-slate-500 mt-1">Generate dynamic graphs and SVGs</div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Message History list gets generated dynamically -->
+              <div id="message-history" class="space-y-6 hidden pb-12"></div>
+
+            </div>
+
+            <!-- Compare Grid Chat View (only populated during compare mode) -->
+            <div id="compare-chat-columns" class="hidden w-full h-full gap-4">
+              <!-- Dynamically populated model columns show up here during Compare Mode -->
+            </div>
+
+          </div>
+
+          <!-- CHAT INPUT DOCK -->
+          <div class="p-6 border-t border-[#1e293b]/60 bg-[#0b101c]/80 backdrop-blur-md shrink-0">
+            <div class="max-w-4xl mx-auto space-y-4">
+              
+              <!-- suggestion chips (hidden if chat is active) -->
+              <div id="chips-container" class="flex gap-2 overflow-x-auto no-scrollbar">
+                <button onclick="useChip('Create a beautiful glassmorphism landing page')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-xl text-slate-300 hover:text-white border border-[#1e293b] hover:border-indigo-500/30 transition-all shrink-0">✨ Glassmorphic UI</button>
+                <button onclick="useChip('Create an interactive SVG charting dashboard')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-xl text-slate-300 hover:text-white border border-[#1e293b] hover:border-indigo-500/30 transition-all shrink-0">📊 SVG Dashboard</button>
+                <button onclick="useChip('Write a fast Python quicksort program with animation')" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-xl text-slate-300 hover:text-white border border-[#1e293b] hover:border-indigo-500/30 transition-all shrink-0">🧬 Quicksort Animation</button>
+              </div>
+
+              <!-- Glow borders input container -->
+              <div class="relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-15 group-focus-within:opacity-30 transition duration-300"></div>
+                <div class="relative bg-slate-950 border border-[#1e293b] rounded-2xl p-3 flex flex-col gap-2 min-h-[92px]">
+                  
+                  <textarea id="chat-input" class="w-full bg-transparent border-none text-sm text-[#e2e8f0] focus:outline-none focus:ring-0 placeholder-slate-500 resize-none flex-1 min-h-[44px] max-h-36 no-scrollbar" placeholder="Type a message, or ask to create a website, SVG or script..." onkeydown="handleInputKeydown(event)"></textarea>
+                  
+                  <div class="flex items-center justify-between border-t border-[#1e293b]/60 pt-2 shrink-0">
+                    
+                    <div class="flex items-center gap-1.5">
+                      <!-- Attachment Icon Indicator -->
+                      <button class="p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-all" title="Attach file">
+                        📎
+                      </button>
+                      <div class="text-[10px] font-semibold text-slate-500 bg-slate-900/60 px-2.5 py-1 rounded-lg border border-[#1e293b] font-mono">
+                        Active model: <span id="input-model-label" class="text-indigo-400">claude-opus-4-7</span>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <button id="btn-stop-inference" onclick="stopInference()" class="hidden px-4 py-2 rounded-xl text-xs font-bold text-rose-400 bg-rose-950/20 border border-rose-500/10 hover:bg-rose-950/40 transition-all">
+                        ⏹ Stop
+                      </button>
+                      <button onclick="sendChatMessage()" id="btn-send-message" class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-all shadow-lg shadow-indigo-600/20 group hover:scale-[1.03]">
+                        <span class="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">➔</span>
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- CANVAS / ARTIFACTS PANEL (RIGHT SIDE SPLIT SCREEN) -->
+        <div id="canvas-panel" class="w-[520px] shrink-0 border-l border-[#1e293b] bg-[#0b0f19] flex flex-col h-full overflow-hidden transition-all duration-300 ease-out relative">
+          
+          <!-- Canvas Top Header Tab Strip -->
+          <div class="h-16 border-b border-[#1e293b] px-6 flex items-center justify-between bg-slate-950/30 shrink-0">
+            <div class="flex items-center gap-3">
+              <span class="text-lg">🎨</span>
+              <div>
+                <h3 id="canvas-title" class="text-sm font-bold text-white">Visual Artifact</h3>
+                <p id="canvas-subtitle" class="text-[10px] font-mono text-slate-400">interactive_dashboard.html</p>
+              </div>
+            </div>
+
+            <!-- Tab pills inside Canvas -->
+            <div class="flex gap-2">
+              <div class="flex bg-slate-900 p-1 rounded-lg border border-[#1e293b]">
+                <button onclick="setCanvasTab('preview')" id="btn-canvas-preview" class="px-3 py-1 rounded-md text-[10px] font-bold transition-all bg-indigo-600 text-white">Preview</button>
+                <button onclick="setCanvasTab('code')" id="btn-canvas-code" class="px-3 py-1 rounded-md text-[10px] font-bold transition-all text-slate-400 hover:text-white">Code</button>
+              </div>
+              <button onclick="copyCanvasCode()" class="p-2 bg-slate-900 hover:bg-slate-800 border border-[#1e293b] rounded-lg text-xs hover:text-indigo-400 transition-colors" title="Copy code">
+                📋
+              </button>
+              <button onclick="closeCanvas()" class="p-2 bg-slate-900 hover:bg-slate-800 border border-[#1e293b] rounded-lg text-xs hover:text-rose-400 transition-colors" title="Close Panel">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <!-- Canvas Workspace Frame / View -->
+          <div class="flex-1 bg-slate-950 overflow-hidden relative">
+            
+            <!-- Dynamic Preview (Renders inside iframe) -->
+            <div id="canvas-preview-pane" class="w-full h-full bg-[#0b101c]">
+              <iframe id="canvas-iframe" class="w-full h-full border-none bg-white"></iframe>
+            </div>
+
+            <!-- Code display (Simulated dark syntax highlighter) -->
+            <div id="canvas-code-pane" class="hidden w-full h-full overflow-auto p-6 font-mono text-xs text-indigo-200 bg-[#060814] leading-relaxed">
+              <pre id="canvas-code-display" class="no-scrollbar whitespace-pre-wrap select-text"></pre>
+            </div>
+
+          </div>
+
+          <!-- Interactive Editor overlay -->
+          <div class="absolute bottom-4 right-4 flex gap-2">
+            <div id="copy-success-badge" class="hidden bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow-lg animate-bounce">
+              ✓ Copied successfully
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- MULTI-MODEL ADD MODAL -->
+  <div id="add-model-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#0b0f19] border border-[#1e293b] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden glass">
+      
+      <div class="p-5 border-b border-[#1e293b] flex items-center justify-between">
+        <h3 class="font-outfit font-extrabold text-lg text-white">Add Model to Workspace</h3>
+        <button onclick="closeAddModelModal()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto max-h-[380px] space-y-2 no-scrollbar" id="model-modal-list">
+        <!-- Model items populated dynamically -->
+      </div>
+
+      <div class="p-4 border-t border-[#1e293b] bg-slate-950/40 flex justify-end">
+        <button onclick="closeAddModelModal()" class="px-4 py-2 bg-slate-900 border border-[#1e293b] rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INLINE DATABASE OF SUPPORTED MODELS -->
+  <script>
+    const MODELS = [
+      { id: 'claude-opus-4-7', name: 'claude-opus-4.7', provider: 'Anthropic', type: 'Chat', badge: 'Flagship' },
+      { id: 'gpt-5.5', name: 'gpt-5.5', provider: 'OpenAI', type: 'Chat', badge: 'Flagship' },
+      { id: 'gemini-2.5-flash-lite', name: 'gemini-2.5-flash-lite', provider: 'Google', type: 'Chat', badge: 'Budget' },
+      { id: 'gpt-4o', name: 'gpt-4o', provider: 'OpenAI', type: 'Chat', badge: 'Popular' },
+      { id: 'gemini-2.5-pro', name: 'gemini-2.5-pro', provider: 'Google', type: 'Chat', badge: 'Popular' },
+      { id: 'deepseek-chat', name: 'deepseek-chat', provider: 'DeepSeek', type: 'Chat', badge: 'Value' },
+      { id: 'llama-3.3-70b', name: 'llama-3.3-70b', provider: 'Meta', type: 'Chat', badge: 'Budget' },
+      { id: 'gpt-4o-mini', name: 'gpt-4o-mini', provider: 'OpenAI', type: 'Chat', badge: 'Value' },
+      { id: 'gemini-2.5-flash', name: 'gemini-2.5-flash', provider: 'Google', type: 'Chat', badge: 'Value' }
+    ];
+
+    // LOCAL STORAGE STATE PERSISTENCE
+    const STORAGE_KEY = 'digitaland_playground_state_v1';
+
+    let activeTabs = ['claude-opus-4-7', 'gpt-5.5', 'gemini-2.5-flash-lite'];
+    let activeTabIdx = 0;
+    let compareMode = false;
+    let canvasOpen = true;
+    let currentMessages = []; // For Single Mode
+    let compareMessages = {}; // { modelId: [messages...] }
+    let activeInferences = {}; // Track active controllers/timeouts
+    let currentArtifact = null; // Store current rendering code/metadata
+
+    function loadStateFromLocalStorage() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.activeTabs) activeTabs = parsed.activeTabs;
+          if (typeof parsed.activeTabIdx === 'number') activeTabIdx = parsed.activeTabIdx;
+          if (typeof parsed.compareMode === 'boolean') compareMode = parsed.compareMode;
+          if (typeof parsed.canvasOpen === 'boolean') canvasOpen = parsed.canvasOpen;
+          if (parsed.currentMessages) currentMessages = parsed.currentMessages;
+          if (parsed.compareMessages) compareMessages = parsed.compareMessages;
+          if (parsed.currentArtifact) currentArtifact = parsed.currentArtifact;
+          return true;
+        }
+      } catch (e) {
+        console.warn('Could not load state from localStorage:', e);
+      }
+      return false;
+    }
+
+    function saveStateToLocalStorage() {
+      try {
+        const state = {
+          activeTabs,
+          activeTabIdx,
+          compareMode,
+          canvasOpen,
+          currentMessages,
+          compareMessages,
+          currentArtifact
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Could not save state to localStorage:', e);
+      }
+    }
+
+    // INITIAL LAYOUT LAUNCH
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStateFromLocalStorage();
+      
+      // Ensure compare message boxes are initialized
+      activeTabs.forEach(mId => {
+        if (!compareMessages[mId]) compareMessages[mId] = [];
+      });
+
+      renderTabs();
+      updateInputModelLabel();
+      
+      // Sync UI components with loaded states
+      setCompareModeUI(compareMode);
+      toggleCanvasUI(canvasOpen);
+
+      if (compareMode) {
+        activeTabs.forEach(mId => {
+          renderCompareColumn(mId);
+        });
+      } else {
+        refreshSingleHistory();
+      }
+
+      // If we loaded a current artifact from memory, launch its render!
+      if (currentArtifact) {
+        triggerCanvasLaunchUI(currentArtifact.code, currentArtifact.fileName);
+      }
+    });
+
+    // PARAMETER SLIDER UPDATE
+    function updateTemp(val) {
+      document.getElementById('temp-value').textContent = val;
+    }
+
+    // RENDER MODEL TABS STRIP
+    function renderTabs() {
+      const container = document.getElementById('tabs-container');
+      container.innerHTML = '';
+
+      activeTabs.forEach((mId, idx) => {
+        const isActive = idx === activeTabIdx && !compareMode;
+        const tabEl = document.createElement('div');
+        tabEl.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all border ${
+          isActive 
+            ? 'bg-slate-900 border-[#1e293b] text-white' 
+            : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-950/40'
+        }`;
+        
+        tabEl.innerHTML = `
+          <span onclick="selectTab(${idx})" class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full ${
+              mId.includes('gemini') ? 'bg-blue-400' : mId.includes('gpt') ? 'bg-green-400' : 'bg-purple-400'
+            }"></span>
+            ${mId}
+          </span>
+          ${activeTabs.length > 1 ? `<span onclick="closeTab(event, ${idx})" class="opacity-40 hover:opacity-100 pl-1 font-bold text-[10px]">✕</span>` : ''}
+        `;
+        container.appendChild(tabEl);
+      });
+    }
+
+    // TAB SELECTION - SWITCHING MODEL CLEARS CONVERSATION AS REQUESTED!
+    function selectTab(idx) {
+      if (activeTabIdx === idx && !compareMode) return;
+      activeTabIdx = idx;
+      
+      // CRITICAL REQUIREMENT: "quando mudo de modelo, quero que volte tudo do zero e sem o chat anterior no chat novo"
+      clearChat();
+
+      renderTabs();
+      updateInputModelLabel();
+    }
+
+    // CLOSE A ACTIVE MODEL TAB
+    function closeTab(event, idx) {
+      event.stopPropagation();
+      if (activeTabs.length <= 1) return;
+      
+      activeTabs = activeTabs.filter((_, i) => i !== idx);
+      
+      if (activeTabIdx >= activeTabs.length) {
+        activeTabIdx = activeTabs.length - 1;
+      }
+      
+      clearChat(); // Clear on change/close of active tabs
+      renderTabs();
+      updateInputModelLabel();
+    }
+
+    // UPDATE DOCK MODEL NAME
+    function updateInputModelLabel() {
+      const activeModelId = activeTabs[activeTabIdx];
+      document.getElementById('input-model-label').textContent = compareMode ? 'All Compare Tabs' : activeModelId;
+    }
+
+    // CLEAR CHAT CONVERSATION AND REFRESH VIEW
+    function clearChat() {
+      currentMessages = [];
+      compareMessages = {};
+      activeTabs.forEach(mId => {
+        compareMessages[mId] = [];
+      });
+
+      // Stop any running animations or simulation
+      stopInference();
+
+      // UI reset
+      document.getElementById('message-history').innerHTML = '';
+      document.getElementById('message-history').classList.add('hidden');
+      document.getElementById('welcome-state').classList.remove('hidden');
+      document.getElementById('chips-container').classList.remove('hidden');
+
+      // Sync Compare Columns if in compare mode
+      if (compareMode) {
+        populateCompareColumns();
+      }
+
+      saveStateToLocalStorage();
+    }
+
+    // COMPARE MODE VISUAL TOGGLE
+    function setCompareModeUI(isActive) {
+      const btnSingle = document.getElementById('btn-mode-single');
+      const btnCompare = document.getElementById('btn-mode-compare');
+      
+      if (isActive) {
+        btnSingle.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+        btnCompare.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/10";
+        
+        document.getElementById('single-chat-column').classList.add('hidden');
+        document.getElementById('compare-chat-columns').classList.remove('hidden');
+        document.getElementById('compare-chat-columns').classList.add('flex');
+      } else {
+        btnSingle.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/10";
+        btnCompare.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+        
+        document.getElementById('compare-chat-columns').classList.add('hidden');
+        document.getElementById('compare-chat-columns').classList.remove('flex');
+        document.getElementById('single-chat-column').classList.remove('hidden');
+      }
+    }
+
+    // TOGGLE SIDE-BY-SIDE COMPARE MODE
+    function setCompareMode(isActive) {
+      if (compareMode === isActive) return;
+      compareMode = isActive;
+      clearChat(); // Clear chat to prevent mixing histories
+      setCompareModeUI(compareMode);
+      saveStateToLocalStorage();
+      updateInputModelLabel();
+      renderTabs();
+    }
+
+    // POPULATE COMPARE COLUMNS LAYOUT
+    function populateCompareColumns() {
+      const grid = document.getElementById('compare-chat-columns');
+      grid.innerHTML = '';
+
+      activeTabs.forEach(mId => {
+        const col = document.createElement('div');
+        col.className = "flex-1 min-w-0 bg-slate-950/20 border border-[#1e293b] rounded-2xl flex flex-col h-full overflow-hidden";
+        col.innerHTML = `
+          <!-- Header of column -->
+          <div class="px-4 py-3 border-b border-[#1e293b] flex items-center justify-between bg-slate-950/40 shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${
+                mId.includes('gemini') ? 'bg-blue-400' : mId.includes('gpt') ? 'bg-green-400' : 'bg-purple-400'
+              }"></span>
+              <span class="text-xs font-bold text-slate-200">${mId}</span>
+            </div>
+            <span class="text-[9px] font-mono text-slate-500">${MODELS.find(x => x.id === mId)?.provider || 'Neural Core'}</span>
+          </div>
+          <!-- Messages viewport -->
+          <div id="compare-viewport-${mId}" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+            <div id="compare-empty-${mId}" class="h-full flex flex-col items-center justify-center text-center p-4">
+              <span class="text-xl opacity-30 mb-2">🧠</span>
+              <span class="text-[10px] text-slate-500 font-bold">Waiting for request...</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(col);
+      });
+    }
+
+    // REFRESH SINGLE HISTORY UI LIST
+    function refreshSingleHistory() {
+      const container = document.getElementById('message-history');
+      container.innerHTML = '';
+      
+      if (currentMessages.length === 0) {
+        document.getElementById('welcome-state').classList.remove('hidden');
+        container.classList.add('hidden');
+        document.getElementById('chips-container').classList.remove('hidden');
+        return;
+      }
+      
+      document.getElementById('welcome-state').classList.add('hidden');
+      container.classList.remove('hidden');
+      document.getElementById('chips-container').classList.add('hidden');
+
+      currentMessages.forEach((msg) => {
+        const isUser = msg.role === 'user';
+        const card = document.createElement('div');
+        
+        if (isUser) {
+          card.className = "flex justify-end w-full";
+          card.innerHTML = `
+            <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%] text-sm leading-relaxed shadow-lg shadow-indigo-600/5 select-text">
+              ${msg.content}
+            </div>
+          `;
+        } else {
+          card.className = "p-4 bg-slate-900/55 border border-[#1e293b] rounded-2xl space-y-2 relative group w-full";
+          
+          let formattedContent = msg.content;
+          // Check if it has custom artifacts code blocks
+          if (msg.hasArtifact) {
+            formattedContent = `
+              <div class="space-y-3">
+                <p class="text-sm leading-relaxed">${msg.desc || 'I have generated a responsive widget for you.'}</p>
+                <div class="p-3 bg-slate-950 border border-indigo-500/20 rounded-xl flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">🎨</span>
+                    <div>
+                      <div class="text-xs font-bold text-white">${msg.artifactName}</div>
+                      <div class="text-[9px] font-mono text-slate-400">interactive html document</div>
+                    </div>
+                  </div>
+                  <button onclick="triggerCanvasLaunch('${encodeURIComponent(msg.artifactCode)}', '${msg.artifactName}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold text-white rounded-lg transition-colors">
+                    Preview Canvas
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between text-xs text-slate-500 border-b border-[#1e293b]/40 pb-2">
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full ${
+                  msg.model.includes('gemini') ? 'bg-blue-400' : msg.model.includes('gpt') ? 'bg-green-400' : 'bg-purple-400'
+                }"></span>
+                <span class="font-bold text-slate-300 uppercase">${msg.model}</span>
+              </div>
+              <span class="font-mono text-[9px]">${msg.latency ? (msg.latency / 1000).toFixed(2) + 's' : '0.12s'}</span>
+            </div>
+            <div class="text-sm text-slate-300 leading-relaxed font-outfit select-text">${formattedContent}</div>
+          `;
+        }
+        container.appendChild(card);
+      });
+      
+      // Auto scroll viewport
+      const chatViewport = document.getElementById('chat-viewport');
+      chatViewport.scrollTop = chatViewport.scrollHeight;
+    }
+
+    // USE CHIP TEXT
+    function useChip(text) {
+      document.getElementById('chat-input').value = text;
+      document.getElementById('chat-input').focus();
+    }
+
+    // INPUT EVENT LISTENER
+    function handleInputKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    }
+
+    // MAIN SEND FUNCTION
+    function sendChatMessage() {
+      const inputEl = document.getElementById('chat-input');
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+
+      if (compareMode) {
+        // Send to all columns
+        activeTabs.forEach(mId => {
+          if (!compareMessages[mId]) compareMessages[mId] = [];
+          compareMessages[mId].push({ role: 'user', content: text });
+          renderCompareColumn(mId);
+          simulateInference(mId, text);
+        });
+      } else {
+        // Single Active Mode
+        currentMessages.push({ role: 'user', content: text });
+        refreshSingleHistory();
+        
+        // Trigger simulated response from active model
+        const activeModel = activeTabs[activeTabIdx];
+        simulateInference(activeModel, text);
+      }
+      saveStateToLocalStorage();
+    }
+
+    // RENDER COMPARE MESSAGES INSIDE SPECIFIC COLUMN
+    function renderCompareColumn(mId) {
+      const colBox = document.getElementById(`compare-viewport-${mId}`);
+      const emptyEl = document.getElementById(`compare-empty-${mId}`);
+      if (emptyEl) emptyEl.remove();
+
+      colBox.innerHTML = '';
+      const list = compareMessages[mId] || [];
+
+      list.forEach((msg) => {
+        const isUser = msg.role === 'user';
+        const item = document.createElement('div');
+        
+        if (isUser) {
+          item.className = "flex justify-end w-full";
+          item.innerHTML = `
+            <div class="bg-indigo-600 text-white rounded-xl rounded-tr-sm px-3 py-2 text-xs leading-relaxed max-w-[85%] select-text">
+              ${msg.content}
+            </div>
+          `;
+        } else {
+          item.className = "p-3 bg-slate-900 border border-[#1e293b] rounded-xl space-y-2 relative w-full";
+          let formattedContent = msg.content;
+          if (msg.hasArtifact) {
+            formattedContent = `
+              <div class="space-y-2">
+                <p class="text-xs text-slate-300 leading-relaxed">${msg.desc || 'I have generated a custom workspace for you.'}</p>
+                <div class="p-2 bg-slate-950 border border-indigo-500/20 rounded-lg flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-white truncate max-w-[100px]">${msg.artifactName}</span>
+                  <button onclick="triggerCanvasLaunch('${encodeURIComponent(msg.artifactCode)}', '${msg.artifactName}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-[8px] font-bold text-white rounded-md transition-colors">
+                    Canvas
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+
+          item.innerHTML = `
+            <div class="text-[10px] font-bold text-slate-500 border-b border-[#1e293b]/40 pb-1 flex justify-between">
+              <span>${mId.toUpperCase()}</span>
+              <span>${msg.latency ? (msg.latency / 1000).toFixed(2) + 's' : 'Inference'}</span>
+            </div>
+            <div class="text-xs text-slate-300 leading-relaxed font-outfit select-text">${formattedContent}</div>
+          `;
+        }
+        colBox.appendChild(item);
+      });
+
+      // Scroll column
+      colBox.scrollTop = colBox.scrollHeight;
+    }
+
+    // STOP ALL PENDING RESPONSE GENERATORS
+    function stopInference() {
+      Object.keys(activeInferences).forEach(mId => {
+        clearTimeout(activeInferences[mId].timer);
+      });
+      activeInferences = {};
+      
+      document.getElementById('btn-stop-inference').classList.add('hidden');
+    }
+
+    // SIMULATED SYSTEM INTELLIGENT RESPONDER
+    function simulateInference(modelId, prompt) {
+      document.getElementById('btn-stop-inference').classList.remove('hidden');
+
+      // Place a placeholder spinner
+      if (compareMode) {
+        compareMessages[modelId].push({ role: 'assistant', content: '<span class="animate-pulse text-indigo-400 font-bold font-mono">Thinking...</span>', model: modelId });
+        renderCompareColumn(modelId);
+      } else {
+        currentMessages.push({ role: 'assistant', content: '<span class="animate-pulse text-indigo-400 font-bold font-mono">Thinking...</span>', model: modelId });
+        refreshSingleHistory();
+      }
+
+      const pLower = prompt.toLowerCase();
+      let hasArtifact = false;
+      let artifactName = 'canvas_render.html';
+      let artifactCode = '';
+      let desc = '';
+      let textResponse = '';
+
+      // Check if prompt contains standard HTML or SVG tags written by the user!
+      const promptHtmlMatch = prompt.match(/<html>([\s\S]*?)<\/html>/i) || prompt.match(/<!DOCTYPE html>([\s\S]*?)<\/html>/i);
+      const promptSvgMatch = prompt.match(/<svg([\s\S]*?)<\/svg>/i);
+
+      if (promptHtmlMatch) {
+        hasArtifact = true;
+        artifactName = 'user_custom_markup.html';
+        artifactCode = promptHtmlMatch[0];
+        desc = "I detected custom HTML markup in your request. I have extracted and rendered your custom HTML document directly in the Canvas panel!";
+        textResponse = "Great! I have successfully extracted your custom HTML markup and rendered it in the split-screen Canvas. Select the tabs on the right to toggle between code viewing and active rendering!";
+      } else if (promptSvgMatch) {
+        hasArtifact = true;
+        artifactName = 'user_custom_vector.svg';
+        artifactCode = promptSvgMatch[0];
+        desc = "I detected custom SVG vector markup in your request. I have parsed and rendered your custom vector graphics in the Canvas panel!";
+        textResponse = "I have extracted the SVG vector graphics from your message and successfully rendered it in the Canvas area. Feel free to download, copy, or edit it directly!";
+      } else if (pLower.includes('landing') || pLower.includes('page') || pLower.includes('website') || pLower.includes('design')) {
+        hasArtifact = true;
+        artifactName = 'interactive_landing_page.html';
+        desc = `I have designed a stunning, state-of-the-art landing page for a SaaS intelligence platform featuring glassmorphism, responsive navigation, beautiful grid layouts, card hover micro-animations, and full tailwind support.`;
+        artifactCode = `<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .outfit { font-family: 'Outfit', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col font-outfit overflow-x-hidden">
+  <!-- Navbar -->
+  <nav class="border-b border-white/5 py-4 px-8 flex justify-between items-center bg-slate-950/40 backdrop-blur-md sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-extrabold text-sm text-white shadow-lg shadow-indigo-600/30">N</div>
+      <span class="text-white font-extrabold outfit text-lg">NEURACORE</span>
+    </div>
+    <div class="flex items-center gap-6 text-sm font-semibold text-slate-400">
+      <a href="#" class="hover:text-white transition-colors">Features</a>
+      <a href="#" class="hover:text-white transition-colors">Pricing</a>
+      <a href="#" class="hover:text-white transition-colors">Docs</a>
+    </div>
+    <button class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20">Launch Console</button>
+  </nav>
+  <!-- Hero -->
+  <main class="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 relative max-w-4xl mx-auto space-y-8">
+    <div class="absolute inset-0 bg-indigo-500/10 rounded-full blur-3xl w-[300px] h-[300px] mx-auto top-20 -z-10"></div>
+    <div class="inline-flex items-center gap-2 bg-indigo-950/40 border border-indigo-500/30 px-3.5 py-1.5 rounded-full text-xs font-semibold text-indigo-300">
+      <span>🚀</span> <span>Version 4.0 Neural Core Now Active</span>
+    </div>
+    <h1 class="text-5xl md:text-6xl font-extrabold outfit tracking-tight leading-tight">
+      Accelerate Your Systems with <br/>
+      <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-200">Autonomous Intelligence</span>
+    </h1>
+    <p class="text-base text-slate-400 max-w-2xl leading-relaxed">
+      Connect and scale complex AI pipelines under a secure unified gateway. Deploy subagents, reason across multi-nodes, and analyze data in sub-millisecond latencies.
+    </p>
+    <div class="flex gap-4 justify-center">
+      <button class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30">Get Started Free</button>
+      <button class="border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 px-6 py-3 font-bold rounded-xl text-sm transition-all">Request Demo</button>
+    </div>
+  </main>
+</body>
+</html>`;
+      } else if (pLower.includes('chart') || pLower.includes('svg') || pLower.includes('graph') || pLower.includes('dashboard') || pLower.includes('telemetry')) {
+        hasArtifact = true;
+        artifactName = 'interactive_dashboard.html';
+        desc = `I have generated an elegant, fully interactive SVG charting dashboard that visually graphs incoming network request loads, server storage bounds and token cost indexes in a beautiful glowing telemetry panel.`;
+        artifactCode = `<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen p-8 flex flex-col justify-center items-center">
+  <div class="w-full max-w-2xl bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-6 shadow-2xl">
+    <div class="flex justify-between items-center border-b border-white/5 pb-4">
+      <div>
+        <h2 class="text-lg font-extrabold text-white">System Performance Matrix</h2>
+        <p class="text-xs text-slate-400">Live request index metrics</p>
+      </div>
+      <div class="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 font-mono text-[10px] font-bold">● NODE ACTIVE</div>
+    </div>
+    
+    <!-- SVG chart -->
+    <div class="relative w-full h-44 bg-slate-950 rounded-2xl border border-white/5 p-4 flex items-end">
+      <!-- Glowing grid lines -->
+      <div class="absolute inset-0 flex flex-col justify-between p-4 py-8">
+        <div class="border-t border-white/5 w-full"></div>
+        <div class="border-t border-white/5 w-full"></div>
+        <div class="border-t border-white/5 w-full"></div>
+      </div>
+      
+      <!-- SVG Line Graph -->
+      <svg class="absolute inset-0 w-full h-full p-4 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="1" />
+            <stop offset="100%" stop-color="#a855f7" stop-opacity="1" />
+          </linearGradient>
+          <linearGradient id="area" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3" />
+            <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        
+        <!-- Area path under the graph -->
+        <path d="M 0 100 L 0 50 Q 25 20, 50 60 T 100 10 L 100 100 Z" fill="url(#area)"></path>
+        <!-- Smooth spline stroke -->
+        <path d="M 0 50 Q 25 20, 50 60 T 100 10" fill="none" stroke="url(#glow)" stroke-width="2.5" stroke-linecap="round"></path>
+      </svg>
+      
+      <div class="absolute bottom-2 left-4 text-[9px] text-slate-500 font-mono">08:00 AM</div>
+      <div class="absolute bottom-2 right-4 text-[9px] text-slate-500 font-mono">08:00 PM</div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div class="bg-slate-950 p-4 border border-white/5 rounded-2xl text-center space-y-1">
+        <div class="text-xs text-slate-400">API Latency</div>
+        <div class="text-xl font-extrabold text-indigo-400 font-mono">12.5ms</div>
+      </div>
+      <div class="bg-slate-950 p-4 border border-white/5 rounded-2xl text-center space-y-1">
+        <div class="text-xs text-slate-400">Total Requests</div>
+        <div class="text-xl font-extrabold text-indigo-400 font-mono">948k</div>
+      </div>
+      <div class="bg-slate-950 p-4 border border-white/5 rounded-2xl text-center space-y-1">
+        <div class="text-xs text-slate-400">Uptime Rate</div>
+        <div class="text-xl font-extrabold text-emerald-400 font-mono">99.98%</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+      } else if (pLower.includes('button') || pLower.includes('pricing') || pLower.includes('faq') || pLower.includes('profile') || pLower.includes('card') || pLower.includes('form') || pLower.includes('login') || pLower.includes('interactive') || pLower.includes('code') || pLower.includes('app') || pLower.includes('calculator') || pLower.includes('calc')) {
+        hasArtifact = true;
+        artifactName = 'interactive_billing_calculator.html';
+        desc = `I have generated an elegant, fully interactive cloud token billing calculator. It features real-time sliders for prompt/completion token consumption, custom currency sliders, multi-model discount ratios, and gorgeous modern neon glass styling.`;
+        artifactCode = `<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen p-6 flex flex-col justify-center items-center">
+  <div class="w-full max-w-md bg-slate-900 border border-white/5 rounded-3xl p-6 space-y-6 shadow-2xl relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-transparent to-transparent -z-10"></div>
+    
+    <div class="border-b border-white/5 pb-4">
+      <h2 class="text-xl font-extrabold text-white">SaaS Token Cost Calculator</h2>
+      <p class="text-xs text-slate-400">Estimate your API usage dynamically</p>
+    </div>
+    
+    <!-- Realtime calculator sliders -->
+    <div class="space-y-4">
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs font-semibold">
+          <span class="text-slate-400">Monthly Request Volume</span>
+          <span id="vol-lbl" class="text-indigo-400 font-mono">150,000 reqs</span>
+        </div>
+        <input type="range" id="vol-input" min="10000" max="1000000" step="10000" value="150000" oninput="calcCost()" class="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs font-semibold">
+          <span class="text-slate-400">Avg Prompt Tokens per Req</span>
+          <span id="prompt-lbl" class="text-indigo-400 font-mono">1,500 toks</span>
+        </div>
+        <input type="range" id="prompt-input" min="100" max="5000" step="100" value="1500" oninput="calcCost()" class="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs font-semibold">
+          <span class="text-slate-400">Avg Output Tokens per Req</span>
+          <span id="output-lbl" class="text-indigo-400 font-mono">400 toks</span>
+        </div>
+        <input type="range" id="output-input" min="50" max="2000" step="50" value="400" oninput="calcCost()" class="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+      </div>
+    </div>
+
+    <!-- Cost estimation box -->
+    <div class="p-4 bg-slate-950 border border-white/5 rounded-2xl flex flex-col items-center justify-center space-y-1">
+      <div class="text-xs text-slate-500 uppercase tracking-widest font-bold">Estimated Cost</div>
+      <div id="cost-lbl" class="text-4xl font-extrabold text-indigo-400 font-mono">$24.80</div>
+      <div class="text-[10px] text-slate-400 mt-1">Calculated with standard 1.8x Digitaland markup</div>
+    </div>
+
+    <button class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/20 transition-all">
+      Export Estimation
+    </button>
+  </div>
+  
+  <script>
+    function calcCost() {
+      const vol = parseFloat(document.getElementById('vol-input').value);
+      const pr = parseFloat(document.getElementById('prompt-input').value);
+      const out = parseFloat(document.getElementById('output-input').value);
+      
+      document.getElementById('vol-lbl').textContent = vol.toLocaleString() + ' reqs';
+      document.getElementById('prompt-lbl').textContent = pr.toLocaleString() + ' toks';
+      document.getElementById('output-lbl').textContent = out.toLocaleString() + ' toks';
+      
+      // standard pricing rates: prompt: $0.15/1M, output: $0.60/1M, markup: 1.8
+      const promptCost = (vol * pr) / 1000000 * 0.055;
+      const outputCost = (vol * out) / 1000000 * 0.22;
+      const total = (promptCost + outputCost) * 1.8;
+      
+      document.getElementById('cost-lbl').textContent = '$' + total.toFixed(2);
+    }
+    calcCost();
+  <\/script>
+</body>
+</html>`;
+      } else {
+        // Generates a beautiful fallback Profile Widget Card so that the Canvas is ALWAYS active and fun to play with!
+        hasArtifact = true;
+        artifactName = 'interactive_profile_widget.html';
+        desc = `I have generated an elegant, fully interactive developer profile widget with dynamic tabs, visual progress trackers, and detailed profile statistics in a glassmorphism container.`;
+        artifactCode = `<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen p-6 flex flex-col justify-center items-center">
+  <div class="w-full max-w-sm bg-slate-900 border border-white/5 rounded-3xl p-5 space-y-6 shadow-2xl relative overflow-hidden text-center">
+    <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-20"></div>
+    
+    <div class="relative pt-6 flex flex-col items-center">
+      <div class="w-20 h-20 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-extrabold text-2xl shadow-xl shadow-indigo-600/10">
+        GD
+      </div>
+      <h3 class="text-base font-extrabold text-white mt-4">Guest Developer</h3>
+      <p class="text-[10px] text-indigo-400 font-mono tracking-widest uppercase">Verified Node Member</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 pt-2">
+      <div class="bg-slate-950 p-3 border border-white/5 rounded-xl text-center">
+        <div class="text-[9px] text-slate-500 font-bold uppercase">Requests</div>
+        <div class="text-base font-extrabold text-white mt-0.5">8,429</div>
+      </div>
+      <div class="bg-slate-950 p-3 border border-white/5 rounded-xl text-center">
+        <div class="text-[9px] text-slate-500 font-bold uppercase">Accuracy</div>
+        <div class="text-base font-extrabold text-emerald-400 mt-0.5">98.4%</div>
+      </div>
+    </div>
+
+    <!-- Toggle stats buttons inside widget -->
+    <div class="space-y-3 text-left">
+      <div class="text-xs font-bold text-slate-400 px-1">Active Specializations</div>
+      <div class="space-y-2.5">
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-bold">
+            <span class="text-slate-300">Front-End Interface (Tailwind/HTML)</span>
+            <span class="text-indigo-400">95%</span>
+          </div>
+          <div class="h-1 w-full bg-slate-950 rounded-full overflow-hidden">
+            <div class="h-full bg-indigo-500 rounded-full" style="width: 95%"></div>
+          </div>
+        </div>
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-bold">
+            <span class="text-slate-300">Autonomic Agents / Sub-routine</span>
+            <span class="text-indigo-400">80%</span>
+          </div>
+          <div class="h-1 w-full bg-slate-950 rounded-full overflow-hidden">
+            <div class="h-full bg-indigo-500 rounded-full" style="width: 80%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="alert('Digitaland Neural Matrix Synchronization Complete!')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20">
+      Sync Neural Matrix
+    </button>
+  </div>
+</body>
+</html>`;
+        textResponse = `Hi! I am the simulated **${modelId}** gateway core. 
+        
+Your request *"${prompt}"* has been processed successfully. Since you didn't ask for a specific document, I have generated a gorgeous, fully interactive **Developer Profile Widget** in the split-screen **Canvas / Artifacts Mode**!
+
+You can click *"Sync Neural Matrix"* inside the Canvas interactive preview on the right to interact with it! Or try writing a prompt containing **"html"**, **"landing page"**, or **"svg"** to render custom visual documents!`;
+      }
+
+      // Simulate network latency (between 600ms and 1500ms)
+      const latency = Math.floor(Math.random() * 900) + 600;
+      
+      const timer = setTimeout(() => {
+        // Remove the spinner placeholder
+        if (compareMode) {
+          compareMessages[modelId].pop();
+          compareMessages[modelId].push({
+            role: 'assistant',
+            content: textResponse,
+            hasArtifact: hasArtifact,
+            artifactName: artifactName,
+            artifactCode: artifactCode,
+            desc: desc,
+            latency: latency,
+            model: modelId
+          });
+          renderCompareColumn(modelId);
+        } else {
+          currentMessages.pop();
+          currentMessages.push({
+            role: 'assistant',
+            content: textResponse,
+            hasArtifact: hasArtifact,
+            artifactName: artifactName,
+            artifactCode: artifactCode,
+            desc: desc,
+            latency: latency,
+            model: modelId
+          });
+          refreshSingleHistory();
+        }
+
+        // Auto launch Canvas if artifact generated and canvas is active
+        if (hasArtifact && canvasOpen) {
+          triggerCanvasLaunchUI(artifactCode, artifactName);
+          currentArtifact = { code: artifactCode, fileName: artifactName };
+        }
+
+        // Remove active timer entry
+        delete activeInferences[modelId];
+        if (Object.keys(activeInferences).length === 0) {
+          document.getElementById('btn-stop-inference').classList.add('hidden');
+        }
+
+        saveStateToLocalStorage();
+      }, latency);
+
+      // Record active running timeout
+      activeInferences[modelId] = { timer, latency };
+    }
+
+    // CANVAS ARTIFACT RENDER LAUNCH
+    function triggerCanvasLaunch(encodedCode, fileName) {
+      const code = decodeURIComponent(encodedCode);
+      currentArtifact = { code, fileName };
+      saveStateToLocalStorage();
+
+      // Open Canvas panel if closed
+      if (!canvasOpen) {
+        toggleCanvas(true);
+      }
+
+      triggerCanvasLaunchUI(code, fileName);
+    }
+
+    // INTERFACE CANVAS LAUNCH
+    function triggerCanvasLaunchUI(code, fileName) {
+      // Update Title & Filename
+      document.getElementById('canvas-subtitle').textContent = fileName;
+      document.getElementById('canvas-title').textContent = fileName.endsWith('.html') ? 'HTML App Render' : 'SVG Vector Preview';
+
+      // Load Code Display in Syntax panel
+      document.getElementById('canvas-code-display').textContent = code;
+
+      // Render code inside iframe
+      const iframe = document.getElementById('canvas-iframe');
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(code);
+      doc.close();
+
+      // Show preview pane by default
+      setCanvasTab('preview');
+    }
+
+    // SWITCH TAB VIEWS INSIDE CANVAS
+    function setCanvasTab(tabType) {
+      const btnPreview = document.getElementById('btn-canvas-preview');
+      const btnCode = document.getElementById('btn-canvas-code');
+      const previewPane = document.getElementById('canvas-preview-pane');
+      const codePane = document.getElementById('canvas-code-pane');
+
+      if (tabType === 'preview') {
+        btnPreview.className = "px-3 py-1 rounded-md text-[10px] font-bold transition-all bg-indigo-600 text-white";
+        btnCode.className = "px-3 py-1 rounded-md text-[10px] font-bold transition-all text-slate-400 hover:text-white";
+        previewPane.classList.remove('hidden');
+        codePane.classList.add('hidden');
+      } else {
+        btnPreview.className = "px-3 py-1 rounded-md text-[10px] font-bold transition-all text-slate-400 hover:text-white";
+        btnCode.className = "px-3 py-1 rounded-md text-[10px] font-bold transition-all bg-indigo-600 text-white";
+        previewPane.classList.add('hidden');
+        codePane.classList.remove('hidden');
+      }
+    }
+
+    // COPY ARTIFACT CODE TO CLIPBOARD
+    function copyCanvasCode() {
+      if (!currentArtifact) return;
+      navigator.clipboard.writeText(currentArtifact.code);
+      
+      const badge = document.getElementById('copy-success-badge');
+      badge.classList.remove('hidden');
+      setTimeout(() => {
+        badge.classList.add('hidden');
+      }, 1500);
+    }
+
+    // OPEN / CLOSE CANVAS VIEW WITH ANIMATION
+    function toggleCanvasUI(isOpen) {
+      const panel = document.getElementById('canvas-panel');
+      const indicator = document.getElementById('canvas-indicator');
+      
+      if (isOpen) {
+        panel.className = "w-[520px] shrink-0 border-l border-[#1e293b] bg-[#0b0f19] flex flex-col h-full overflow-hidden transition-all duration-300 ease-out relative";
+        indicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 transition-all active-glow";
+      } else {
+        panel.className = "w-0 shrink-0 border-l border-transparent bg-[#0b0f19] flex flex-col h-full overflow-hidden transition-all duration-300 ease-out relative";
+        indicator.className = "w-2.5 h-2.5 rounded-full bg-slate-700 transition-all";
+      }
+    }
+
+    // TOGGLE CANVAS STATE
+    function toggleCanvas(forceOpen = null) {
+      if (forceOpen === true) {
+        canvasOpen = true;
+      } else if (forceOpen === false) {
+        canvasOpen = false;
+      } else {
+        canvasOpen = !canvasOpen;
+      }
+      toggleCanvasUI(canvasOpen);
+      saveStateToLocalStorage();
+    }
+
+    // CLOSE CANVAS SHORTCUT
+    function closeCanvas() {
+      toggleCanvas(false);
+    }
+
+    // MODAL ADD MODELS
+    function openAddModelModal() {
+      document.getElementById('add-model-modal').classList.remove('hidden');
+      const list = document.getElementById('model-modal-list');
+      list.innerHTML = '';
+
+      MODELS.forEach(m => {
+        const isTabbed = activeTabs.includes(m.id);
+        const el = document.createElement('div');
+        el.className = "flex items-center justify-between p-3 rounded-xl hover:bg-slate-900 border border-[#1e293b]/60 transition-all";
+        
+        el.innerHTML = `
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white font-mono">${m.id}</span>
+              <span class="px-2 py-0.5 rounded text-[8px] font-bold ${
+                m.type === 'Reasoning' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+              }">${m.type}</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Provider: ${m.provider}</p>
+          </div>
+          ${isTabbed 
+            ? `<span class="text-xs text-indigo-400 font-bold bg-indigo-950/20 border border-indigo-500/30 px-2.5 py-1 rounded-lg">Added</span>` 
+            : `<button onclick="addModelToWorkspace('${m.id}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white rounded-lg transition-all shadow-md">Add</button>`
+          }
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    // CLOSE ADD MODEL MODAL
+    function closeAddModelModal() {
+      document.getElementById('add-model-modal').classList.add('hidden');
+    }
+
+    // ADD MODEL HANDLER
+    function addModelToWorkspace(mId) {
+      if (!activeTabs.includes(mId)) {
+        activeTabs.push(mId);
+        clearChat(); // Switch requires fresh reset
+        renderTabs();
+        updateInputModelLabel();
+      }
+      closeAddModelModal();
+    }
+  </script>
+</body>
+</html>

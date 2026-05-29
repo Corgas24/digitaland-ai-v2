@@ -22,16 +22,72 @@ const sanitizeProviderError = (msg) => {
   if (!msg) return 'Unknown network error.';
   if (msg instanceof Error) return sanitizeProviderError(msg.message);
   const msgStr = typeof msg === 'object' ? JSON.stringify(msg) : String(msg);
+
+  // Separate user session/auth from LLM provider auth
+  const isUserAuth = /unauthorized|invalid\s+api\s+key|invalid\s+credentials/i.test(msgStr);
+  if (isUserAuth) return 'Session expired. Please sign in again.';
+
   const hasChinese = /[\u4e00-\u9fa5]/.test(msgStr);
-  const isInvalidToken = msgStr.includes('无效的令牌') || /invalid\s+token|unauthorized|invalid\s+api\s+key/i.test(msgStr);
-  const isUserOutOfBalance = /insufficient balance|payment required/i.test(msgStr);
-  const isChannelOutOfBalance = /quota|insufficient_funds|out of balance/i.test(msgStr);
+  const isInvalidToken = msgStr.includes('无效的令牌') || /invalid\s+token/i.test(msgStr);
+  const isUserOutOfBalance = /insufficient balance|payment required|insufficient_funds/i.test(msgStr);
+  const isChannelOutOfBalance = /quota|out of balance/i.test(msgStr);
 
   if (hasChinese || isInvalidToken) return 'Provider credentials invalid or temporarily unavailable.';
   if (isUserOutOfBalance) return 'Insufficient balance. Please add credits to continue.';
   if (isChannelOutOfBalance) return 'Upstream channel quota exhausted. Try an alternative model.';
   if (msgStr.includes('Failed to fetch') || msgStr.includes('NetworkError')) return 'Connection failed. Check your internet.';
   return msgStr;
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   ERROR MESSAGES DEFINITIONS
+   ═══════════════════════════════════════════════════════════════════ */
+const ERROR_MESSAGES = {
+  'balance': {
+    icon: '💳',
+    title: 'Insufficient Balance',
+    desc: 'You have run out of credits. Please add credits to your account to continue using the models.',
+    canRetry: false,
+    action: { label: 'Add Credits', href: '/dashboard' }
+  },
+  'Session expired. Please sign in again.': {
+    icon: '👤',
+    title: 'Session Expired',
+    desc: 'Your login session has expired or is invalid. Please sign in again to restore access.',
+    canRetry: false,
+    action: { label: 'Sign In', href: '/signin' }
+  },
+  'Provider credentials invalid or temporarily unavailable.': {
+    icon: '🔑',
+    title: 'Provider Offline',
+    desc: 'The upstream provider is reporting credential validation issues or temporary service disruption. Rest assured, our team is investigating.',
+    canRetry: true
+  },
+  'Insufficient balance. Please add credits to continue.': {
+    icon: '💳',
+    title: 'Insufficient Balance',
+    desc: 'Your account balance is insufficient. Please top up your account.',
+    canRetry: false,
+    action: { label: 'Top up', href: '/dashboard' }
+  },
+  'Upstream channel quota exhausted. Try an alternative model.': {
+    icon: '⚡',
+    title: 'Quota Exhausted',
+    desc: 'Upstream channel quota has been exhausted. Please try again later or use an alternative model.',
+    canRetry: true
+  },
+  'Connection failed. Check your internet.': {
+    icon: '🌐',
+    title: 'Connection Issue',
+    desc: 'Failed to connect to the model gateway. Please check your internet connection and try again.',
+    canRetry: true
+  },
+  'service_unavailable': {
+    icon: '⚠️',
+    title: 'Service Disruption',
+    desc: 'An unexpected upstream error occurred. Please try again in a few moments.',
+    canRetry: true
+  }
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -60,7 +116,7 @@ export default function Playground() {
   const [isDark, setIsDark] = useState(true);
 
   // Multi-Model Workspace
-  const [activeTabs, setActiveTabs] = useState(['gpt-4o-mini']);
+  const [activeTabs, setActiveTabs] = useState(['claude-opus-4-7', 'gpt-5.5', 'gemini-2.5-flash-lite']);
   const [activeTabIdx, setActiveTabIdx] = useState(0);
   const [compareMode, setCompareMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -114,7 +170,7 @@ export default function Playground() {
         setActiveTabs([urlModel]);
         setActiveTabIdx(0);
       } else if (data?.length > 0) {
-        const defaults = ['gpt-4o', 'claude-sonnet-4-20250514', 'gemini-2.5-pro', 'deepseek-chat']
+        const defaults = ['claude-opus-4-7', 'gpt-5.5', 'gemini-2.5-flash-lite']
           .filter(id => data.some(m => m.id === id));
         setActiveTabs(defaults.length > 0 ? defaults : [data[0].id]);
         setActiveTabIdx(0);
@@ -257,7 +313,10 @@ export default function Playground() {
               for (const line of lines) {
                 const t = line.trim(); if (!t || t === 'data: [DONE]') continue;
                 if (t.startsWith('data: ')) {
-                  try { const d = JSON.parse(t.slice(6)); const c = d.choices?.[0]?.delta?.content || '';
+                  try {
+                    const d = JSON.parse(t.slice(6));
+                    const delta = d.choices?.[0]?.delta;
+                    const c = delta?.content || delta?.reasoning_content || delta?.reasoning || '';
                     if (c) { text += c; updateResponse(mId, p => ({ ...p, content: text, retrying: 0 })); }
                   } catch {}
                 }
@@ -1445,7 +1504,7 @@ export default function Playground() {
               const mObj = models.find(m => m.id === mId);
               const prov = PROVIDERS[mObj?.provider];
               return (
-                <button key={mId} className={`pg-tab ${activeTabIdx === i ? 'active' : ''}`} onClick={() => setActiveTabIdx(i)}>
+                <button key={mId} className={`pg-tab ${activeTabIdx === i ? 'active' : ''}`} onClick={() => { setActiveTabIdx(i); setMessages([]); setCurrentConvId(null); setError(null); }}>
                   {prov?.logo && <img src={prov.logo} alt="" className="pg-tab-logo" />}
                   <span>{mObj?.name || mId}</span>
                   {activeTabs.length > 1 && (
@@ -1529,7 +1588,7 @@ export default function Playground() {
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                   {errInfo.canRetry && (
                                     <button
-                                      onClick={() => handleSubmit(null, true)}
+                                      onClick={() => handleSend()}
                                       style={{
                                         padding: '0.35rem 0.85rem', borderRadius: '7px', fontSize: '0.72rem',
                                         fontWeight: 700, cursor: 'pointer', border: '1px solid rgba(99,102,241,0.3)',
@@ -1555,7 +1614,7 @@ export default function Playground() {
                               </div>
                             );
                           })()
-                          ) : r.retrying > 0 ? (
+                          : r.retrying > 0 ? (
                             <>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0', color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem' }}>
                                 <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span>
@@ -1666,7 +1725,7 @@ export default function Playground() {
                   const mObj = models.find(m => m.id === mId);
                   const prov = PROVIDERS[mObj?.provider];
                   return (
-                    <div key={mId} onClick={() => setActiveTabIdx(idx)} style={{
+                    <div key={mId} onClick={() => { setActiveTabIdx(idx); setMessages([]); setCurrentConvId(null); setError(null); }} style={{
                       display: 'flex', alignItems: 'center', gap: '0.4rem',
                       padding: '0.35rem 0.5rem', borderRadius: '7px', cursor: 'pointer',
                       background: idx === activeTabIdx ? 'var(--primary-soft)' : 'var(--surface)',

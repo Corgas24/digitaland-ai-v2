@@ -285,9 +285,9 @@ export default function Pricing() {
      ══════════════════════════════════════════════════════════════════════════ */
   const FAQ_DATA = [
     { q: 'O que é o Digitaland.ai?', a: 'O Digitaland.ai é um gateway API unificado para inteligência artificial. Oferecemos acesso ultra-rápido a mais de 300 modelos de ponta (OpenAI, Anthropic, Google, xAI, Meta, Mistral) através de uma única integração simples.' },
-    { q: 'Como funciona a faturação em tempo real (Pay-As-You-Go)?', a: `Não existem taxas mensais nem subscrições. Adiciona créditos ao teu saldo e os tokens são debitados em tempo real à medida que fazes requisições. As nossas tarifas são garantidamente 30% mais baratas que a OpenRouter.` },
+    { q: 'Como funciona a faturação em tempo real (Pay-As-You-Go)?', a: 'Não existem taxas mensais nem subscrições. Adiciona créditos ao teu saldo e os tokens são debitados em tempo real à medida que fazes requisições. Preços transparentes e competitivos, otimizados para volume.' },
     { q: 'Existe algum compromisso de consumo mínimo?', a: 'Nenhum. Podes testar com apenas $1 e os teus créditos nunca expiram. Pagas apenas pelos tokens que a tua aplicação realmente consome.' },
-    { q: 'Como garantem preços mais baixos que a OpenRouter?', a: 'Graças ao nosso motor de routing inteligente global e parcerias de alto volume de processamento, conseguimos otimizar a latência e repassar as economias diretamente para os programadores.' },
+    { q: 'Como garantem preços competitivos?', a: 'Graças ao nosso motor de routing inteligente global e parcerias de alto volume de processamento, conseguimos otimizar a latência e repassar as economias diretamente para os programadores.' },
   ];
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -316,7 +316,7 @@ export default function Pricing() {
               
               <h1 className="hero-headline-lg" style={{ fontSize: '4rem', margin: '0.5rem 0', textAlign: 'left', lineHeight: 1.05 }}>
                 Frontier AI Power.<br />
-                <span className="hero-gradient-text">30% Cheaper.</span>
+                <span className="hero-gradient-text">Pay Only What You Use.</span>
               </h1>
               
               <p className="hero-sub" style={{ margin: '0', textAlign: 'left', fontSize: '1.15rem', maxWidth: '580px', color: 'var(--text-dim)' }}>
@@ -339,7 +339,7 @@ export default function Pricing() {
               <div style={{ display: 'flex', gap: '2.5rem', marginTop: '2.5rem', flexWrap: 'wrap' }}>
                 {[
                   { value: '260+', label: 'Active Models' },
-                  { value: '30%', label: 'Cheaper Guaranteed' },
+                  { value: '$0', label: 'Monthly Fees' },
                   { value: '0.005s', label: 'Response Overhead' },
                   { value: '99.9%', label: 'Uptime SLA' }
                 ].map((item, idx) => (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Shield, X } from 'lucide-react';
 
 export default function CookieConsent() {
@@ -60,7 +61,7 @@ export default function CookieConsent() {
         <div style={{ flex: 1 }}>
           <h4 style={{ fontWeight: 800, marginBottom: '0.25rem', fontSize: '1rem' }}>Cookie & Privacy Policy</h4>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            We use cookies to ensure you get the best experience on our platform. By continuing, you agree to our <a href="/legal/privacy" style={{ color: 'var(--primary)', fontWeight: 600 }}>Privacy Policy</a>.
+            We use cookies to ensure you get the best experience on our platform. By continuing, you agree to our <Link to="/privacy" style={{ color: 'var(--primary)', fontWeight: 600 }}>Privacy Policy</Link>.
           </p>
         </div>
 

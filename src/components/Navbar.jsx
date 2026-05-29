@@ -17,9 +17,27 @@ const Navbar = memo(function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogoClick = (e) => {
+    const scrollOpts = { top: 0, behavior: 'smooth' };
     if (window.location.pathname === '/') {
       e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(scrollOpts);
+      document.documentElement.scrollTo(scrollOpts);
+      document.body.scrollTo(scrollOpts);
+      
+      const rootEl = document.getElementById('root');
+      if (rootEl) rootEl.scrollTo(scrollOpts);
+      
+      const appRoot = document.querySelector('.app-root');
+      if (appRoot) appRoot.scrollTo(scrollOpts);
+    } else {
+      setTimeout(() => {
+        const instantOpts = { top: 0 };
+        window.scrollTo(instantOpts);
+        document.documentElement.scrollTo(instantOpts);
+        document.body.scrollTo(instantOpts);
+        const rootEl = document.getElementById('root');
+        if (rootEl) rootEl.scrollTo(instantOpts);
+      }, 150);
     }
   };
 

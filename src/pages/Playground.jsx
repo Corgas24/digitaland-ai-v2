@@ -191,7 +191,16 @@ export default function Playground() {
   // Auto-resize textarea
   useEffect(() => {
     const ta = textareaRef.current;
-    if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 180) + 'px'; }
+    if (ta) {
+      ta.style.height = 'auto';
+      const newHeight = Math.min(ta.scrollHeight, 300);
+      ta.style.height = newHeight + 'px';
+      
+      // Auto-scroll chat history to keep input cursor fully in view
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }
   }, [input]);
 
   /* ── Data operations ─────────────────────────────────────────── */
@@ -1061,7 +1070,7 @@ export default function Playground() {
   border: none;
   resize: none;
   min-height: 22px;
-  max-height: 180px;
+  max-height: 300px;
   color: var(--text);
   font-size: 0.88rem;
   line-height: 1.45;

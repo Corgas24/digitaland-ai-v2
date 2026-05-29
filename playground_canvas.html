@@ -228,7 +228,7 @@
                 <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-15 group-focus-within:opacity-30 transition duration-300"></div>
                 <div class="relative bg-slate-950 border border-[#1e293b] rounded-2xl p-3 flex flex-col gap-2 min-h-[92px]">
                   
-                  <textarea id="chat-input" class="w-full bg-transparent border-none text-sm text-[#e2e8f0] focus:outline-none focus:ring-0 placeholder-slate-500 resize-none flex-1 min-h-[44px] max-h-36 no-scrollbar" placeholder="Type a message, or ask to create a website, SVG or script..." onkeydown="handleInputKeydown(event)"></textarea>
+                  <textarea id="chat-input" oninput="autoResizeChatInput(this)" class="w-full bg-transparent border-none text-sm text-[#e2e8f0] focus:outline-none focus:ring-0 placeholder-slate-500 resize-none flex-1 min-h-[44px] max-h-[300px] no-scrollbar" placeholder="Type a message, or ask to create a website, SVG or script..." onkeydown="handleInputKeydown(event)"></textarea>
                   
                   <div class="flex items-center justify-between border-t border-[#1e293b]/60 pt-2 shrink-0">
                     
@@ -677,6 +677,15 @@
         e.preventDefault();
         sendChatMessage();
       }
+    }
+
+    function autoResizeChatInput(el) {
+      el.style.height = 'auto';
+      const newHeight = Math.min(el.scrollHeight, 300);
+      el.style.height = newHeight + 'px';
+      
+      const scrollEl = document.getElementById('single-history-container') || document.getElementById('chat-history');
+      if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
     }
 
     // MAIN SEND FUNCTION

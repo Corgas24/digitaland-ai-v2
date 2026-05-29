@@ -168,8 +168,13 @@ export default function SupportChat() {
 
     const channel = supabase
       .channel(`support_chat:${chat.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, payload => {
-        if (payload.new && payload.new.chat_id === chat.id) {
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'support_messages',
+        filter: `chat_id=eq.${chat.id}`
+      }, payload => {
+        if (payload.new) {
           setMessages(prev => {
             if (prev.some(m => m.id === payload.new.id)) return prev;
             
@@ -187,7 +192,12 @@ export default function SupportChat() {
           }
         }
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_chats', filter: `id=eq.${chat.id}` }, payload => {
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'support_chats', 
+        filter: `id=eq.${chat.id}` 
+      }, payload => {
         if (payload.new && payload.new.id === chat.id) {
           setChat(payload.new);
         }
@@ -200,6 +210,39 @@ export default function SupportChat() {
       channel.unsubscribe();
     };
   }, [chat?.id]);
+
+  // 4a. Fallback Polling (every 5 seconds) to guarantee 100% message delivery regardless of browser/websocket restrictions
+  useEffect(() => {
+    if (!chat?.id || !isOpen) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { data: msgs, error } = await supabase
+          .from('support_messages')
+          .select('*')
+          .eq('chat_id', chat.id)
+          .order('id', { ascending: true });
+
+        if (!error && msgs) {
+          setMessages(prev => {
+            const hasNew = msgs.some(m => !prev.some(p => p.id === m.id));
+            if (hasNew) {
+              const lastNew = msgs[msgs.length - 1];
+              if (lastNew && lastNew.sender_role === 'agent' && !prev.some(p => p.id === lastNew.id)) {
+                playNotificationSound();
+              }
+              return msgs;
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.warn('[SupportChat] Fallback polling failed:', err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [chat?.id, isOpen]);
 
   // Auto-scroll to bottom
   useEffect(() => {

@@ -133,7 +133,7 @@ export default function SupportChat() {
     }
   };
 
-  // 4. Subscribe to Live Support Messages when Chat ID is set (Stably tracks chat.id)
+  // 4. Subscribe to Live Support Messages & Parent Chat Session Status Updates when Chat ID is set (Stably tracks chat.id)
   useEffect(() => {
     if (!chat?.id) return;
 
@@ -158,6 +158,11 @@ export default function SupportChat() {
           if (!isOpenRef.current) {
             setUnread(u => u + 1);
           }
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_chats', filter: `id=eq.${chat.id}` }, payload => {
+        if (payload.new && payload.new.id === chat.id) {
+          setChat(payload.new);
         }
       })
       .subscribe();
@@ -243,10 +248,13 @@ export default function SupportChat() {
       // Replace the optimistic message with the database message
       setMessages(prev => prev.map(m => m.id === tempId ? { ...newMsg, status: 'sent' } : m));
 
-      // Trigger realtime update in support_chats parent row so Admin panel receives this message instantly!
+      // Trigger realtime update in support_chats parent row, reopening if closed, so Admin panel receives this message instantly!
       await supabase
         .from('support_chats')
-        .update({ updated_at: new Date().toISOString() })
+        .update({ 
+          status: 'open',
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', activeChat.id);
 
       // 5c. Run AI Support bot if status is Offline or Away

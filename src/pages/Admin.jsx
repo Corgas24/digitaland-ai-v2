@@ -216,12 +216,22 @@ export default function Admin() {
       .channel('admin_chats_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats' }, () => {
         loadChats();
-        playNotificationSound();
+      })
+      .subscribe();
+
+    const messagesChannel = supabase
+      .channel('admin_global_messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, payload => {
+        if (payload.new && payload.new.sender_role === 'guest') {
+          playNotificationSound();
+          loadChats();
+        }
       })
       .subscribe();
 
     return () => {
       channel.unsubscribe();
+      messagesChannel.unsubscribe();
     };
   }, [isAdmin]);
 

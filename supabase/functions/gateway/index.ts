@@ -108,6 +108,8 @@ function mapModelToOpenRouter(modelId: string): string {
   if (m === "gpt-5.5" || m === "gpt-5") return "openai/gpt-5.5";
   if (m === "gpt-5-mini") return "openai/gpt-5.4-mini";
   if (m === "claude-opus-4-7") return "anthropic/claude-opus-4.7-fast";
+  if (m === "claude-opus-4.8" || m === "claude-opus-4-8") return "anthropic/claude-opus-4.8";
+  if (m === "claude-opus-4.8-fast" || m === "claude-opus-4-8-fast") return "anthropic/claude-opus-4.8-fast";
   if (m === "claude-sonnet-4-6") return "anthropic/claude-3.5-sonnet";
   if (m === "claude-haiku-4-5") return "anthropic/claude-3.5-haiku";
   if (m === "gemini-3.1-pro") return "google/gemini-pro-latest";

@@ -62,6 +62,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [usageLogs, setUsageLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch Usage Logs & Transactions
   useEffect(() => {
@@ -89,7 +90,7 @@ export default function Dashboard() {
       setLoadingLogs(false);
     }
     fetchData();
-  }, [user?.id, user?.balance]);
+  }, [user?.id, user?.balance, refreshTrigger]);
 
    // Process data for AreaChart (Daily Spend)
    const chartData = useMemo(() => {
@@ -300,7 +301,7 @@ export default function Dashboard() {
                     <option>Last 7 Days</option>
                     <option>Last 30 Days</option>
                   </select>
-                  <button className="btn-outline" style={{ padding: '0.5rem' }}><RefreshCcw size={16}/></button>
+                  <button className="btn-outline" style={{ padding: '0.5rem' }} onClick={() => setRefreshTrigger(prev => prev + 1)}><RefreshCcw size={16}/></button>
                 </div>
               </div>
 
@@ -611,7 +612,7 @@ export default function Dashboard() {
                   <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Detailed history of API requests, security events, and account changes.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn-outline" onClick={() => window.location.reload()}><RefreshCcw size={16} /> Refresh</button>
+                  <button className="btn-outline" onClick={() => setRefreshTrigger(prev => prev + 1)}><RefreshCcw size={16} /> Refresh</button>
                   <button className="btn-outline">Export CSV</button>
                 </div>
               </div>
@@ -759,7 +760,7 @@ export default function Dashboard() {
                   <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Overview of your API consumption and spending.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn-outline" onClick={() => window.location.reload()}><RefreshCcw size={16} /> Refresh</button>
+                  <button className="btn-outline" onClick={() => setRefreshTrigger(prev => prev + 1)}><RefreshCcw size={16} /> Refresh</button>
                 </div>
               </div>
 
@@ -1015,7 +1016,7 @@ export default function Dashboard() {
           <button
             key={tab}
             className={`dash-mobile-nav-item ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => window.location.href = `/dashboard?tab=${tab}`}
+            onClick={() => handleTabChange(tab)}
           >
             {icon}
             {label}

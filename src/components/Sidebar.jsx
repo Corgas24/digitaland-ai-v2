@@ -31,21 +31,21 @@ export default function Sidebar() {
           <Sparkles size={18} /> Playground
         </Link>
 
-        <button className={`sidebar-link ${isBilling ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=billing'; }}>
+        <Link to="/dashboard?tab=billing" className={`sidebar-link ${isBilling ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
           <CreditCard size={18} /> Billing
-        </button>
+        </Link>
 
-        <button className={`sidebar-link ${isKeys ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=keys'; }}>
+        <Link to="/dashboard?tab=keys" className={`sidebar-link ${isKeys ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
           <Key size={18} /> API Keys
-        </button>
+        </Link>
 
-        <button className={`sidebar-link ${isUsage ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=usage'; }}>
+        <Link to="/dashboard?tab=usage" className={`sidebar-link ${isUsage ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
           <BarChart2 size={18} /> Usage
-        </button>
+        </Link>
 
-        <button className={`sidebar-link ${isLogs ? 'active' : ''}`} onClick={() => { window.location.href = '/dashboard?tab=logs'; }}>
+        <Link to="/dashboard?tab=logs" className={`sidebar-link ${isLogs ? 'active' : ''}`} style={{ textDecoration: 'none' }}>
           <Activity size={18} /> Logs
-        </button>
+        </Link>
 
         {user?.isAdmin && (
           <Link to="/admin" className="sidebar-link" style={{ textDecoration: 'none', color: 'var(--secondary)', fontWeight: 800 }}>

@@ -1424,16 +1424,16 @@ export default function Playground() {
             <button className="pg-side-link active" onClick={() => navigate('/playground')}>
               <Sparkles size={16} /> Playground
             </button>
-            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=billing'; }}>
+            <button className="pg-side-link" onClick={() => navigate('/dashboard?tab=billing')}>
               <CreditCard size={16} /> Billing
             </button>
-            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=keys'; }}>
+            <button className="pg-side-link" onClick={() => navigate('/dashboard?tab=keys')}>
               <Key size={16} /> API Keys
             </button>
-            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=usage'; }}>
+            <button className="pg-side-link" onClick={() => navigate('/dashboard?tab=usage')}>
               <Activity size={16} /> Usage
             </button>
-            <button className="pg-side-link" onClick={() => { window.location.href = '/dashboard?tab=logs'; }}>
+            <button className="pg-side-link" onClick={() => navigate('/dashboard?tab=logs')}>
               <Activity size={16} /> Logs
             </button>
             {user?.isAdmin && (

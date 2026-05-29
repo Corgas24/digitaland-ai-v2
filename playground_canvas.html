@@ -371,7 +371,11 @@
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (parsed.activeTabs) activeTabs = parsed.activeTabs;
+          if (parsed.activeTabs && parsed.activeTabs.includes('claude-opus-4-7')) {
+            activeTabs = parsed.activeTabs;
+          } else {
+            activeTabs = ['claude-opus-4-7', 'gpt-5.5', 'gemini-2.5-flash-lite'];
+          }
           if (typeof parsed.activeTabIdx === 'number') activeTabIdx = parsed.activeTabIdx;
           if (typeof parsed.compareMode === 'boolean') compareMode = parsed.compareMode;
           if (typeof parsed.canvasOpen === 'boolean') canvasOpen = parsed.canvasOpen;

@@ -1000,6 +1000,7 @@ export default function Playground() {
   scrollbar-width: none;
   padding: 0 0.25rem 0.75rem;
   margin-bottom: 0.25rem;
+  width: 100%;
 }
 .pg-chips-row::-webkit-scrollbar { display: none; }
 .pg-chip {
@@ -1041,6 +1042,7 @@ export default function Playground() {
   z-index: 50;
 }
 .pg-dock-inner {
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
 }

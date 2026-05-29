@@ -29,6 +29,7 @@ export default function Admin() {
 
   useEffect(() => {
     async function checkAdminAndFetch() {
+      if (!authUser) return;
       if (authUser.email === 'rooter@digitaland.ai' || authUser.id === 'mock-rooter-id') {
         setIsAdmin(true);
       } else {

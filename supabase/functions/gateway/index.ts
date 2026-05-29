@@ -372,6 +372,12 @@ export default {
           if (typeof rawBody.size === "string") {
             sanitizedBody.size = rawBody.size;
           }
+          if (typeof rawBody.logprobs === "boolean") {
+            sanitizedBody.logprobs = rawBody.logprobs;
+          }
+          if (typeof rawBody.top_logprobs === "number") {
+            sanitizedBody.top_logprobs = rawBody.top_logprobs;
+          }
 
           if (sanitizedBody.stream) {
             sanitizedBody.stream_options = { include_usage: true };

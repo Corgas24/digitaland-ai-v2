@@ -1118,9 +1118,8 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
   font-weight: 800;
   color: var(--text);
   font-family: var(--mono);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
 }
 .pm-type-badge {
   font-size: 0.65rem;

@@ -53,6 +53,31 @@ export const PROVIDERS = {
 };
 
 
+const formatModelName = (name) => {
+  if (!name) return 'Unnamed Model';
+  // If it already starts with an uppercase letter, preserve it
+  if (/^[A-Z]/.test(name)) return name;
+
+  // Replace dashes with spaces
+  let formatted = name.replace(/-/g, ' ');
+
+  // Capitalize each word
+  formatted = formatted.replace(/\b\w/g, c => c.toUpperCase());
+
+  // Handle specific version formatting (e.g. "4 7" -> "4.7")
+  formatted = formatted.replace(/(\d)\s(\d)/g, '$1.$2');
+
+  // Specific acronym replacements
+  formatted = formatted
+    .replace(/\bGpt\b/gi, 'GPT')
+    .replace(/\bApi\b/gi, 'API')
+    .replace(/\bLlm\b/gi, 'LLM')
+    .replace(/\bSd\b/gi, 'SD')
+    .replace(/\bMj\b/gi, 'MJ');
+
+  return formatted;
+};
+
 // ─── DYNAMIC MODEL LOADING ────────────────────────────────────────────────────
 
 let cachedModels = [];
@@ -76,7 +101,8 @@ export const getDynamicModels = async () => {
   }
 
   cachedModels = data.map(m => {
-    const name = m.name || '';
+    const rawName = m.name || '';
+    const name = formatModelName(rawName);
     const nameLower = name.toLowerCase();
     const isMini      = nameLower.includes('mini')
                      || nameLower.includes('flash')

@@ -144,6 +144,7 @@ export default function Playground() {
   const [isModelsLoading, setIsModelsLoading] = useState(true);
   const [copiedText, setCopiedText] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState('');
 
   const abortControllersRef = useRef({});
   const scrollRef = useRef(null);
@@ -433,9 +434,102 @@ export default function Playground() {
   flex: 1;
   padding: 0.75rem 0.65rem;
   overflow-y: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
-.pg-side-nav::-webkit-scrollbar { display: none; }
+.pg-side-nav::-webkit-scrollbar { width: 3px; }
+.pg-side-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* New chat button */
+.pg-new-chat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-glow);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 0.75rem;
+}
+.pg-new-chat:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* Conversation history items */
+.pg-conv-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.42rem 0.55rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.1s;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+}
+.pg-conv-item:hover {
+  background: var(--surface);
+}
+.pg-conv-item.active {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+}
+.pg-conv-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.pg-conv-info {
+  flex: 1;
+  min-width: 0;
+}
+.pg-conv-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.pg-conv-time {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* Sidebar search box */
+.pg-side-search {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 7px;
+  padding: 0.3rem 0.55rem;
+  margin-bottom: 0.5rem;
+}
+.pg-side-search input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.73rem;
+  color: var(--text);
+  font-family: inherit;
+}
+.pg-side-search input::placeholder { color: var(--text-muted); opacity: 0.55; }
 
 .pg-side-group {
   margin-bottom: 1.25rem;
@@ -1419,6 +1513,56 @@ export default function Playground() {
       {/* ═══ A. LEFT SIDEBAR ═══ */}
       <aside className="pg-side">
         <div className="pg-side-nav">
+          {/* New Chat */}
+          <button className="pg-new-chat" onClick={startNewConversation}>
+            <span>New Chat</span>
+            <Plus size={13} />
+          </button>
+
+          {/* Conversation history */}
+          {conversations.length > 0 && (
+            <div className="pg-side-group">
+              <div className="pg-side-group-title">Recent Chats</div>
+              <div className="pg-side-search">
+                <Search size={11} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                <input
+                  type="text"
+                  placeholder="Search chats..."
+                  value={sidebarSearch}
+                  onChange={e => setSidebarSearch(e.target.value)}
+                />
+              </div>
+              {conversations
+                .filter(c => !sidebarSearch || c.title?.toLowerCase().includes(sidebarSearch.toLowerCase()))
+                .slice(0, 20)
+                .map(conv => {
+                  const isActive = currentConvId === conv.id;
+                  const relTime = (() => {
+                    const d = new Date(conv.updated_at);
+                    const diff = Date.now() - d.getTime();
+                    if (diff < 60000) return 'just now';
+                    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+                    if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+                    return d.toLocaleDateString();
+                  })();
+                  return (
+                    <button
+                      key={conv.id}
+                      className={`pg-conv-item ${isActive ? 'active' : ''}`}
+                      onClick={() => loadConversation(conv)}
+                    >
+                      <MessageCircle size={12} className="pg-conv-icon" />
+                      <div className="pg-conv-info">
+                        <div className="pg-conv-title">{conv.title || 'Untitled'}</div>
+                        <div className="pg-conv-time">{relTime}</div>
+                      </div>
+                    </button>
+                  );
+                })
+              }
+            </div>
+          )}
+
           <div className="pg-side-group">
             <div className="pg-side-group-title">Platform</div>
             <button className="pg-side-link active" onClick={() => navigate('/playground')}>
@@ -1514,7 +1658,7 @@ export default function Playground() {
               const mObj = models.find(m => m.id === mId);
               const prov = PROVIDERS[mObj?.provider];
               return (
-                <button key={mId} className={`pg-tab ${activeTabIdx === i ? 'active' : ''}`} onClick={() => { setActiveTabIdx(i); setMessages([]); setCurrentConvId(null); setError(null); }}>
+                <button key={mId} className={`pg-tab ${activeTabIdx === i ? 'active' : ''}`} onClick={() => { setActiveTabIdx(i); setError(null); }}>
                   {prov?.logo && <img src={prov.logo} alt="" className="pg-tab-logo" />}
                   <span>{mObj?.name || mId}</span>
                   {activeTabs.length > 1 && (

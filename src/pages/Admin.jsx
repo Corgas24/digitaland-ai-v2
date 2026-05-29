@@ -13,6 +13,7 @@ export default function Admin() {
   const { theme } = useTheme();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -27,26 +28,48 @@ export default function Admin() {
   const isDark = theme === 'dark';
 
 
+  // 1. Instant Authorization Check
   useEffect(() => {
-    async function checkAdminAndFetch() {
+    async function checkAdmin() {
       if (!authUser) return;
-      if (authUser.email === 'rooter@digitaland.ai' || authUser.id === 'mock-rooter-id') {
+      if (
+        authUser.email === 'corgasmario@gmail.com' ||
+        authUser.email === 'rooter@digitaland.ai' ||
+        authUser.id === 'mock-rooter-id'
+      ) {
         setIsAdmin(true);
-      } else {
+        setLoading(false);
+        return;
+      }
+
+      try {
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', authUser.id)
           .single();
 
-        if (profileErr || (!profile?.is_admin && authUser.email !== 'corgasmario@gmail.com')) {
+        if (profileErr || !profile?.is_admin) {
           setIsAdmin(false);
-          setLoading(false);
-          return;
+        } else {
+          setIsAdmin(true);
         }
-        setIsAdmin(true);
+      } catch (err) {
+        console.error('Error verifying admin profile:', err);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
       }
+    }
+    checkAdmin();
+  }, [authUser]);
 
+  // 2. Heavy Background Data Fetching
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    async function fetchStats() {
+      setLoadingStats(true);
       const errors = [];
 
       try {
@@ -100,11 +123,11 @@ export default function Admin() {
         console.error('Admin Fetch Error:', err);
         setFetchError(`Critical fetch error: ${err.message}`);
       } finally {
-        setLoading(false);
+        setLoadingStats(false);
       }
     }
-    checkAdminAndFetch();
-  }, [authUser]);
+    fetchStats();
+  }, [isAdmin]);
 
   // --- Support Live Chat & AI Fallback Logic ---
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'support'
@@ -148,9 +171,33 @@ export default function Admin() {
     };
   }, [isAdmin]);
 
-  // Load and subscribe to Support Chats list
+  // WhatsApp-style gentle chime sound for incoming visitor messages
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 (587.33Hz)
+      osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.08); // A5 (880.00Hz)
+      
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+      console.warn('Web Audio chime blocked:', e);
+    }
+  };
+
+  // Load and subscribe to Support Chats list globally
   useEffect(() => {
-    if (!isAdmin || activeTab !== 'support') return;
+    if (!isAdmin) return;
     async function loadChats() {
       try {
         const { data, error } = await supabase
@@ -169,13 +216,14 @@ export default function Admin() {
       .channel('admin_chats_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats' }, () => {
         loadChats();
+        playNotificationSound();
       })
       .subscribe();
 
     return () => {
       channel.unsubscribe();
     };
-  }, [isAdmin, activeTab]);
+  }, [isAdmin]);
 
   // Load and subscribe to active chat's messages
   useEffect(() => {
@@ -197,11 +245,13 @@ export default function Admin() {
 
     const channel = supabase
       .channel(`admin_chat_messages:${selectedChat.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `chat_id=eq.${selectedChat.id}` }, payload => {
-        setChatMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev;
-          return [...prev, payload.new];
-        });
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, payload => {
+        if (payload.new && payload.new.chat_id === selectedChat.id) {
+          setChatMessages(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
+        }
       })
       .subscribe();
 
@@ -446,7 +496,11 @@ export default function Admin() {
                     <div style={{ color: s.color }}>{s.icon}</div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.4, textTransform: 'uppercase', letterSpacing: '1px' }}>{s.label}</span>
                   </div>
-                  <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>{s.prefix}{(s.value || 0).toLocaleString(undefined, { minimumFractionDigits: s.prefix ? 2 : 0, maximumFractionDigits: s.prefix ? 2 : 0 })}</h2>
+                  {loadingStats ? (
+                    <div className="shimmer" style={{ width: '120px', height: '36px', borderRadius: '8px', background: 'var(--border-light)', marginTop: '0.5rem' }} />
+                  ) : (
+                    <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>{s.prefix}{(s.value || 0).toLocaleString(undefined, { minimumFractionDigits: s.prefix ? 2 : 0, maximumFractionDigits: s.prefix ? 2 : 0 })}</h2>
+                  )}
                 </div>
               ))}
             </div>
@@ -463,8 +517,13 @@ export default function Admin() {
                      <div style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '8px', height: '2px', background: '#22c55e' }} /> REVENUE</div>
                   </div>
                 </div>
-                <div style={{ width: '100%', height: 350 }}>
-                  {dailyChartData.some(d => d.requests > 0 || d.profit > 0) ? (
+                         <div style={{ width: '100%', height: 350 }}>
+                  {loadingStats ? (
+                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="shimmer" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', opacity: 0.8, marginBottom: '1rem' }} />
+                      <p style={{ fontSize: '0.8rem', opacity: 0.5, letterSpacing: '1px' }}>LOADING PERFORMANCE METRICS...</p>
+                    </div>
+                  ) : dailyChartData.some(d => d.requests > 0 || d.profit > 0) ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={dailyChartData}>
                         <defs>
@@ -497,7 +556,12 @@ export default function Admin() {
               {/* Model Popularity */}
               <div className="card" style={{ padding: '2rem' }}>
                  <h3 style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: '2rem' }}>Model Market Share</h3>
-                 {modelDistribution.length > 0 ? (
+                 {loadingStats ? (
+                    <div style={{ height: 250, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="shimmer" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', opacity: 0.8, marginBottom: '1rem' }} />
+                      <p style={{ fontSize: '0.8rem', opacity: 0.5, letterSpacing: '1px' }}>LOADING DATA...</p>
+                    </div>
+                  ) : modelDistribution.length > 0 ? (
                    <>
                      <div style={{ width: '100%', height: 250 }}>
                        <ResponsiveContainer width="100%" height="100%">
@@ -543,7 +607,12 @@ export default function Admin() {
                 </div>
               </div>
               <div style={{ width: '100%', height: 200 }}>
-                {signupChartData.some(d => d.signups > 0) ? (
+                {loadingStats ? (
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="shimmer" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', opacity: 0.8, marginBottom: '1rem' }} />
+                    <p style={{ fontSize: '0.8rem', opacity: 0.5, letterSpacing: '1px' }}>LOADING DATA...</p>
+                  </div>
+                ) : signupChartData.some(d => d.signups > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={signupChartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />

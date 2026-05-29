@@ -95,6 +95,30 @@ export default function SupportChat() {
     loadChat();
   }, [sessionId]);
 
+  // WhatsApp-style gentle chime synth sound
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 (587.33Hz)
+      osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.08); // A5 (880.00Hz)
+      
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+      console.warn('Web Audio chime blocked/failed:', e);
+    }
+  };
+
   // 4. Subscribe to Live Support Messages when Chat ID is set
   useEffect(() => {
     if (!chat?.id) return;
@@ -103,15 +127,23 @@ export default function SupportChat() {
 
     const channel = supabase
       .channel(`support_chat:${chat.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `chat_id=eq.${chat.id}` }, payload => {
-        setMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev;
-          return [...prev, payload.new];
-        });
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, payload => {
+        if (payload.new && payload.new.chat_id === chat.id) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev;
+            
+            // Play notification sound on incoming agent messages
+            if (payload.new.sender_role === 'agent') {
+              playNotificationSound();
+            }
+            
+            return [...prev.filter(m => m.id !== 'temp-' + payload.new.id), payload.new];
+          });
 
-        // Trigger unread indicator if closed
-        if (!isOpen) {
-          setUnread(u => u + 1);
+          // Trigger unread indicator if closed
+          if (!isOpen) {
+            setUnread(u => u + 1);
+          }
         }
       })
       .subscribe();
@@ -135,13 +167,26 @@ export default function SupportChat() {
     if (!isOpen) setUnread(0);
   };
 
-  // 5. Send Message Handler
+  // 5. Send Message Handler (Optimistic WhatsApp Style Updates)
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     const guestMessageText = input.trim();
     setInput('');
+
+    // Instant Optimistic Update
+    const tempId = 'temp-' + Date.now();
+    const tempMsg = {
+      id: tempId,
+      chat_id: chat?.id || 'pending',
+      sender_role: 'guest',
+      content: guestMessageText,
+      created_at: new Date().toISOString(),
+      status: 'sending' // 'sending' (clock icon), 'sent' (double check)
+    };
+
+    setMessages(prev => [...prev.filter(m => m.id !== 'welcome'), tempMsg]);
 
     let activeChat = chat;
 
@@ -151,8 +196,8 @@ export default function SupportChat() {
         const { data: newChat, error } = await supabase
           .from('support_chats')
           .insert([{ 
-            guest_session_id: sessionId, 
-            guest_name: user?.email || 'User ' + sessionId.slice(-4) 
+            guest_session_id: sessionId || user.id, 
+            guest_name: user?.email || 'User ' + (sessionId || user.id).slice(-4) 
           }])
           .select()
           .single();
@@ -162,6 +207,8 @@ export default function SupportChat() {
         setChat(newChat);
       } catch (err) {
         console.error('Failed to create support chat session:', err);
+        // Mark optimistic message as failed
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
         return;
       }
     }
@@ -179,23 +226,22 @@ export default function SupportChat() {
         .single();
       if (error) throw error;
 
-      setMessages(prev => [...prev.filter(m => m.id !== 'welcome'), newMsg]);
+      // Replace the optimistic message with the database message
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...newMsg, status: 'sent' } : m));
 
-      // 5c. Run AI Support bot if status is Offline or Away (or fallback)
+      // 5c. Run AI Support bot if status is Offline or Away
       if (agentStatus === 'offline' || agentStatus === 'away') {
         setIsTyping(true);
 
         setTimeout(async () => {
           try {
-            // Get past 6 messages for context
             const contextMsgs = messages
-              .filter(m => m.id !== 'welcome')
+              .filter(m => m.id !== 'welcome' && !m.id.toString().startsWith('temp-'))
               .map(m => ({
                 role: m.sender_role === 'guest' ? 'user' : 'assistant',
                 content: m.content
               }));
 
-            // Call public anonymous support gateway completions with custom header
             const response = await fetch('/v1/chat/completions', {
               method: 'POST',
               headers: { 
@@ -214,9 +260,8 @@ export default function SupportChat() {
             if (!response.ok) throw new Error('Gateway response error');
 
             const resData = await response.json();
-            const aiText = resData.choices?.[0]?.message?.content || 'Pedimos desculpa, estamos com dificuldades técnicas. O nosso agente irá responder-te em breve.';
+            const aiText = resData.choices?.[0]?.message?.content || 'Pedimos desculpa, o nosso agente irá responder-te em breve.';
 
-            // Insert AI Response as 'agent' in the database support chat
             const { data: aiMsg, error: aiErr } = await supabase
               .from('support_messages')
               .insert([{
@@ -229,16 +274,19 @@ export default function SupportChat() {
 
             if (!aiErr && aiMsg) {
               setMessages(prev => [...prev, aiMsg]);
+              playNotificationSound();
             }
           } catch (err) {
             console.error('AI support failed:', err);
           } finally {
             setIsTyping(false);
           }
-        }, 1200); // 1.2s realistic support thinking delay
+        }, 1200);
       }
     } catch (err) {
       console.error('Failed to send support message:', err);
+      // Mark optimistic message as failed
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
     }
   };
 
@@ -297,6 +345,15 @@ export default function SupportChat() {
                 );
               }
 
+              const formatTime = (isoString) => {
+                try {
+                  const d = new Date(isoString);
+                  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                } catch {
+                  return '';
+                }
+              };
+
               return (
                 <div key={m.id} className={`sc-msg-row ${isGuest ? 'guest' : 'agent'}`}>
                   {!isGuest && (
@@ -304,8 +361,51 @@ export default function SupportChat() {
                       {m.sender_role === 'agent' ? '👤' : '🤖'}
                     </div>
                   )}
-                  <div className={`sc-msg-bubble ${isGuest ? 'guest' : 'agent'}`}>
-                    {m.content}
+                  <div 
+                    className={`sc-msg-bubble ${isGuest ? 'guest' : 'agent'}`}
+                    style={isGuest ? {
+                      background: 'rgba(37, 211, 102, 0.12)',
+                      border: '1px solid rgba(37, 211, 102, 0.2)',
+                      borderBottomRightRadius: '2px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.2rem'
+                    } : {
+                      borderBottomLeftRadius: '2px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.2rem'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.85rem', wordBreak: 'break-word', color: 'var(--text)' }}>
+                      {m.content}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'flex-end', 
+                      gap: '0.25rem', 
+                      fontSize: '0.62rem', 
+                      opacity: 0.5,
+                      alignSelf: 'flex-end',
+                      marginTop: '-0.1rem',
+                      color: 'var(--text-muted)'
+                    }}>
+                      <span>{formatTime(m.created_at)}</span>
+                      {isGuest && (
+                        <span>
+                          {m.status === 'sending' ? (
+                            <span style={{ fontSize: '0.6rem' }} title="A enviar...">🕒</span>
+                          ) : m.status === 'failed' ? (
+                            <span style={{ color: '#ef4444', fontWeight: 'bold' }} title="Falha ao enviar">⚠️</span>
+                          ) : agentStatus === 'active' ? (
+                            <span style={{ color: '#34b7f1', fontWeight: 'bold', letterSpacing: '-1.5px', fontSize: '0.75rem' }} title="Lido">✓✓</span>
+                          ) : (
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', letterSpacing: '-1.5px', fontSize: '0.75rem' }} title="Entregue">✓✓</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

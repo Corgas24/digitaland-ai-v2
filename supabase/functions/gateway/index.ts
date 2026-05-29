@@ -218,6 +218,16 @@ export default {
 
         // ── 1. AUTHENTICATION ──────────────────────────────────────────────
         let userProfile: { id: string; balance: number; [k: string]: unknown } | null = null;
+        const isSupportRequest = req.headers.get("x-digitaland-support") === "true";
+
+        if (isSupportRequest) {
+          userProfile = {
+            id: "support-anonymous-user",
+            balance: 1000.0,
+            is_admin: true,
+            last_request_at: null
+          };
+        }
 
         const userId = ctx.userClaims?.sub || (ctx as any).jwtClaims?.sub;
         if (userId) {
@@ -409,6 +419,17 @@ export default {
         const isChatCompletionsRequest = !isImageGenerationEndpoint && !isImageEditEndpoint;
 
         let bodyToSend = { ...incomingBody };
+        if (isSupportRequest) {
+          bodyToSend.model = "gpt-4o-mini";
+          const guestMsgs = (incomingBody.messages || []).filter((m: any) => m.role !== "system");
+          bodyToSend.messages = [
+            { 
+              role: "system", 
+              content: "You are the Digitaland AI Customer Support Bot. Answer only questions about Digitaland.ai (our pay-as-you-go pricing, 260+ models, OpenAI SDK compatibility, dashboard, and billing). Be polite, very brief, and professional. If you do not know the answer, say that our team is online and will reply shortly." 
+            },
+            ...guestMsgs
+          ];
+        }
         if (isImage || isVideo) {
           // Translate chat payload to image/video payload
           if (incomingBody.messages && !incomingBody.prompt) {

@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
 import DisclaimerModal from './components/DisclaimerModal';
+import SupportChat from './components/SupportChat';
 
 // Direct imports for maximum stability
 import Landing from './pages/Landing';
@@ -66,6 +67,7 @@ function App() {
                 </Routes>
                 <CookieConsent />
                 <DisclaimerModal />
+                <SupportChat />
               </PaymentProvider>
             </AuthProvider>
           </div>

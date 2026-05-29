@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, ProtectedRoute } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -10,18 +10,34 @@ import CookieConsent from './components/CookieConsent';
 import DisclaimerModal from './components/DisclaimerModal';
 import SupportChat from './components/SupportChat';
 
-// Direct imports for maximum stability
-import Landing from './pages/Landing';
-import Models from './pages/Models';
-import Pricing from './pages/Pricing';
-import Docs from './pages/Docs';
-import Dashboard from './pages/Dashboard';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import Playground from './pages/Playground';
-import Billing from './pages/Billing';
-import Admin from './pages/Admin';
-import Legal from './pages/Legal';
+// Lazy loading all major pages to shrink bundle size and increase initial page load speed
+const Landing = lazy(() => import('./pages/Landing'));
+const Models = lazy(() => import('./pages/Models'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Docs = lazy(() => import('./pages/Docs'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SignIn = lazy(() => import('./pages/SignIn'));
+const SignUp = lazy(() => import('./pages/SignUp'));
+const Playground = lazy(() => import('./pages/Playground'));
+const Billing = lazy(() => import('./pages/Billing'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Legal = lazy(() => import('./pages/Legal'));
+
+function PageLoader() {
+  return (
+    <div style={{ 
+      height: '80vh', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: 'var(--bg)', 
+      color: 'var(--text)' 
+    }}>
+      <div className="shimmer" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', opacity: 0.8 }} />
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -47,24 +63,26 @@ function App() {
             <AuthProvider>
               <PaymentProvider>
                 <Navbar />
-                <Routes>
-                  <Route path="/" element={<><Landing /><Footer /></>} />
-                  <Route path="/models" element={<><Models /><Footer /></>} />
-                  <Route path="/pricing" element={<><Pricing /><Footer /></>} />
-                  <Route path="/docs" element={<><Docs /><Footer /></>} />
-                  <Route path="/privacy" element={<Legal title="Privacy Policy" />} />
-                  <Route path="/terms" element={<Legal title="Terms of Service" />} />
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/playground" element={<ProtectedRoute><Playground /></ProtectedRoute>} />
-                  <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/dashboard/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
-                  <Route path="/dashboard/keys" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/dashboard/usage" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/dashboard/logs" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                </Routes>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<><Landing /><Footer /></>} />
+                    <Route path="/models" element={<><Models /><Footer /></>} />
+                    <Route path="/pricing" element={<><Pricing /><Footer /></>} />
+                    <Route path="/docs" element={<><Docs /><Footer /></>} />
+                    <Route path="/privacy" element={<Legal title="Privacy Policy" />} />
+                    <Route path="/terms" element={<Legal title="Terms of Service" />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/playground" element={<ProtectedRoute><Playground /></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/dashboard/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+                    <Route path="/dashboard/keys" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/dashboard/usage" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/dashboard/logs" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  </Routes>
+                </Suspense>
                 <CookieConsent />
                 <DisclaimerModal />
                 <SupportChat />

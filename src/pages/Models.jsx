@@ -152,6 +152,8 @@ export default function Models() {
       if (selType !== 'All') {
         if (selType === 'Featured') {
           matchType = m.badge === 'Flagship' || m.badge === 'Popular';
+        } else if (selType === 'Free') {
+          matchType = m.badge === 'Free' || m.offIn === 0 || (m.name || '').toLowerCase().includes('free') || (m.id || '').toLowerCase().includes(':free');
         } else if (selType === 'LLM') {
           matchType = m.type === 'Chat' || m.type === 'Reasoning' || m.type === 'Code';
         } else {
@@ -207,7 +209,7 @@ export default function Models() {
           <div className="badge-glow-wrap fade-in-up">
             <span className="premium-glow-badge">
               <Sparkles size={12} style={{ color: 'var(--primary)' }} />
-              270+ High-Performance Nodes Online
+              {models.length > 0 ? `${models.length}+` : '600+'} High-Performance Nodes Online
             </span>
           </div>
           
@@ -242,6 +244,27 @@ export default function Models() {
               </div>
             )}
           </div>
+
+          {/* Glowing Free Models Emphasis Banner */}
+          <div className="free-emphasis-banner fade-in-up delay-4" style={{
+            marginTop: '2rem',
+            padding: '1rem 1.5rem',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%)',
+            border: '1px solid rgba(0, 230, 118, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            boxShadow: '0 8px 32px rgba(0, 230, 118, 0.05)',
+            maxWidth: '720px',
+            margin: '2rem auto 0'
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>⚡</span>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 650, color: '#00e676', textAlign: 'left', lineHeight: 1.4 }}>
+              <strong style={{ color: '#fff' }}>22+ Modelos 100% Gratuitos Disponíveis!</strong> Filtre pela categoria "Free Models" abaixo para usar sem qualquer custo.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -254,6 +277,7 @@ export default function Models() {
               {[
                 { id: 'All', label: 'All Models' },
                 { id: 'Featured', label: 'Featured 🔥' },
+                { id: 'Free', label: 'Free Models ⚡' },
                 { id: 'LLM', label: 'Language & LLMs 💬' },
                 { id: 'Image', label: 'Images 🎨' },
                 { id: 'Video', label: 'Videos 🎬' },
@@ -313,7 +337,7 @@ export default function Models() {
             <div className="premium-loader-wrap">
               <Loader2 size={40} className="animate-spin loader-spinner" />
               <h3>Sincronizando com a Matriz Neural...</h3>
-              <p>Carregando os preços, descrições e benchmarks de mais de 270 modelos ativos no Supabase.</p>
+              <p>Carregando os preços, descrições e benchmarks de mais de {models.length > 0 ? models.length : '600'} modelos ativos no Supabase.</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="premium-empty-state">
@@ -331,6 +355,7 @@ export default function Models() {
                 const prov = PROVIDERS[m.provider || ''] || { color: '#6366f1', short: m.provider?.[0] || 'N' };
                 const ourIn = ourPrice(m.offIn || 0);
                 const ourOut = ourPrice(m.offOut || 0);
+                const isFree = m.badge === 'Free' || m.offIn === 0 || (m.name || '').toLowerCase().includes('free') || (m.id || '').toLowerCase().includes(':free');
                 const isGeneration = ['Image', 'Video', 'Audio'].includes(m.type || '');
                 const { context, maxOutput, desc } = getModelSpecs(m);
 
@@ -413,37 +438,72 @@ export default function Models() {
                       </div>
                       <div className="pm-spec-item span-2">
                         <span className="pm-spec-label">Economia vs Upstream</span>
-                        <span className="pm-spec-value text-green">-{DISCOUNT}%</span>
+                        {isFree ? (
+                          <span className="pm-spec-value text-green" style={{ color: '#00e676', border: '1px solid rgba(0, 230, 118, 0.3)', background: 'rgba(0, 230, 118, 0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>100% GRÁTIS</span>
+                        ) : (
+                          <span className="pm-spec-value text-green">-{DISCOUNT}%</span>
+                        )}
                       </div>
                     </div>
 
                     {/* Pricing Display box */}
                     <div className="pm-pricing-box">
-                      {isGeneration ? (
-                        <div className="pm-pricing-line">
-                          <span className="pricing-label">CUSTO POR GERAÇÃO</span>
-                          <div className="pricing-value-wrap">
-                            <span className="pricing-value">${ourIn.toFixed(4)}</span>
-                            <span className="pricing-unit">/ gen</span>
+                      {isFree ? (
+                        isGeneration ? (
+                          <div className="pm-pricing-line">
+                            <span className="pricing-label">CUSTO POR GERAÇÃO</span>
+                            <div className="pricing-value-wrap">
+                              <span className="pricing-value" style={{ color: '#00e676', fontWeight: 800 }}>GRÁTIS</span>
+                              <span className="pricing-unit">/ gen</span>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <>
+                            <div className="pm-pricing-line">
+                              <span className="pricing-label">INPUT (Prompt)</span>
+                              <div className="pricing-value-wrap">
+                                <span className="pricing-value" style={{ color: '#00e676', fontWeight: 800 }}>GRÁTIS</span>
+                                <span className="pricing-unit">/ 1M tokens</span>
+                              </div>
+                            </div>
+                            <div className="pm-pricing-line">
+                              <span className="pricing-label">OUTPUT (Completions)</span>
+                              <div className="pricing-value-wrap">
+                                <span className="pricing-value" style={{ color: '#00e676', fontWeight: 800 }}>GRÁTIS</span>
+                                <span className="pricing-unit">/ 1M tokens</span>
+                              </div>
+                            </div>
+                          </>
+                        )
                       ) : (
-                        <>
+                        isGeneration ? (
                           <div className="pm-pricing-line">
-                            <span className="pricing-label">INPUT (Prompt)</span>
-                            <div className="pricing-value-wrap">
-                              <span className="pricing-value">${ourIn.toFixed(4)}</span>
-                              <span className="pricing-unit">/ 1M tokens</span>
+                            <span className="pricing-label">CUSTO POR GERAÇÃO</span>
+                            <div className="pm-pricing-line">
+                              <div className="pricing-value-wrap">
+                                <span className="pricing-value">${ourIn.toFixed(4)}</span>
+                                <span className="pricing-unit">/ gen</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="pm-pricing-line">
-                            <span className="pricing-label">OUTPUT (Completions)</span>
-                            <div className="pricing-value-wrap">
-                              <span className="pricing-value">${ourOut.toFixed(4)}</span>
-                              <span className="pricing-unit">/ 1M tokens</span>
+                        ) : (
+                          <>
+                            <div className="pm-pricing-line">
+                              <span className="pricing-label">INPUT (Prompt)</span>
+                              <div className="pricing-value-wrap">
+                                <span className="pricing-value">${ourIn.toFixed(4)}</span>
+                                <span className="pricing-unit">/ 1M tokens</span>
+                              </div>
                             </div>
-                          </div>
-                        </>
+                            <div className="pm-pricing-line">
+                              <span className="pricing-label">OUTPUT (Completions)</span>
+                              <div className="pricing-value-wrap">
+                                <span className="pricing-value">${ourOut.toFixed(4)}</span>
+                                <span className="pricing-unit">/ 1M tokens</span>
+                              </div>
+                            </div>
+                          </>
+                        )
                       )}
                     </div>
 

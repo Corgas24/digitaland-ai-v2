@@ -116,7 +116,7 @@ export default function Playground() {
   const [isDark, setIsDark] = useState(true);
 
   // Multi-Model Workspace
-  const [activeTabs, setActiveTabs] = useState(['claude-opus-4-8', 'gpt-5.5', 'gemini-2.5-flash-lite']);
+  const [activeTabs, setActiveTabs] = useState(['claude-sonnet-4-6', 'openai/gpt-4o', 'google/gemini-2.5-flash-lite']);
   const [activeTabIdx, setActiveTabIdx] = useState(0);
   const [compareMode, setCompareMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -171,7 +171,7 @@ export default function Playground() {
         setActiveTabs([urlModel]);
         setActiveTabIdx(0);
       } else if (data?.length > 0) {
-        const defaults = ['claude-opus-4-8', 'gpt-5.5', 'gemini-2.5-flash-lite']
+        const defaults = ['claude-sonnet-4-6', 'openai/gpt-4o', 'google/gemini-2.5-flash-lite']
           .filter(id => data.some(m => m.id === id));
         setActiveTabs(defaults.length > 0 ? defaults : [data[0].id]);
         setActiveTabIdx(0);
@@ -1652,15 +1652,22 @@ export default function Playground() {
             </div>
             <span className="pg-topbar-brand-text">Digitaland</span>
           </div>
-
           <div className="pg-tabs">
             {activeTabs.map((mId, i) => {
               const mObj = models.find(m => m.id === mId);
               const prov = PROVIDERS[mObj?.provider];
+              const isFree = mObj?.badge === 'Free' || mObj?.offIn === 0 || (mObj?.name || '').toLowerCase().includes('free') || mId.endsWith(':free');
               return (
                 <button key={mId} className={`pg-tab ${activeTabIdx === i ? 'active' : ''}`} onClick={() => { setActiveTabIdx(i); setError(null); }}>
                   {prov?.logo && <img src={prov.logo} alt="" className="pg-tab-logo" />}
-                  <span>{mObj?.name || mId}</span>
+                  <span>
+                    {mObj?.name || mId}
+                    {isFree && (
+                      <span style={{ color: '#00e676', fontSize: '0.65rem', marginLeft: '4px', fontWeight: 800, textShadow: '0 0 4px rgba(0, 230, 118, 0.4)' }}>
+                        (Free)
+                      </span>
+                    )}
+                  </span>
                   {activeTabs.length > 1 && (
                     <span className="pg-tab-close" onClick={e => closeTab(e, i)}>
                       <X size={9} />
@@ -1956,6 +1963,24 @@ export default function Playground() {
               </div>
             </div>
 
+            {/* Glowing Free Notice Banner */}
+            <div style={{
+              margin: '0.5rem 1.25rem 0.85rem',
+              padding: '0.65rem 1rem',
+              borderRadius: '10px',
+              background: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(0, 230, 118, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.78rem',
+              color: '#00e676',
+              fontWeight: 650
+            }}>
+              <span>⚡</span>
+              <span><strong>Acesso Gratuito Ativo!</strong> Escolha qualquer modelo com a etiqueta "Free" para interagir sem gastar créditos.</span>
+            </div>
+
             {/* Model List */}
             <div className="pg-modal-body">
               {Object.entries(modelsByProvider).map(([prov, ms]) => (
@@ -1981,6 +2006,7 @@ export default function Playground() {
                         Vision:    { bg: 'rgba(20,184,166,0.15)',  color: '#5eead4' },
                       };
                       const tc = typeColors[model.type] || { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' };
+                      const isFree = model.badge === 'Free' || model.offIn === 0 || (model.name || '').toLowerCase().includes('free') || model.id.endsWith(':free');
                       const priceStr = model.offIn > 0 ? `$${(model.offIn * 1.8).toFixed(2)}/M` : null;
                       return (
                         <div
@@ -1998,11 +2024,15 @@ export default function Playground() {
                               {model.type || 'Chat'}
                             </span>
                             {model.badge && (
-                              <span className="pg-m-type" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>
-                                ⭐ {model.badge}
+                              <span className="pg-m-type" style={model.badge === 'Free' ? { background: 'rgba(16,185,129,0.18)', color: '#00e676', border: '1px solid rgba(0, 230, 118, 0.3)', fontWeight: 800 } : { background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>
+                                {model.badge === 'Free' ? '⚡ Free' : `⭐ ${model.badge}`}
                               </span>
                             )}
-                            {priceStr && <span className="pg-m-price">{priceStr}</span>}
+                            {isFree ? (
+                              <span className="pg-m-price" style={{ color: '#00e676', fontWeight: 800, textShadow: '0 0 4px rgba(0, 230, 118, 0.4)' }}>Free</span>
+                            ) : (
+                              priceStr && <span className="pg-m-price">{priceStr}</span>
+                            )}
                           </div>
                         </div>
                       );

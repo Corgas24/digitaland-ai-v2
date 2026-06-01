@@ -11,71 +11,40 @@ const GLOBAL_SAVING = savingsPercent();
 
 const ALL_FALLBACK_MODELS = [
     // DeepSeek
-    { id: 'deepseek-v3-pro', name: 'DeepSeek-V3-Pro', provider: 'DeepSeek', type: 'Chat', offIn: 0.814, offOut: 2.486, badge: 'Flagship' },
-    { id: 'deepseek-v3-flash', name: 'DeepSeek-V3-Flash', provider: 'DeepSeek', type: 'Chat', offIn: 0.10, offOut: 0.20, badge: 'Value' },
-    { id: 'deepseek-v3.2', name: 'DeepSeek-V3.2', provider: 'DeepSeek', type: 'Chat', offIn: 0.507, offOut: 0.336, badge: '' },
-    { id: 'deepseek-v3.2-exp', name: 'DeepSeek-V3.2-Exp', provider: 'DeepSeek', type: 'Chat', offIn: 0.507, offOut: 0.293, badge: '' },
-    { id: 'deepseek-v3.2-terminus', name: 'DeepSeek-V3.2-Terminus', provider: 'DeepSeek', type: 'Chat', offIn: 0.507, offOut: 0.714, badge: '' },
-    { id: 'deepseek-r1', name: 'DeepSeek-R1', provider: 'DeepSeek', type: 'Reasoning', offIn: 0.393, offOut: 1.564, badge: 'Flagship' },
+    { id: 'deepseek/deepseek-chat', name: 'DeepSeek-V3-Pro', provider: 'DeepSeek', type: 'Chat', offIn: 0.14, offOut: 0.28, badge: 'Flagship' },
+    { id: 'deepseek/deepseek-chat:free', name: 'DeepSeek-V3-Flash', provider: 'DeepSeek', type: 'Chat', offIn: 0.0, offOut: 0.0, badge: 'Value' },
+    { id: 'deepseek/deepseek-r1', name: 'DeepSeek-R1', provider: 'DeepSeek', type: 'Reasoning', offIn: 0.55, offOut: 2.19, badge: 'Flagship' },
 
     // Qwen
-    { id: 'qwen-2-5-72b', name: 'Qwen-2.5-72B', provider: 'Qwen', type: 'Chat', offIn: 0.214, offOut: 2.643, badge: 'Flagship' },
-    { id: 'qwen-2-5-32b-a23b', name: 'Qwen-2.5-32B-A23B', provider: 'Qwen', type: 'Chat', offIn: 0.50, offOut: 1.143, badge: '' },
-    { id: 'qwen-2-5-14b', name: 'Qwen-2.5-14B', provider: 'Qwen', type: 'Chat', offIn: 0.0714, offOut: 0.529, badge: 'Value' },
-    { id: 'qwen-2-5-72b-a14b', name: 'Qwen-2.5-72B-A14B', provider: 'Qwen', type: 'Chat', offIn: 0.136, offOut: 0.421, badge: 'Popular' },
-    { id: 'qwen-2-5-27b', name: 'Qwen-2.5-27B', provider: 'Qwen', type: 'Chat', offIn: 0.529, offOut: 5.214, badge: '' },
-
-    // Zhipu (Zai)
-    { id: 'glm-4-1', name: 'GLM-4.1', provider: 'Zhipu', type: 'Chat', offIn: 1.00, offOut: 3.143, badge: 'Flagship' },
-    { id: 'glm-4', name: 'GLM-4', provider: 'Zhipu', type: 'Chat', offIn: 0.257, offOut: 1.886, badge: '' },
-    { id: 'glm-4-7', name: 'GLM-4.7', provider: 'Zhipu', type: 'Chat', offIn: 0.30, offOut: 2.643, badge: 'Popular' },
-    { id: 'glm-4-8v', name: 'GLM-4.8V', provider: 'Zhipu', type: 'Chat', offIn: 0.143, offOut: 0.20, badge: 'Value' },
-    { id: 'glm-4-9', name: 'GLM-4.9', provider: 'Zhipu', type: 'Chat', offIn: 0.271, offOut: 0.929, badge: '' },
-
-    // Moonshot AI
-    { id: 'kimi-k1-instruct', name: 'Kimi-k1-instruct', provider: 'Moonshot', type: 'Chat', offIn: 0.343, offOut: 1.986, badge: 'Popular' },
-    { id: 'kimi-k1-instruct-osds', name: 'Kimi-k1-instruct-OSDS', provider: 'Moonshot', type: 'Chat', offIn: 1.714, offOut: 5.00, badge: 'Flagship' },
-    { id: 'kimi-k1-5', name: 'Kimi-k1.5', provider: 'Moonshot', type: 'Chat', offIn: 0.293, offOut: 1.257, badge: '' },
-    { id: 'kimi-k1-6', name: 'Kimi-k1.6', provider: 'Moonshot', type: 'Chat', offIn: 0.214, offOut: 1.143, badge: '' },
-
-    // MiniMax AI
-    { id: 'minimax-v2-5', name: 'MiniMax-V2.5', provider: 'MiniMax', type: 'Chat', offIn: 0.214, offOut: 1.214, badge: 'Flagship' },
+    { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen-2.5-72B', provider: 'Qwen', type: 'Chat', offIn: 0.36, offOut: 0.40, badge: 'Flagship' },
 
     // OpenAI
-    { id: 'gpt-4o-mini', name: 'gpt-4o-mini', provider: 'OpenAI', type: 'Chat', offIn: 0.107, offOut: 0.429, badge: 'Value' },
-    { id: 'gpt-4o', name: 'gpt-4o', provider: 'OpenAI', type: 'Chat', offIn: 1.786, offOut: 7.143, badge: 'Flagship' },
-    { id: 'o1-mini', name: 'o1-mini', provider: 'OpenAI', type: 'Reasoning', offIn: 2.143, offOut: 8.571, badge: 'Popular' },
-    { id: 'o1', name: 'o1', provider: 'OpenAI', type: 'Reasoning', offIn: 10.714, offOut: 42.857, badge: 'Flagship' },
+    { id: 'openai/gpt-4o-mini', name: 'gpt-4o-mini', provider: 'OpenAI', type: 'Chat', offIn: 0.15, offOut: 0.60, badge: 'Value' },
+    { id: 'openai/gpt-4o', name: 'gpt-4o', provider: 'OpenAI', type: 'Chat', offIn: 2.50, offOut: 10.00, badge: 'Flagship' },
+    { id: 'openai/o1-mini', name: 'o1-mini', provider: 'OpenAI', type: 'Reasoning', offIn: 3.00, offOut: 12.00, badge: 'Popular' },
+    { id: 'openai/o1', name: 'o1', provider: 'OpenAI', type: 'Reasoning', offIn: 15.00, offOut: 60.00, badge: 'Flagship' },
 
     // Anthropic
-    { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', type: 'Chat', offIn: 2.143, offOut: 10.714, badge: 'Flagship' },
-    { id: 'claude-3-5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic', type: 'Chat', offIn: 0.571, offOut: 2.857, badge: 'Value' },
+    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', type: 'Chat', offIn: 2.97, offOut: 14.85, badge: 'Flagship' },
+    { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic', type: 'Chat', offIn: 0.80, offOut: 4.00, badge: 'Value' },
+    { id: 'anthropic/claude-opus-4.8', name: 'Claude Opus 4.8', provider: 'Anthropic', type: 'Chat', offIn: 5.00, offOut: 25.00, badge: 'Flagship' },
 
     // Google
-    { id: 'gemini-1-5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', type: 'Chat', offIn: 0.893, offOut: 3.571, badge: 'Flagship' },
-    { id: 'gemini-1-5-flash', name: 'Gemini 1.5 Flash', provider: 'Google', type: 'Chat', offIn: 0.0536, offOut: 0.214, badge: 'Value' },
+    { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', type: 'Chat', offIn: 1.25, offOut: 10.00, badge: 'Flagship' },
+    { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', type: 'Chat', offIn: 0.30, offOut: 2.50, badge: 'Value' },
 
     // Others
-    { id: 'deepseek-v2-lite-1b', name: 'DeepSeek-V2-Lite-1B', provider: 'Meta', type: 'Chat', offIn: 0.193, offOut: 0.714, badge: '' },
-    { id: 'gemini-1-5-flash-8b', name: 'gemini-1.5-flash-8b', provider: 'Google', type: 'Chat', offIn: 0.0714, offOut: 0.286, badge: 'Value' },
-    { id: 'gemini-1-5-pro-8b', name: 'gemini-1.5-pro-8b', provider: 'Google', type: 'Chat', offIn: 0.093, offOut: 0.286, badge: '' },
-    { id: 'phi-3-medium-instruct', name: 'Phi-3-medium-instruct', provider: 'Other', type: 'Chat', offIn: 0.10, offOut: 0.479, badge: '' },
-    { id: 'yi-1-5-34b-chat', name: 'Yi-1.5-34b-Chat', provider: 'Other', type: 'Chat', offIn: 0.061, offOut: 0.543, badge: '' },
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', provider: 'Meta', type: 'Chat', offIn: 0.10, offOut: 0.32, badge: '' },
 
     // Image Generation
-    { id: 'flux-schnell-gen', name: 'FLUX.1 [schnell]', provider: 'Stability AI', type: 'Image', offIn: 0.0214, offOut: 0, badge: 'Value' },
-    { id: 'flux-dev-gen', name: 'FLUX.1 [dev]', provider: 'Stability AI', type: 'Image', offIn: 0.0536, offOut: 0, badge: 'Popular' },
-    { id: 'flux-schnell-max', name: 'FLUX.1 [schnell] (max)', provider: 'Stability AI', type: 'Image', offIn: 0.0429, offOut: 0, badge: '' },
-    { id: 'flux-dev-ultra', name: 'FLUX.1 [dev] (ultra)', provider: 'Stability AI', type: 'Image', offIn: 0.0571, offOut: 0, badge: '' },
-    { id: 'flux-schnell-ultra', name: 'FLUX.1 [schnell] (ultra)', provider: 'Stability AI', type: 'Image', offIn: 0.0429, offOut: 0, badge: '' },
+    { id: 'stability-ai/flux-schnell', name: 'FLUX.1 [schnell]', provider: 'Stability AI', type: 'Image', offIn: 0.03, offOut: 0, badge: 'Value' },
+    { id: 'stability-ai/flux-dev', name: 'FLUX.1 [dev]', provider: 'Stability AI', type: 'Image', offIn: 0.075, offOut: 0, badge: 'Popular' },
 
     // Video Generation
-    { id: 'luma-dream-gen', name: 'Luma Dream Machine', provider: 'Other', type: 'Video', offIn: 0.2143, offOut: 0, badge: 'Popular' },
-    { id: 'sora-video-gen', name: 'Sora Video', provider: 'OpenAI', type: 'Video', offIn: 1.0714, offOut: 0, badge: 'Flagship' },
+    { id: 'luma/dream-machine', name: 'Luma Dream Machine', provider: 'Other', type: 'Video', offIn: 0.30, offOut: 0, badge: 'Popular' },
 
     // Audio Models
-    { id: 'whisper-large-v3-gen', name: 'Whisper Large V3', provider: 'OpenAI', type: 'Audio', offIn: 0.00428, offOut: 0, badge: 'Flagship' },
-    { id: 'elevenlabs-reader-gen', name: 'ElevenLabs Reader', provider: 'Other', type: 'Audio', offIn: 0.01071, offOut: 0, badge: 'Popular' }
+    { id: 'openai/whisper-large-v3', name: 'Whisper Large V3', provider: 'OpenAI', type: 'Audio', offIn: 0.006, offOut: 0, badge: 'Flagship' }
 ];
 
 const PROVIDER_DESCS = {
@@ -258,18 +227,16 @@ export default function Pricing() {
 
   // Compute calculated pricing
   const calculatorCosts = useMemo(() => {
-    if (!calcModel) return { ours: 0, official: 0, saved: 0, pct: 0 };
+    if (!calcModel) return { ours: 0, official: 0, saved: 0, pct: 40 };
     const offInVal = calcModel.offIn || 0;
     const oursVal = ourPrice(offInVal) * tokenVolume;
     const officialVal = openrouterPrice(offInVal) * tokenVolume;
-    const savedVal = Math.max(officialVal - oursVal, 0);
-    const denominator = openrouterPrice(offInVal);
-    const pctVal = denominator ? Math.round((1 - (ourPrice(offInVal) / denominator)) * 100) : GLOBAL_SAVING;
+    const savedVal = Math.max(oursVal - officialVal, 0);
     return {
       ours: oursVal,
       official: officialVal,
       saved: savedVal,
-      pct: isNaN(pctVal) ? GLOBAL_SAVING : pctVal
+      pct: 40
     };
   }, [calcModel, tokenVolume]);
 
@@ -354,9 +321,9 @@ export default function Pricing() {
             {/* Right Column: Savings Calculator Card */}
             <div>
               <div className="calculator-card">
-                <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '0.9rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}> Savings Calculator</h3>
-                  <span className="save-tag savings-badge-glow" style={{ fontSize: '0.7rem' }}>SAVE {calculatorCosts.pct}%</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '0.9rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}> Cost Calculator</h3>
+                  <span className="save-tag savings-badge-glow" style={{ fontSize: '0.7rem' }}>+40% PREMIUM</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-alt)', padding: '4px', borderRadius: '14px', border: '1px solid var(--border)', marginBottom: '1.5rem' }}>
@@ -416,9 +383,9 @@ export default function Pricing() {
                   </div>
                   <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.25rem 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>Poupança Líquida Mensal</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>Infraestrutura & SLA Premium</span>
                     <span style={{ fontSize: '1.3rem', color: 'var(--primary)', fontWeight: 950, fontFamily: 'var(--mono)', textShadow: '0 0 15px var(--primary-soft)' }}>
-                      ${calculatorCosts.saved.toFixed(2)}
+                      +${calculatorCosts.saved.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -700,6 +667,7 @@ export default function Pricing() {
                                 const ourOut = ourPrice(m.offOut || 0);
                                 const { context } = getModelSpecs(m);
                                 const cachedPrice = getCachedInputPrice(m, ourIn);
+                                const isFree = m.offIn === 0 || (m.name || '').toLowerCase().includes('free') || (m.id || '').toLowerCase().includes(':free');
 
                                 return (
                                   <tr key={m.id}>
@@ -708,8 +676,8 @@ export default function Pricing() {
                                     </td>
                                     {isMedia ? (
                                       <>
-                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right' }}>
-                                          ${ourIn.toFixed(4)}
+                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right', color: isFree ? '#00e676' : 'inherit', fontWeight: isFree ? 800 : 'normal' }}>
+                                          {isFree ? 'Free' : `$${ourIn.toFixed(4)}`}
                                         </td>
                                       </>
                                     ) : (
@@ -717,14 +685,14 @@ export default function Pricing() {
                                         <td align="center" className="cell-context" style={{ textAlign: 'center' }}>
                                           {context}
                                         </td>
-                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right' }}>
-                                          ${ourIn.toFixed(3)}
+                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right', color: isFree ? '#00e676' : 'inherit', fontWeight: isFree ? 800 : 'normal' }}>
+                                          {isFree ? 'Free' : `$${ourIn.toFixed(3)}`}
                                         </td>
                                         <td align="right" className="cell-price font-mono text-muted" style={{ textAlign: 'right' }}>
-                                          {cachedPrice !== null ? `$${cachedPrice.toFixed(3)}` : '—'}
+                                          {isFree ? '—' : (cachedPrice !== null ? `$${cachedPrice.toFixed(3)}` : '—')}
                                         </td>
-                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right' }}>
-                                          ${ourOut.toFixed(3)}
+                                        <td align="right" className="cell-price font-mono" style={{ textAlign: 'right', color: isFree ? '#00e676' : 'inherit', fontWeight: isFree ? 800 : 'normal' }}>
+                                          {isFree ? 'Free' : `$${ourOut.toFixed(3)}`}
                                         </td>
                                       </>
                                     )}

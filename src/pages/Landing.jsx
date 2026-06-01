@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FEATURED_MODELS, PROVIDERS, MARKUP, ourPrice, savingsPercent } from '../data/models';
+import { FEATURED_MODELS, PROVIDERS, MARKUP, ourPrice, savingsPercent, getDynamicModels } from '../data/models';
 import { Copy, ArrowRight, Zap, Shield, Code, ChevronDown, CheckCircle2, Globe, Clock, Lock, Terminal, Check, DollarSign, Layers, Search, Server, Sparkles, Cpu, Send } from 'lucide-react';
 import ProviderLogo from '../components/ProviderLogo';
 
@@ -29,24 +29,40 @@ function TypeWriter({ text, delay = 40, onDone }) {
    Featured Model Card
    ═══════════════════════════════════════════════ */
 function ModelCard({ model, provider }) {
+  const isFree = model.badge === 'Free' || model.offIn === 0 || (model.name || '').toLowerCase().includes('free') || (model.id || '').toLowerCase().includes(':free');
   return (
-    <div className="model-card-elite glass-card">
+    <div className="model-card-elite glass-card" style={isFree ? { border: '1px solid rgba(0, 230, 118, 0.35)', boxShadow: '0 8px 32px rgba(0, 230, 118, 0.05)' } : {}}>
       <div className="mce-header">
         <ProviderLogo provider={provider} size={36} style={{ borderRadius: '10px' }} />
         <div className="mce-info">
           <h4>{model.name}</h4>
           <span className="mce-provider">{provider}</span>
         </div>
-        {model.badge && <span className={`mce-badge mce-badge-${model.badge.toLowerCase()}`}>{model.badge}</span>}
+        {model.badge && (
+          <span 
+            className={`mce-badge mce-badge-${model.badge.toLowerCase()}`}
+            style={isFree ? { background: 'rgba(0, 230, 118, 0.15)', color: '#00e676', border: '1px solid rgba(0, 230, 118, 0.3)' } : {}}
+          >
+            {model.badge}
+          </span>
+        )}
       </div>
       <div className="mce-pricing">
         <div className="mce-price-row">
           <span className="mce-label">Input</span>
-          <span className="mce-value">${ourPrice(model.offIn).toFixed(3)}</span>
+          {isFree ? (
+            <span className="mce-value" style={{ color: '#00e676', fontWeight: 800 }}>Free</span>
+          ) : (
+            <span className="mce-value">${ourPrice(model.offIn).toFixed(3)}</span>
+          )}
         </div>
         <div className="mce-price-row">
           <span className="mce-label">Output</span>
-          <span className="mce-value">${ourPrice(model.offOut).toFixed(3)}</span>
+          {isFree ? (
+            <span className="mce-value" style={{ color: '#00e676', fontWeight: 800 }}>Free</span>
+          ) : (
+            <span className="mce-value">${ourPrice(model.offOut).toFixed(3)}</span>
+          )}
         </div>
         <span className="mce-unit">per 1M tokens</span>
       </div>
@@ -54,11 +70,35 @@ function ModelCard({ model, provider }) {
   );
 }
 
+const FALLBACK_MODELS = [
+  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', offIn: 2.50, offOut: 10.00, badge: 'Flagship' },
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', offIn: 3.00, offOut: 15.00, badge: 'Flagship' },
+  { id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', offIn: 1.25, offOut: 5.00, badge: 'Flagship' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek', offIn: 0.55, offOut: 2.19, badge: 'Reasoning' },
+  { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct', provider: 'Meta', offIn: 0.35, offOut: 0.60, badge: 'Popular' },
+  { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3 (Chat)', provider: 'DeepSeek', offIn: 0.14, offOut: 0.28, badge: 'Popular' },
+  { id: 'x-ai/grok-2-1212', name: 'Grok 2', provider: 'xAI', offIn: 2.00, offOut: 10.00, badge: 'Flagship' },
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', offIn: 0.15, offOut: 0.60, badge: 'Value' },
+  { id: 'google/gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google', offIn: 0.075, offOut: 0.30, badge: 'Value' },
+  { id: 'qwen/qwen-2.5-72b-instruct:free', name: 'Qwen 2.5 72B (Free)', provider: 'Alibaba', offIn: 0, offOut: 0, badge: 'Free' },
+  { id: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B (Free)', provider: 'Meta', offIn: 0, offOut: 0, badge: 'Free' },
+  { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)', provider: 'Mistral', offIn: 0, offOut: 0, badge: 'Free' }
+];
+
 export default function Landing() {
    const [openFaq, setOpenFaq] = useState(null);
    const [copied, setCopied] = useState(false);
    const [termStep, setTermStep] = useState(0);
+   const [dbModels, setDbModels] = useState([]);
    const savPct = savingsPercent();
+
+   useEffect(() => {
+     getDynamicModels()
+       .then(data => {
+         if (data && data.length > 0) setDbModels(data);
+       })
+       .catch(err => console.error('Failed to load landing models:', err));
+   }, []);
 
    const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
 
@@ -69,28 +109,77 @@ export default function Landing() {
   };
 
   const faqs = [
-    { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 260+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
+    { q: "What is Digitaland.ai?", a: "Digitaland.ai is a unified AI API gateway that gives you access to 600+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral and many more — all through a single API key and OpenAI-compatible endpoint." },
     { q: "How does pricing work?", a: "We offer competitive, usage-based pricing optimized for volume. No monthly fees, no subscriptions — pure pay-as-you-go. You only pay for the tokens you actually consume. Check our pricing page for exact per-model costs." },
     { q: "Is it really OpenAI-compatible?", a: "Yes! Just change your base_url to https://api.digitaland.ai/v1 and use your Digitaland API key. Works with the official OpenAI SDK, LangChain, LlamaIndex, and any other OpenAI-compatible library." },
-    { q: "Which models are supported?", a: "We support 260+ models including GPT-5.5, Claude 4.8, Gemini 3 Pro, Grok, DeepSeek V3, Qwen3, Llama 4, Mistral Large, and many more. New models are added within hours of release." },
+    { q: "Which models are supported?", a: "We support 600+ models including GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, Grok 2, DeepSeek V3, DeepSeek R1, Qwen 2.5, Llama 3.3, Mistral Large, and many more. New models are added within hours of release." },
     { q: "How does Digitaland protect my data?", a: "Enterprise-grade encryption for all data in transit and at rest. We operate a strict zero-log policy — your prompts, completions, and API keys are never stored, logged, or used for training." },
     { q: "What happens if a provider goes down?", a: "Our intelligent routing automatically fails over to backup nodes. We maintain 99.9% uptime with redundant infrastructure across multiple regions." }
   ];
 
-  const topModels = [
-    { name: 'gpt-5.5', provider: 'OpenAI', offIn: 2.75, offOut: 16.50, badge: 'Flagship' },
-    { name: 'claude-opus-4-8', provider: 'Anthropic', offIn: 2.75, offOut: 13.75, badge: 'Flagship' },
-    { name: 'gemini-3.1-pro', provider: 'Google', offIn: 1.10, offOut: 6.60, badge: 'Flagship' },
-    { name: 'grok-4', provider: 'xAI', offIn: 1.65, offOut: 8.25, badge: 'Flagship' },
-    { name: 'deepseek-r1', provider: 'DeepSeek', offIn: 0.495, offOut: 1.98, badge: 'Reasoning' },
-    { name: 'claude-sonnet-4-6', provider: 'Anthropic', offIn: 1.65, offOut: 8.25, badge: 'Popular' },
-    { name: 'gpt-4.1', provider: 'OpenAI', offIn: 1.10, offOut: 4.40, badge: 'Popular' },
-    { name: 'qwen3-235b-a22b', provider: 'Alibaba', offIn: 0.22, offOut: 0.88, badge: 'Popular' },
-    { name: 'llama-4-maverick', provider: 'Meta', offIn: 0.20, offOut: 0.60, badge: 'Flagship' },
-    { name: 'gpt-5-mini', provider: 'OpenAI', offIn: 0.138, offOut: 1.10, badge: 'Value' },
-    { name: 'deepseek-v4-flash', provider: 'DeepSeek', offIn: 0.14, offOut: 0.28, badge: 'Value' },
-    { name: 'mistral-large-3', provider: 'Mistral', offIn: 2.00, offOut: 6.00, badge: 'Flagship' },
-  ];
+  const topModels = useMemo(() => {
+    if (!dbModels || dbModels.length === 0) return FALLBACK_MODELS;
+
+    const targets = [
+      { id: 'openai/gpt-4o', badge: 'Flagship' },
+      { id: 'claude-3-5-sonnet', badge: 'Flagship' },
+      { id: 'google/gemini-2.5-pro', badge: 'Flagship' },
+      { id: 'deepseek/deepseek-r1', badge: 'Reasoning' },
+      { id: 'meta-llama/llama-3.3-70b-instruct', badge: 'Popular' },
+      { id: 'deepseek-chat', badge: 'Popular' },
+      { id: 'grok-2-1212', badge: 'Flagship' },
+      { id: 'openai/gpt-4o-mini', badge: 'Value' },
+      { id: 'google/gemini-2.5-flash', badge: 'Value' },
+    ];
+
+    const result = [];
+    
+    targets.forEach(t => {
+      const match = dbModels.find(m => (m.id || '').toLowerCase() === t.id.toLowerCase()) ||
+                    dbModels.find(m => (m.id || '').toLowerCase().includes(t.id.toLowerCase()));
+      if (match) {
+        result.push({
+          ...match,
+          badge: t.badge
+        });
+      }
+    });
+
+    const freeModels = dbModels.filter(m => 
+      m.badge === 'Free' || m.offIn === 0 || (m.name || '').toLowerCase().includes('free') || (m.id || '').toLowerCase().includes(':free')
+    );
+
+    let freeCount = 0;
+    freeModels.forEach(fm => {
+      if (freeCount < 3 && !result.some(r => r.id === fm.id)) {
+        result.push({
+          ...fm,
+          badge: 'Free'
+        });
+        freeCount++;
+      }
+    });
+
+    if (result.length < 12) {
+      const remaining = dbModels.filter(m => !result.some(r => r.id === m.id));
+      const prioritized = remaining.sort((a, b) => {
+        const aFlag = a.badge === 'Flagship' || a.badge === 'Popular' ? 1 : 0;
+        const bFlag = b.badge === 'Flagship' || b.badge === 'Popular' ? 1 : 0;
+        return bFlag - aFlag;
+      });
+
+      for (let i = 0; i < prioritized.length && result.length < 12; i++) {
+        result.push(prioritized[i]);
+      }
+    }
+
+    const badgeOrder = { 'Free': 1, 'Flagship': 2, 'Reasoning': 3, 'Popular': 4, 'Value': 5 };
+    return result.slice(0, 12).sort((a, b) => {
+      const aOrd = badgeOrder[a.badge] || 99;
+      const bOrd = badgeOrder[b.badge] || 99;
+      return aOrd - bOrd;
+    });
+  }, [dbModels]);
 
   return (
     <div className="landing-root" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -111,7 +200,7 @@ export default function Landing() {
           </h1>
           
           <p className="hero-sub fade-in-up delay-2" style={{ fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.6 }}>
-            Access <strong>GPT-5.5, Claude Opus 4.8, Gemini 3.1 Pro, DeepSeek V3</strong> and 300+ other models instantly. 
+            Access <strong>GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, DeepSeek R1</strong> and 600+ other models instantly. 
             Enterprise-grade speed, strict zero-logging privacy, and pure pay-as-you-go billing — the most powerful AI engines in the world, unified.
           </p>
 
@@ -134,7 +223,7 @@ export default function Landing() {
           <div className="hero-social-proof fade-in-up delay-4">
             <div className="hsp-item">
               <Sparkles size={14} />
-              <span><strong>260+</strong> AI Models</span>
+              <span><strong>600+</strong> AI Models</span>
             </div>
             <div className="hsp-divider" />
             <div className="hsp-item">
@@ -173,7 +262,7 @@ export default function Landing() {
       <div className="container">
         <div className="stats-row">
           {[
-            { num: '260+', label: 'AI Models', icon: <Layers size={20} /> },
+            { num: '600+', label: 'AI Models', icon: <Layers size={20} /> },
             { num: '99.9%', label: 'Uptime SLA', icon: <Server size={20} /> },
             { num: '<200ms', label: 'Avg Latency', icon: <Zap size={20} /> },
             { num: '$0', label: 'Monthly Fees', icon: <DollarSign size={20} /> },
@@ -209,7 +298,7 @@ export default function Landing() {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '4rem' }}>
               {[
-                'Unified access to 260+ LLMs via All-in-One API',
+                'Unified access to 600+ LLMs via All-in-One API',
                 'Intelligent Edge caching for instant responses',
                 'Real-time token usage and cost analytics',
                 'Guaranteed lowest market prices for developers'
@@ -253,7 +342,7 @@ export default function Landing() {
                  </div>
                  <div>
                     <p style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', marginBottom: '0.25rem' }}>Neural Gateway <span style={{ color: '#22c55e', fontSize: '0.8rem', marginLeft: '1rem', fontWeight: 900, textTransform: 'uppercase' }}>● ONLINE</span></p>
-                    <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-5.5_ULTRA</p>
+                    <p style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px' }}>Active Core: GPT-4o</p>
                  </div>
               </div>
 
@@ -341,7 +430,7 @@ export default function Landing() {
                 <div className="t-step-num">3</div>
                 <div>
                   <strong>Start calling any model</strong>
-                  <p>Access 260+ models — GPT, Claude, Gemini, Grok & more</p>
+                  <p>Access 600+ models — GPT, Claude, Gemini, Grok & more</p>
                 </div>
               </div>
             </div>
@@ -398,8 +487,8 @@ export default function Landing() {
                 color: '#06b6d4',
                 bg: 'rgba(6,182,212,0.08)',
                 title: 'Unified Model Catalog',
-                desc: 'A single API key unlocks every major frontier model — from GPT-5.5 and Claude 4.8 to Gemini 3 Pro, Grok, and DeepSeek V3. New models added within hours.',
-                highlight: '260+ models · 20+ providers'
+                desc: 'A single API key unlocks every major frontier model — from GPT-4o and Claude 3.5 Sonnet to Gemini 1.5 Pro, Grok 2, and DeepSeek R1. New models added within hours.',
+                highlight: '600+ models · 20+ providers'
               },
               {
                 icon: <Server size={24} />,
@@ -439,7 +528,7 @@ export default function Landing() {
 
           <div style={{ textAlign: 'center', marginTop: '3rem' }}>
             <Link to="/models" className="btn-solid" style={{ padding: '0.9rem 2.5rem' }}>
-              Browse All 260+ Models <ArrowRight size={18} />
+              Browse All 600+ Models <ArrowRight size={18} />
             </Link>
           </div>
         </div>
@@ -467,23 +556,37 @@ export default function Landing() {
                 </tr>
               </thead>
               <tbody>
-                {topModels.slice(0, 8).map((m, i) => (
-                  <tr key={i}>
-                    <td className="pt-model">
-                      <ProviderLogo provider={m.provider} size={28} style={{ borderRadius: '8px' }} />
-                      {m.name}
-                    </td>
-                    <td className="pt-provider">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <ProviderLogo provider={m.provider} size={16} style={{ borderRadius: '4px' }} />
-                        {m.provider}
-                      </span>
-                    </td>
-                    <td className="pt-price">${ourPrice(m.offIn).toFixed(3)}</td>
-                    <td className="pt-price">${ourPrice(m.offOut).toFixed(3)}</td>
-                    <td><span className={`mce-badge mce-badge-${(m.badge || '').toLowerCase()}`}>{m.badge}</span></td>
-                  </tr>
-                ))}
+                {topModels.slice(0, 12).map((m, i) => {
+                  const isFree = m.badge === 'Free' || m.offIn === 0 || (m.name || '').toLowerCase().includes('free') || (m.id || '').toLowerCase().includes(':free');
+                  return (
+                    <tr key={i} style={isFree ? { background: 'rgba(0, 230, 118, 0.02)' } : {}}>
+                      <td className="pt-model">
+                        <ProviderLogo provider={m.provider} size={28} style={{ borderRadius: '8px' }} />
+                        {m.name}
+                      </td>
+                      <td className="pt-provider">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <ProviderLogo provider={m.provider} size={16} style={{ borderRadius: '4px' }} />
+                          {m.provider}
+                        </span>
+                      </td>
+                      <td className="pt-price" style={isFree ? { color: '#00e676', fontWeight: 800 } : {}}>
+                        {isFree ? 'Free' : `$${ourPrice(m.offIn).toFixed(3)}`}
+                      </td>
+                      <td className="pt-price" style={isFree ? { color: '#00e676', fontWeight: 800 } : {}}>
+                        {isFree ? 'Free' : `$${ourPrice(m.offOut).toFixed(3)}`}
+                      </td>
+                      <td>
+                        <span 
+                          className={`mce-badge mce-badge-${(m.badge || '').toLowerCase()}`}
+                          style={isFree ? { background: 'rgba(0, 230, 118, 0.15)', color: '#00e676', border: '1px solid rgba(0, 230, 118, 0.3)' } : {}}
+                        >
+                          {m.badge}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -523,7 +626,7 @@ export default function Landing() {
          ════════════════════════════════════ */}
       <section className="cta-section">
         <div className="container">
-          <h2>Ready to build with 260+ AI models?</h2>
+          <h2>Ready to build with 600+ AI models?</h2>
           <p>Join developers worldwide who trust Digitaland.ai for production AI</p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/playground" className="magic-btn btn-lg" style={{ padding: '1rem 2.5rem' }}>
@@ -553,7 +656,7 @@ const PythonSnippet = () => (
     ){"\n"}
     {"\n"}
     response = client.chat.completions.<span className="t-func">create</span>({"\n"}
-    {"    "}model=<span className="t-string">"gpt-5.5"</span>,  <span className="t-comment"># or claude-opus-4-8, etc.</span>{"\n"}
+    {"    "}model=<span className="t-string">"gpt-4o"</span>,  <span className="t-comment"># or claude-3-5-sonnet, etc.</span>{"\n"}
     {"    "}messages=[{"\n"}
     {"        "}{"{"}<span className="t-string">"role"</span>: <span className="t-string">"user"</span>, <span className="t-string">"content"</span>: <span className="t-string">"Hello from Digitaland!"</span>{"}"}{"\n"}
     {"    "}]{"\n"}
@@ -574,7 +677,7 @@ const NodeSnippet = () => (
     {"}"});{"\n"}
     {"\n"}
     <span className="t-keyword">const</span> response = <span className="t-keyword">await</span> client.chat.completions.<span className="t-func">create</span>({"{"}{"\n"}
-    {"    "}model: <span className="t-string">'claude-sonnet-4-6'</span>, <span className="t-comment">// or gpt-5.5, etc.</span>{"\n"}
+    {"    "}model: <span className="t-string">'claude-3-5-sonnet'</span>, <span className="t-comment">// or gpt-4o, etc.</span>{"\n"}
     {"    "}messages: [{"\n"}
     {"        "}{"{"} role: <span className="t-string">'user'</span>, content: <span className="t-string">'Hello from Digitaland!'</span> {"}"}{"\n"}
     {"    "}],{"\n"}
@@ -590,7 +693,7 @@ const CurlSnippet = () => (
     {"  "}-H <span className="t-string">"Content-Type: application/json"</span> \<br />
     {"  "}-H <span className="t-string">"Authorization: Bearer sk-your-digitaland-key"</span> \<br />
     {"  "}-d <span className="t-string">'{"{"}'</span>{"\n"}
-    {"    "}<span className="t-prop">"model"</span>: <span className="t-string">"grok-4"</span>,{"\n"}
+    {"    "}<span className="t-prop">"model"</span>: <span className="t-string">"grok-2"</span>,{"\n"}
     {"    "}<span className="t-prop">"messages"</span>: [{"\n"}
     {"      "}{"{"}<span className="t-prop">"role"</span>: <span className="t-string">"user"</span>, <span className="t-prop">"content"</span>: <span className="t-string">"Hello from Digitaland!"</span>{"}"}{"\n"}
     {"    "}]{"\n"}
@@ -608,7 +711,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="gpt-5.5",
+    model="gpt-4o",
     messages=[
         {"role": "user", "content": "Hello from Digitaland!"}
     ]
@@ -624,7 +727,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-  model: 'claude-sonnet-4-6',
+  model: 'claude-3-5-sonnet',
   messages: [
     { role: 'user', content: 'Hello from Digitaland!' }
   ],
@@ -636,7 +739,7 @@ const curlCode = `curl https://api.digitaland.ai/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer sk-your-digitaland-key" \\
   -d '{
-    "model": "grok-4",
+    "model": "grok-2",
     "messages": [
       {"role": "user", "content": "Hello from Digitaland!"}
     ]

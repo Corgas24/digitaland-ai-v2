@@ -274,4 +274,4 @@ const R=[
 ['OpenRouter','mistral-7b:free',0,0,'Chat','Free'],
 ['OpenRouter','phi-3-mini:free',0,0,'Chat','Free'],
 ];
-export default R.map(([provider,name,offIn,offOut,type,badge])=>({provider,name,offIn,offOut,type,badge:badge||'',ctx:'-',vision:type==='Vision',tools:type!=='Image'&&type!=='Audio'&&type!=='Video',reasoning:type==='Reasoning',speed:50,intel:50}));
+export default R.map(([provider,name,offIn,offOut,type,badge])=>({provider,name,offIn: offIn * 1.8,offOut: offOut * 1.8,type,badge:badge||'',ctx:'-',vision:type==='Vision',tools:type!=='Image'&&type!=='Audio'&&type!=='Video',reasoning:type==='Reasoning',speed:50,intel:50}));

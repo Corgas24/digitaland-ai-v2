@@ -17,7 +17,7 @@ INFORMAÇÕES SOBRE A DIGITALAND.AI:
    - Redundância multi-região com failover automático.
 4. Faturação e Preços (Pay-as-you-go):
    - Sem mensalidades, sem subscrições. Paga apenas pelos tokens que consumir. Créditos nunca expiram.
-   - Poupança média de até 10% em relação aos preços oficiais da OpenRouter (aplicamos um markup competitivo de 1.8x sobre o custo wholesale CrazyRouter).
+   - Transparência total de custos (aplicamos um markup competitivo de 1.4x sobre o custo wholesale do OpenRouter).
 5. Preços de Referência (por 1M tokens):
    - Claude Opus 4.8: Input $4.95 / Output $24.75
    - Claude Opus 4.8 (Fast): Input $9.00 / Output $45.00

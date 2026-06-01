@@ -1081,6 +1081,20 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .badge-budget { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
 .badge-new { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); }
 .badge-premium { background: rgba(236, 72, 153, 0.1); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.2); }
+.badge-free { 
+  background: rgba(16, 185, 129, 0.15) !important; 
+  color: #00e676 !important; 
+  border: 1px solid rgba(0, 230, 118, 0.4) !important; 
+  font-weight: 900 !important; 
+  text-shadow: 0 0 5px rgba(0, 230, 118, 0.5); 
+  animation: neon-pulse 2s infinite ease-in-out;
+}
+
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(0, 230, 118, 0.2), 0 0 8px rgba(0, 230, 118, 0.1); }
+  50% { box-shadow: 0 0 12px rgba(0, 230, 118, 0.5), 0 0 20px rgba(0, 230, 118, 0.3); }
+}
+
 
 /* Card Header */
 .pm-card-header {
